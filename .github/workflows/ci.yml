@@ -18,6 +18,12 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Prepare example configs
+        run: |
+          cp config.example.yaml config.yaml
+          cp services.example.yaml services.yaml
+          cp theme.example.yaml theme.yaml
+          cp .env.example .env
       - name: Run ESLint
         run: npm run lint
       - name: Run Vitest
@@ -29,6 +35,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+      - name: Prepare example configs
+        run: |
+          cp theme.example.yaml theme.yaml
       - name: Test Docker build
         uses: docker/build-push-action@v5
         with:

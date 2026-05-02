@@ -38,6 +38,10 @@ jobs:
             type=raw,value=${{ github.event.release.tag_name }}
             type=raw,value=latest
 
+      - name: Prepare example configs
+        run: |
+          cp theme.example.yaml theme.yaml
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
