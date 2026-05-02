@@ -1,0 +1,10 @@
+services:
+  glassboard:
+    build: .
+    env_file: .env
+    ports:
+      - "${PORT:-3001}:3001"
+    volumes:
+      - ${CONFIG_FILE:-./config.yaml}:/app/config.yaml
+      - ${SERVICES_FILE:-./services.yaml}:/app/services.yaml
+    restart: unless-stopped

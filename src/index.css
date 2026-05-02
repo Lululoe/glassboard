@@ -1,0 +1,72 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  /* Layout variables - static */
+  --radius-card: 24px;
+  --gap-grid: 24px;
+  --seperator-width: 2px;
+
+  /* Default card primary color (defaults to global primary) */
+  --card-primary: var(--color-primary);
+  --text-accent: var(--card-primary);
+}
+
+html {
+  background: var(--bg-page-gradient);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  font-family: var(--font-family);
+  background: transparent;
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Utility: apply to any element to enable vertical scrolling with themed scrollbars */
+.scrollable {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  /* Firefox */
+  scrollbar-color: var(--text-primary) rgba(255, 255, 255, 0.08);
+  scrollbar-gutter: stable;
+}
+
+/* WebKit browsers */
+.scrollable::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.scrollable::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+}
+
+.scrollable::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(90deg, var(--card-primary), var(--color-primary-light));
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.scrollable::-webkit-scrollbar-thumb:hover {
+  filter: brightness(0.92);
+}

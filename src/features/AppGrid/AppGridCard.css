@@ -1,0 +1,73 @@
+.app-grid-card {
+    padding: 16px !important;
+    /* Slightly reduce padding to maximize space for grid */
+}
+
+.app-grid-container {
+    display: grid;
+    /* grid-template-columns set via inline style */
+    grid-template-rows: repeat(3, 1fr);
+    gap: 12px;
+    width: 100%;
+    height: 100%;
+}
+
+.app-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: start;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    border-radius: 12px;
+    padding: 4px;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.app-item:hover {
+    transform: scale(1.05);
+}
+
+.app-grid-icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: 6px;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    /* Subtle backing for transparent pngs */
+}
+
+.app-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* Or contain depending on icon style */
+}
+
+.app-icon-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(rgba(255, 255, 255, 0));
+    color: white;
+}
+
+.app-name {
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-align: center;
+    white-space: pre-line;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    line-height: 1.2;
+}

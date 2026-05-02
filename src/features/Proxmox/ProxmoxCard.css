@@ -1,0 +1,124 @@
+/* Proxmox List Layout */
+.proxmox-list {
+    display: flex;
+    flex-direction: column;
+    /* No explicit overflow or height needed, relying on parent scrollable area */
+}
+
+.proxmox-item {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 0px;
+    border-bottom: 1px solid var(--color-separator);
+    gap: 8px;
+}
+
+.proxmox-item:first-child {
+    padding-top: 0px;
+}
+
+.proxmox-item:last-child {
+    border-bottom: none;
+}
+
+.proxmox-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.proxmox-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.proxmox-icon-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+}
+
+.proxmox-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.proxmox-id {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-left: 6px;
+}
+
+.proxmox-status-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+}
+
+.proxmox-status-badge.running {
+    background: rgba(34, 197, 94, 0.2);
+    color: #22c55e;
+}
+
+.proxmox-status-badge.stopped {
+    background: rgba(148, 163, 184, 0.2);
+    color: #94a3b8;
+}
+
+/* Stats Row */
+.proxmox-stats-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    /* Align with text, skipping icon */
+}
+
+.stat-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-label-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.mini-bar-container {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.mini-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+/* Colors */
+.bar-cpu {
+    background-color: #f43f5e;
+}
+
+.bar-ram {
+    background-color: #8b5cf6;
+}
+
+.bar-disk {
+    background-color: #06b6d4;
+}

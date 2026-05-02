@@ -1,0 +1,95 @@
+# Glassboard Theme Configuration
+# Copy this file to theme.yaml to use the default theme, or customize it.
+#   cp theme.example.yaml theme.yaml
+
+themes:
+  - id: "default"
+    name: "Default Blue"
+    # particles:
+    #  enable: true
+    #  fpsLimit: 60
+    #  particles:
+    #    number:
+    #      value: 80
+    #      density:
+    #        enable: true
+    #        value_area: 800
+    #    color:
+    #      value: "#ffffff"
+    #    links:
+    #      enable: true
+    #      color: "#ffffff"
+    #      distance: 150
+    #      opacity: 0.4
+    #      width: 1
+    #    opacity:
+    #      value: 0.5
+    #    size:
+    #      value: { min: 1, max: 3 }
+    #    move:
+    #      enable: true
+    #      speed: 1.5
+    #      direction: "none"
+    #      random: false
+    #      straight: false
+    #      outModes: "out"
+    colors:
+      light:
+        "--bg-page-gradient": "linear-gradient(135deg, #003780 0%, #0061d4 50%, #207ff3 100%)"
+        "--bg-card-glass": "rgba(255, 255, 255, 0.6)"
+        "--bg-card-glass-header": "rgba(50,50, 50, 0.40)"
+        "--bg-card-border": "rgba(0, 0, 0, 0.05)"
+        "--bg-on-card": "rgba(255, 255, 255, 0.6)"
+        "--shadow-card": "0 8px 32px 0 rgba(0, 0, 0, 0.3)"
+        "--bg-tile": "#f7f7f7"
+        "--bg-tile-off": "#c0c0c0"
+        "--color-separator": "rgba(0, 0, 0, 0.1)"
+        "--bg-popup": "rgba(255, 255, 255, 0.9)"
+        "--text-primary": "#1c1c1e"
+        "--text-secondary": "rgba(60, 60, 67, 0.6)"
+        "--icon-background": "linear-gradient(135deg, #fff, #f0f0f0)"
+        "--icon-border-color": "#d1d1d6"
+
+        # Solid defaults
+        "--color-primary": "#0a84ff"
+        "--color-primary-light": "#60a5fa"
+        "--color-primary-dark": "#0050d5"
+        "--color-secondary": "#7A43B6"
+        "--color-secondary-light": "#BE57F2"
+        "--color-secondary-dark": "#5e328c"
+        "--color-tertiary": "#F05050"
+        "--color-tertiary-light": "#F09550"
+        "--color-tertiary-dark": "#c43e3e"
+        "--color-quaternary": "#24A69B"
+        "--color-quaternary-light": "#31E07A"
+        "--color-quaternary-dark": "#1a7f75"
+
+      dark:
+        "--bg-page-gradient": "linear-gradient(135deg, #003780 0%, #0061d4 50%, #00285a 100%)"
+        "--bg-card-glass": "rgba(8, 9, 12, 0.5)"
+        "--bg-card-glass-header": "rgba(50,50, 50, 0.40)"
+        "--bg-card-border": "rgba(255, 255, 255, 0.1)"
+        "--bg-on-card": "rgba(255, 255, 255, 0.03)"
+        "--shadow-card": "0 8px 32px 0 rgba(0, 0, 0, 0.3)"
+        "--bg-tile": "#ffffff"
+        "--bg-tile-off": "rgba(0, 0, 0, 0.25)"
+        "--color-separator": "rgba(255, 255, 255, 0.1)"
+        "--bg-popup": "rgba(0, 0, 0, 0.85)"
+        "--text-primary": "#ffffff"
+        "--text-secondary": "rgba(255, 255, 255, 0.6)"
+        "--icon-background": "linear-gradient(135deg, #333, #111)"
+        "--icon-border-color": "#444"
+
+        # Solid defaults
+        "--color-primary": "#0a84ff"
+        "--color-primary-light": "#60a5fa"
+        "--color-primary-dark": "#0050d5"
+        "--color-secondary": "#7A43B6"
+        "--color-secondary-light": "#BE57F2"
+        "--color-secondary-dark": "#5e328c"
+        "--color-tertiary": "#F05050"
+        "--color-tertiary-light": "#F09550"
+        "--color-tertiary-dark": "#c43e3e"
+        "--color-quaternary": "#24A69B"
+        "--color-quaternary-light": "#31E07A"
+        "--color-quaternary-dark": "#1a7f75"

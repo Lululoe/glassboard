@@ -1,0 +1,37 @@
+name: Sync Docs to Wiki
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Sync Wiki
+        run: |
+          # Configure Git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Clone Wiki repository
+          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" wiki
+          
+          # Copy docs contents to wiki directory
+          cp -R docs/* wiki/
+          
+          # Commit and Push changes
+          cd wiki
+          git add .
+          if git diff-index --quiet HEAD; then
+            echo "No changes to sync to the wiki."
+          else
+            git commit -m "docs: auto-sync from main repository docs/"
+            git push origin master
+          fi

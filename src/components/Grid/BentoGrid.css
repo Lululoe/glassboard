@@ -1,0 +1,104 @@
+.bento-grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+    align-content: start;
+}
+
+/* Card Wrapper in Grid */
+.grid-item {
+    display: flex;
+    min-width: 0;
+    position: relative;
+    z-index: 0;
+    isolation: isolate;
+    animation: card-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--i, 0) * 0.06s);
+}
+
+
+@keyframes card-enter {
+    from {
+        opacity: 0;
+        transform: translateY(24px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Make cards size-driven by their width using aspect-ratio.
+   Single-column cards are square. Multi-column spans use a wider
+   aspect-ratio on large screens, but collapse to square on narrow screens. */
+.grid-item>.glass-card {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1 / 1;
+    /* default: square */
+}
+
+/* Two-column and three-column cards get wider aspect ratios on large screens */
+.grid-item.col-span-2>.glass-card {
+    aspect-ratio: 2 / 1;
+}
+
+.grid-item.col-span-3>.glass-card {
+    aspect-ratio: 3 / 1;
+}
+
+/* Column Spans */
+.col-span-1 {
+    grid-column: span 1;
+}
+
+.col-span-2 {
+    grid-column: span 2;
+}
+
+.col-span-3 {
+    grid-column: span 3;
+}
+
+/* Responsive Breakpoints */
+
+/* Tablet (2 columns) */
+@media (max-width: 1024px) {
+    .bento-grid-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* On medium screens, allow a 2-column span to keep its 2:1 shape,
+       but larger spans should reduce to sensible sizes via grid rules. */
+    .grid-item.col-span-3 {
+        grid-column: span 2;
+    }
+
+    .grid-item.col-span-3>.glass-card {
+        aspect-ratio: 2 / 1;
+    }
+}
+
+/* Mobile (1 column) */
+@media (max-width: 768px) {
+    .bento-grid-container {
+        grid-template-columns: 1fr;
+        padding: 16px;
+    }
+
+    /* Force all cards to span 1 column and be square on small screens */
+    .col-span-1,
+    .col-span-2,
+    .col-span-3 {
+        grid-column: span 1 !important;
+    }
+
+    .grid-item>.glass-card {
+        aspect-ratio: 1 / 1 !important;
+    }
+}

@@ -1,0 +1,133 @@
+.pr-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.pr-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-bottom: 12px;
+    border-bottom: var(--seperator-width) solid var(--color-separator);
+}
+
+.pr-item:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.pr-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.pr-title-wrap {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.pr-repo {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+}
+
+.pr-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* white-space: nowrap; - removing this to allow title wrapping if needed, but ellipsis is safer for single line */
+    white-space: nowrap;
+}
+
+.pr-meta {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 2px;
+}
+
+.pr-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pr-status-badge {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.pr-status-badge.open {
+    background-color: rgba(46, 160, 67, 0.15);
+    color: #3fb950;
+}
+
+.pr-status-badge.merged {
+    background-color: rgba(137, 87, 229, 0.15);
+    color: #a371f7;
+}
+
+.pr-status-badge.draft {
+    background-color: rgba(110, 118, 129, 0.15);
+    color: #8b949e;
+}
+
+.pr-status-badge.review_required {
+    background-color: rgba(198, 144, 38, 0.15);
+    color: #d29922;
+}
+
+.check-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.check-status.success {
+    color: #3fb950;
+}
+
+.check-status.failed {
+    color: #f85149;
+}
+
+.check-status.pending {
+    color: #d29922;
+}
+
+.bot-icon {
+    margin-left: 1px;
+}
+
+.pr-comments {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pr-checks {
+    margin-left: 4px;
+}
+
+/* Adjust checks margin if no comments and checks are present, 
+   CSS Logic: If pr-comments is hidden/not-rendered, pr-checks needs to take auto margin.
+   Since React conditionally renders, we can use :first-child or just rely on flex.
+*/
+.pr-meta .pr-checks:only-child {
+    margin-left: auto;
+}

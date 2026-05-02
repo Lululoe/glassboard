@@ -1,0 +1,146 @@
+# Glassboard Configuration
+# Copy this file to config.yaml and customize it for your setup.
+#   cp config.example.yaml config.yaml
+
+theme: "default"
+themes: []
+
+pages:
+  - id: home
+    name: "Home"
+    cards:
+      - id: weather
+        type: weather
+        colSpan: 2
+        entity_id: "weather.forecast_home"
+
+      - id: appgrid
+        type: appgrid
+        colSpan: 1
+
+      - id: media_center
+        type: media
+        colSpan: 3
+        primaryColor: "#f078f0"
+
+      - id: transmission
+        type: transmission
+        colSpan: 3
+        url: "http://transmission.local:9091"
+        downloadsUrl: "http://downloads.local"
+        primaryColor: "#f02520"
+
+  - id: admin
+    name: "Server"
+    cards:
+
+      - id: server_stats
+        type: serverstats
+        colSpan: 2
+        data:
+          sensors: ["cpu", "ram", "storage", "network", "temp"]
+
+      - id: proxmox_cluster
+        type: proxmox
+        colSpan: 1
+        url: "https://proxmox.local:8006"
+        primaryColor: "#e57000"
+
+      - id: github_prs
+        type: git
+        colSpan: 3
+        filterStatus: ['open']
+        repositories:
+          - type: "github"
+            owner: "your-username"
+            repo: "your-repo"
+
+  # Example: Embed an external page as an iframe
+  # - id: example_iframe
+  #   name: "Status Page"
+  #   type: iframe
+  #   url: "https://status.example.com"
+
+launcher:
+  apps:
+    - name: "Home Assistant"
+      url: "https://homeassistant.local:8123"
+      icon:
+        source: "sh"
+        value: "home-assistant-light"
+      bgColor: "linear-gradient(45deg,rgba(3, 169, 244, 1) 0%, rgba(3, 236, 244, 1) 50%, rgba(3, 244, 196, 1) 100%)"
+    - name: "Mealie"
+      url: "https://mealie.local"
+      icon:
+        source: "sh"
+        value: "mealie"
+        color: "white"
+      bgColor: "linear-gradient(45deg,rgba(255, 123, 0, 1) 0%, rgba(255, 183, 0, 1) 100%)"
+    - name: "Paperless"
+      url: "https://paperless.local"
+      icon:
+        source: "lucide"
+        value: "Leaf"
+      bgColor: "linear-gradient(45deg,rgba(13, 161, 55, 1) 3%, rgba(0, 255, 38, 1) 100%)"
+    - name: "Transmission"
+      url: "https://transmission.local"
+      icon:
+        source: "sh"
+        value: "transmission"
+    - name: "Sonarr"
+      url: "https://sonarr.local"
+      icon:
+        source: "sh"
+        value: "sonarr"
+    - name: "Radarr"
+      url: "https://radarr.local"
+      icon:
+        source: "sh"
+        value: "radarr-light-hybrid"
+    - name: "Prowlarr"
+      url: "https://prowlarr.local"
+      icon:
+        source: "sh"
+        value: "prowlarr"
+    - name: "Plex"
+      url: "https://plex.local:32400"
+      icon:
+        source: "sh"
+        value: "plex"
+    - name: "Grafana"
+      url: "https://grafana.local:3000"
+      icon:
+        source: "sh"
+        value: "grafana-png"
+    - name: "Youtube"
+      url: "https://youtube.com"
+      icon:
+        source: "sh"
+        value: "youtube"
+    - name: "Uptime Kuma"
+      url: "https://uptime.local:3001"
+      icon:
+        source: "sh"
+        value: "uptime-kuma"
+
+  links:
+    - name: "Hypervisor"
+      url: "https://proxmox.local:8006"
+      icon:
+        source: "lucide"
+        value: "Server"
+    - name: "Storage"
+      url: "http://truenas.local"
+      icon:
+        source: "lucide"
+        value: "HardDrive"
+    - name: "Reverse Proxy"
+      url: "http://192.168.1.1:81"
+      icon:
+        source: "lucide"
+        value: "Waypoints"
+    - name: "Containers"
+      url: "http://portainer.local:9000"
+      icon:
+        source: "lucide"
+        value: "Container"

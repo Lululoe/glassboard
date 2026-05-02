@@ -1,0 +1,129 @@
+.two-tone-card {
+    padding: 0 !important;
+    /* Override BaseCard padding to allow full flush header */
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+    --two-tone-header-opacity: 0.15;
+    --two-tone-content-opacity: 0.08;
+}
+
+.two-tone-card:hover {
+    transform: scale(1.01);
+}
+
+.two-tone-header {
+    position: relative;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-card-glass-header);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+}
+
+.two-tone-header-actions {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+}
+
+.two-tone-header-info {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 16px;
+    width: 100%;
+    padding: 10px;
+    border-radius: 12px;
+    text-decoration: none;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background 0.2s;
+    /* Instant exit */
+}
+
+.two-tone-header-info:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transition: background 0.2s 0.1s;
+    /* 0.5s delay on entry */
+}
+
+.two-tone-icon-box {
+    width: 48px;
+    height: 48px;
+    padding: 8px;
+    background: var(--icon-background);
+    border: 1px solid var(--icon-border-color);
+    /* Dark icon bg */
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none;
+}
+
+.two-tone-icon {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    user-select: none;
+    -webkit-user-select: none;
+    /* Or contain depending on icon style */
+}
+
+/* If the user passes specific icon color/bg via props we might need inline styles, 
+   but for now mimic the screenshot's generic "Mail" look or defined via CSS */
+
+.two-tone-titles {
+    display: flex;
+    flex-direction: column;
+}
+
+.two-tone-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.two-tone-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.two-tone-header-action {
+    color: var(--card-primary);
+    cursor: pointer;
+    opacity: 0.9;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.two-tone-header-action:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.two-tone-content {
+    flex: 1;
+    padding: 20px;
+    position: relative;
+    background: var(--bg-card-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 0 0 var(--radius-card) var(--radius-card);
+}
+
+/* Use the utility class `scrollable` (in src/index.css) on any element to enable themed scrollbars */

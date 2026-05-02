@@ -1,0 +1,45 @@
+# Glassboard Services Configuration
+# Copy this file to services.yaml and fill in your credentials.
+#   cp services.example.yaml services.yaml
+#
+# Alternatively, you can set these via environment variables:
+#   SERVICES__HOMEASSISTANT__URL=http://homeassistant.local:8123
+#   SERVICES__HOMEASSISTANT__TOKEN=your_token_here
+#
+# See README.md for the full environment variable reference.
+
+services:
+  homeassistant:
+    url: "http://homeassistant.local:8123"
+    token: "YOUR_LONG_LIVED_ACCESS_TOKEN"
+
+  sonarr:
+    url: "http://sonarr.local:8989"
+    apiKey: "YOUR_SONARR_API_KEY"
+
+  radarr:
+    url: "http://radarr.local:7878"
+    apiKey: "YOUR_RADARR_API_KEY"
+
+  transmission:
+    url: "http://transmission.local:9091"
+    # username: "admin"
+    # password: "password"
+
+  proxmox:
+    url: "https://proxmox.local:8006"
+    tokenId: "YOUR_TOKEN_ID"
+    tokenSecret: "YOUR_TOKEN_SECRET"
+
+  glances:
+    url: "http://localhost:61208"
+
+  git:
+    github:
+      token: "YOUR_GITHUB_TOKEN"
+    # gitlab:
+    #   url: "https://gitlab.com"
+    #   token: "YOUR_GITLAB_TOKEN"
+    # gitea:
+    #   url: "https://gitea.local"
+    #   token: "YOUR_GITEA_TOKEN"

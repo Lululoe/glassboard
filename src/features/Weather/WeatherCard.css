@@ -1,0 +1,176 @@
+/* Header info */
+.weather-header-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+/* Toggle button */
+.weather-type-toggle {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.weather-type-toggle:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.weather-header-icon {
+    color: var(--text-primary);
+}
+
+.weather-condition {
+    text-transform: capitalize;
+}
+
+.weather-temp-range {
+    margin-left: auto;
+    font-weight: 600;
+}
+
+.weather-loading,
+.weather-error {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+/* Weather Grid Layout (matching Media Grid) */
+.weather-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 2), 1fr);
+    gap: 12px;
+    height: 100%;
+    overflow: hidden;
+}
+
+.weather-grid-cols-2 {
+    --cols: 2;
+}
+
+.weather-grid-cols-4 {
+    --cols: 4;
+}
+
+.weather-grid-cols-6 {
+    --cols: 6;
+}
+
+@media (max-width: 920px) {
+    .weather-grid-cols-4 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .weather-grid-cols-6 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    /* Hide excess items on small screens */
+    .weather-grid-cols-4 .weather-day:nth-child(3),
+    .weather-grid-cols-4 .weather-day:nth-child(4) {
+        display: none;
+    }
+
+    .weather-grid-cols-6 .weather-day:nth-child(4),
+    .weather-grid-cols-6 .weather-day:nth-child(5),
+    .weather-grid-cols-6 .weather-day:nth-child(6) {
+        display: none;
+    }
+}
+
+.weather-day {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-right: var(--seperator-width) solid var(--color-separator);
+    padding-right: 8px;
+    align-items: center;
+    /* Center content horizontally */
+}
+
+/* Remove border from last item per row context? 
+   Ideally last item in DOM for this flat list. */
+.weather-day:last-child {
+    border-right: none;
+    padding-right: 0;
+}
+
+/* Specific handling for responsive borders when wrapping happens?
+   Media grid simple approach: last-child has no border.
+   With wrapping, we might want to kill border for the "end of visual row".
+   But here we rely on hiding elements to maintain single row in most cases or just let it be.
+   The media query above hides extra items, so we stay on 1 row visually (2 or 3 items).
+   Wait, media query grid-template changes to 2 cols for 4 items -> 2 rows.
+   If 2 rows, index 2 (2nd item) needs no border if it's right edge.
+   Let's create rules similar to MediaCard.
+*/
+@media (max-width: 920px) {
+    .weather-grid-cols-4 .weather-day:nth-child(2) {
+        border-right: none;
+        padding-right: 0;
+    }
+
+    .weather-grid-cols-6 .weather-day:nth-child(3) {
+        border-right: none;
+        padding-right: 0;
+    }
+}
+
+.weather-day-header {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    font-weight: 600;
+    text-align: center;
+    width: 100%;
+}
+
+.weather-day-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+}
+
+/* Reusing existing styles but adjusting structure */
+.weather-day-icon {
+    color: var(--card-primary);
+    margin: 4px 0;
+}
+
+.weather-day-condition {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: capitalize;
+    text-align: center;
+}
+
+.weather-day-temp {
+    display: flex;
+    gap: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.weather-day-precip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: var(--card-primary);
+    font-weight: 500;
+}

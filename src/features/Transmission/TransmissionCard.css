@@ -1,0 +1,126 @@
+.torrent-secondary-info {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.torrent-secondary-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.torrent-secondary-left .upload-icon {
+    margin-left: 6px;
+}
+
+.subtitle-item+.subtitle-item {
+    margin-left: 8px;
+}
+
+.subtitle-item.last {
+    margin-left: 12px;
+}
+
+.torrent-secondary-right {
+    flex: 0 0 auto;
+    margin-left: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.progress-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.progress-bar {
+    flex: 1 1 auto;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--text-primary), var(--text-primary-light));
+    transition: width 300ms ease;
+}
+
+.progress-fill.downloading {
+    background: linear-gradient(90deg, var(--card-primary), var(--color-primary-light));
+}
+
+.progress-fill.seeding {
+    background: linear-gradient(90deg, var(--color-quaternary), var(--color-quaternary-light));
+}
+
+.progress-percent {
+    min-width: 40px;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* New layout classes for TransmissionCard */
+.torrents-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.torrent-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-bottom: 12px;
+    border-bottom: var(--seperator-width) solid var(--color-separator);
+}
+
+.torrent-item:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.torrent-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.torrent-name-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    /* allow child to shrink for ellipsis */
+}
+
+.torrent-name {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.torrent-left {
+    color: var(--text-secondary);
+    font-weight: 400;
+    font-size: 0.8rem;
+    margin-left: 12px;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}

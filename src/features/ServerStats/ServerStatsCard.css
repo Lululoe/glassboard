@@ -1,0 +1,218 @@
+/* Server Stats Grid */
+.server-stats-grid {
+    display: grid;
+    /* Default: 1 column of 2-wide tiles? No, HA grid uses repeat(2, 1fr) for span-1 card.
+       User wants "tiles within the card should be two squares wide".
+       If standard tile is 1x1, then these are 2x1.
+       If card is col-span-1 (2 standard cols wide), then a 2-wide tile takes full width.
+       If card is col-span-2 (4 standard cols wide), then a 2-wide tile takes half width.
+    */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+    height: 100%;
+}
+
+.col-span-1 .server-stats-grid {
+    grid-template-columns: 1fr;
+    /* Full width (2 squares effective) */
+}
+
+/* Card overrides for server stats */
+.server-stats-card .base-card-content {
+    padding: 0;
+}
+
+/* Common Tile Styles */
+.stat-tile {
+    background: var(--bg-tile);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border: 1px solid var(--bg-card-border);
+    box-shadow: none;
+    transition: transform 0.2s;
+    height: 100%;
+    /* Ensure text is dark on the white tile background */
+    color: #333;
+}
+
+.stat-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: none;
+}
+
+/* Info Tile - Transparent */
+.stat-tile.stat-info {
+    background: transparent;
+    box-shadow: none;
+    padding: 12px 0;
+    /* Align with others horizontally but no vertical padding needed effectively? or keep 12px padding but it's transparent */
+    padding: 12px;
+    /* Keep padding for alignment */
+    color: white;
+    /* Text on dark background */
+    justify-content: center;
+    /* Center content vertically? or row? */
+    flex-direction: row;
+    /* Icon and text side-by-side */
+    align-items: center;
+}
+
+.stat-tile.stat-info:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.stat-info-content {
+    flex: 1;
+}
+
+.stat-hostname {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: white;
+}
+
+.stat-ip {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.stat-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Icon Circle - Matching HA Card */
+.stat-icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    /* Default muted background similar to HA 'off' if needed, or colored if active */
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--text-secondary);
+}
+
+/* Make icons white inside colored circles if we decide to color them */
+.stat-cpu .stat-icon-circle {
+    background-color: rgba(244, 63, 94, 0.15);
+    color: #f43f5e;
+}
+
+.stat-ram .stat-icon-circle {
+    background-color: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+}
+
+.stat-storage .stat-icon-circle {
+    background-color: rgba(6, 182, 212, 0.15);
+    color: #06b6d4;
+}
+
+.stat-temp .stat-icon-circle {
+    background-color: rgba(249, 115, 22, 0.15);
+    color: #f97316;
+}
+
+.stat-network .stat-icon-circle {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #666;
+}
+
+.stat-title {
+    font-weight: 600;
+    font-size: 15px;
+    /* Match HA tile name size */
+    color: #111;
+    flex: 1;
+    line-height: 1.2;
+}
+
+.stat-value-text {
+    font-weight: 500;
+    font-size: 13px;
+    color: #888;
+}
+
+/* Progress Bar Styles */
+.stat-bar-container {
+    width: 100%;
+    height: 6px;
+    /* Slightly thinner grid bar? */
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    margin-top: auto;
+}
+
+.stat-bar-fill {
+    height: 100%;
+    background: var(--card-primary);
+    border-radius: 4px;
+    transition: width 0.5s ease-out;
+}
+
+.stat-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    /* Match HA tile-state */
+    color: #888;
+    /* Match HA tile-state color */
+    margin-top: -4px;
+}
+
+/* Graph Styles */
+.stat-graph-container {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 40px;
+    /* specific height for mini graph */
+    width: 100%;
+    padding-top: 8px;
+}
+
+.stat-graph-bar {
+    flex: 1;
+    background: var(--color-secondary);
+    border-radius: 2px 2px 0 0;
+    opacity: 0.7;
+    transition: height 0.3s ease;
+    min-height: 4px;
+}
+
+.stat-graph-bar:hover {
+    opacity: 1;
+}
+
+/* Specific color overrides */
+.stat-cpu .stat-bar-fill {
+    background-color: #f43f5e;
+}
+
+/* Red/Pink */
+.stat-ram .stat-bar-fill {
+    background-color: #8b5cf6;
+}
+
+/* Violet */
+.stat-storage .stat-bar-fill {
+    background-color: #06b6d4;
+}
+
+/* Cyan */
+.stat-temp .stat-graph-bar {
+    background-color: #f97316;
+}
+
+/* Orange */
