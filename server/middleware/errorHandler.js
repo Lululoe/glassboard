@@ -6,10 +6,9 @@ import logger from '../logger.js';
  * @param {Error} err - The thrown error object.
  * @param {Object} req - Express request object.
  * @param {Object} res - Express response object.
- * @param {Function} next - Express next function.
  */
 // eslint-disable-next-line no-unused-vars
-export const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err, req, res) => {
     const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
 
     // Log the error

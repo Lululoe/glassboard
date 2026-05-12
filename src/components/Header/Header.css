@@ -2,8 +2,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
-    height: 48px;
+    padding: env(safe-area-inset-top) 24px 0 24px;
+    padding-left: calc(24px + env(safe-area-inset-left));
+    padding-right: calc(24px + env(safe-area-inset-right));
+    height: calc(48px + env(safe-area-inset-top));
     background: var(--bg-card-glass);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);

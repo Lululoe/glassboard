@@ -31,8 +31,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding-bottom: 60px;
-    /* Bottom margin for cards */
+    padding-bottom: calc(60px + env(safe-area-inset-bottom));
+    /* Bottom margin for cards, plus safe area for home indicator */
 }
 
 .scroll-content.page-hidden {
