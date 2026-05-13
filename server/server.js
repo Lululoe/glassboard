@@ -123,8 +123,9 @@ async function start() {
   }
 
   // 9. Start Server
-  app.listen(PORT, () => {
-    logger.info(`App listening on http://localhost:${PORT} (env=${process.env.NODE_ENV || 'development'})`);
+  const HOST = process.env.HOST || '0.0.0.0';
+  app.listen(PORT, HOST, () => {
+    logger.info(`App listening on http://${HOST}:${PORT} (env=${process.env.NODE_ENV || 'development'})`);
   });
 }
 

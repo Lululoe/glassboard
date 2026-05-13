@@ -8,7 +8,7 @@ import logger from '../logger.js';
  * @param {Object} res - Express response object.
  */
 // eslint-disable-next-line no-unused-vars
-export const errorHandler = (err, req, res) => {
+export const errorHandler = (err, req, res, next) => {
     const statusCode = res.statusCode !== 200 ? res.statusCode : 500;
 
     // Log the error
