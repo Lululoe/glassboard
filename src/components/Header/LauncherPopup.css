@@ -19,6 +19,7 @@ dialog.launcher-popup {
     animation: launcherFadeIn 0.2s ease-out;
     user-select: none;
     -webkit-user-select: none;
+    outline: none;
 }
 
 dialog.launcher-popup::backdrop {

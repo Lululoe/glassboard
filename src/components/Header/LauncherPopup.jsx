@@ -22,6 +22,8 @@ const LauncherPopup = ({ config = {}, onClose }) => {
         const dialog = popupRef.current;
         if (dialog) {
             dialog.showModal();
+            // Prevent the browser from auto-focusing the first app link
+            dialog.focus();
         }
     }, []);
 

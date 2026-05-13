@@ -33,7 +33,7 @@ const getWeatherIcon = (condition) => {
 const WeatherCard = ({ config = {} }) => {
     const colSpan = config.colSpan || 1;
     const entityId = config.entity_id || config.data?.entity_id;
-    const icon = config.icon || "local-weather";
+    const icon = config.icon || "lu-CloudSun";
     // Default gradient for WeatherCard
     const defaultBackground = "linear-gradient(45deg,rgba(54, 111, 255, 1) 0%, rgba(128, 227, 255, 1) 100%)";
     const iconBackground = config.iconBackground || defaultBackground;
