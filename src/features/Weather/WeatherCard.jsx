@@ -12,14 +12,15 @@ import './WeatherCard.css';
 const getWeatherIcon = (condition) => {
     const conditionLower = (condition || '').toLowerCase();
 
-    if (conditionLower.includes('clear') || conditionLower.includes('sunny')) return 'lu-Sun';
-    if (conditionLower.includes('cloud')) return 'lu-Cloud';
-    if (conditionLower.includes('rain') || conditionLower.includes('shower')) return 'lu-CloudRain';
-    if (conditionLower.includes('snow')) return 'lu-CloudSnow';
     if (conditionLower.includes('storm') || conditionLower.includes('thunder')) return 'lu-CloudLightning';
+    if (conditionLower.includes('snow')) return 'lu-CloudSnow';
+    if (conditionLower.includes('drizzle')) return 'lu-CloudDrizzle';
+    if (conditionLower.includes('rain') || conditionLower.includes('shower')) return 'lu-CloudRain';
     if (conditionLower.includes('fog') || conditionLower.includes('mist')) return 'lu-CloudFog';
+    if (conditionLower.includes('partly') || conditionLower.includes('mainly')) return 'lu-CloudSun';
+    if (conditionLower.includes('clear') || conditionLower.includes('sunny')) return 'lu-Sun';
+    if (conditionLower.includes('cloud') || conditionLower.includes('overcast')) return 'lu-Cloud';
     if (conditionLower.includes('wind')) return 'lu-Wind';
-    if (conditionLower.includes('partly')) return 'lu-CloudSun';
 
     return 'lu-Cloud'; // Default
 };
@@ -32,7 +33,6 @@ const getWeatherIcon = (condition) => {
  */
 const WeatherCard = ({ config = {} }) => {
     const colSpan = config.colSpan || 1;
-    const entityId = config.entity_id || config.data?.entity_id;
     const icon = config.icon || "lu-CloudSun";
     // Default gradient for WeatherCard
     const defaultBackground = "linear-gradient(45deg,rgba(54, 111, 255, 1) 0%, rgba(128, 227, 255, 1) 100%)";
@@ -40,7 +40,7 @@ const WeatherCard = ({ config = {} }) => {
     const iconColor = config.iconColor;
 
     const [forecastType, setForecastType] = useState('daily');
-    const { weather, loading, error } = useWeather(entityId, forecastType);
+    const { weather, loading, error } = useWeather(config.id, forecastType);
 
     const toggleType = () => {
         setForecastType(prev => prev === 'daily' ? 'hourly' : 'daily');

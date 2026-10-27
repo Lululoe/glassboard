@@ -8,16 +8,15 @@ window.fetch = vi.fn();
 
 const mockConfig = {
     id: 'weather',
-    entity_id: 'weather.home'
+    location: 'Berlin'
 };
 
 const mockWeather = {
-    "weather.home": {
-        forecast: [
-            { datetime: '2023-10-25T12:00:00', condition: 'sunny', temperature: 20, templow: 10, precipitation: 0 },
-            { datetime: '2023-10-26T12:00:00', condition: 'rainy', temperature: 18, templow: 12, precipitation: 50 }
-        ]
-    }
+    units: 'metric',
+    forecast: [
+        { datetime: '2023-10-25T12:00:00', condition: 'Clear', temperature: 20, templow: 10, precipitation: 0 },
+        { datetime: '2023-10-26T12:00:00', condition: 'Rain', temperature: 18, templow: 12, precipitation: 50 }
+    ]
 };
 
 describe('Weather Feature', () => {
@@ -41,6 +40,9 @@ describe('Weather Feature', () => {
         expect(screen.getByText('20°')).toBeInTheDocument();
         expect(screen.getByText('10°')).toBeInTheDocument();
         // Check condition text (might appear multiple times, e.g. header + day)
-        expect(screen.getAllByText('sunny').length).toBeGreaterThan(0);
+        expect(screen.getAllByText('Clear').length).toBeGreaterThan(0);
+
+        const body = JSON.parse(fetch.mock.calls[0][1].body);
+        expect(body).toMatchObject({ service: 'weather', cardId: 'weather', type: 'daily' });
     });
 });

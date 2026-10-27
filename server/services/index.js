@@ -1,9 +1,10 @@
 import { handleGitRequest } from './git.js';
-import { handleHaRequest, handleWeatherRequest } from './homeassistant.js';
+import { handleHaRequest } from './homeassistant.js';
 import { handleMediaRequest } from './media.js';
 import { handleProxmoxRequest } from './proxmox.js';
 import { handleServerStatsRequest } from './serverstats.js';
 import { handleTransmissionRequest } from './transmission.js';
+import { handleWeatherRequest } from './weather.js';
 
 /**
  * Handlers for the `/api` endpoint, keyed by the `service` request parameter.

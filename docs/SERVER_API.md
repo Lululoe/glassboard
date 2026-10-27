@@ -72,7 +72,7 @@ Services are registered in `server/services/index.js`.
   ```
 
 ### `homeassistant`
-Only entities that appear on an `hacontrol` or `weather` card can be read, and only the
+Only entities that appear on an `hacontrol` card can be read, and only the
 `on_action` / `off_action` configured for an entity can be called.
 
 - **Get several states**: `{ "service": "homeassistant", "endpoint": "states", "entity_ids": ["light.office", "switch.fan"] }`
@@ -82,9 +82,18 @@ Only entities that appear on an `hacontrol` or `weather` card can be read, and o
 
 ### `weather`
 - **Parameters**:
-  - `entity_id` (string): A weather entity configured on a `weather` card.
-  - `type` (string): `daily` (default), `hourly` or `twice_daily`.
-- **Response**: The `weather.get_forecasts` service response. Cached for 30 minutes.
+  - `cardId` (string): Id of a `weather` card. Its `latitude`/`longitude` or `location` and `units` are used.
+  - `type` (string): `daily` (default, 7 days) or `hourly` (next 24 hours).
+- **Response**: Forecast from the public Open-Meteo API, cached for 30 minutes:
+  ```json
+  {
+    "units": "metric",
+    "forecast": [
+      { "datetime": "2026-10-27T12:00:00+01:00", "condition": "Partly cloudy", "temperature": 14.2, "templow": 4.8, "precipitation": 10 }
+    ]
+  }
+  ```
+  `templow` is only present for daily forecasts; `precipitation` is the probability in percent.
 
 ### `proxmox`
 - **Parameters**: None.
