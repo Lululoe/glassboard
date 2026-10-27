@@ -1,47 +1,143 @@
+/* The app grid is laid out like a fixed design on a 315 x 315 tile (modelled on iCloud's app
+   library) and scaled proportionally with the card through container units, so icons, labels
+   and spacing keep their proportions at every card size. Wide cards switch to a roomier design
+   with larger icons instead of just adding columns. All design values below are in tile units. */
 .app-grid-card {
-    padding: 16px !important;
-    /* Slightly reduce padding to maximize space for grid */
+    container: appgrid / size;
+    padding: 0 !important;
+}
+
+.app-grid-card>.card-content {
+    min-height: 0;
 }
 
 .app-grid-container {
+    /* One tile unit: 1/315 of the card's shorter side */
+    --u: calc(min(100cqw, 100cqh) / 315);
+
+    /* medium */
+    --pad: 20;
+    --icon: 54;
+    --label: 12;
+    --label-lh: 14;
+    --label-mt: 8;
+    --gap-x: 14;
+    --gap-y: 9;
+
     display: grid;
-    /* grid-template-columns set via inline style */
-    grid-template-rows: repeat(3, 1fr);
-    gap: 12px;
+    /* Fixed-width columns spread across the full width; overridden inline when `columns` is set.
+       Only complete rows are rendered (see useGridCapacity), filled from the top left. */
+    grid-template-columns: repeat(auto-fill, calc((var(--icon) + 2) * var(--u)));
+    grid-auto-rows: min-content;
+    justify-content: space-between;
+    align-content: start;
+    column-gap: calc(var(--gap-x) * var(--u));
+    row-gap: calc(var(--gap-y) * var(--u));
+    padding: calc(var(--pad) * var(--u));
+    flex: 1 1 0;
+    min-height: 0;
     width: 100%;
-    height: 100%;
+    box-sizing: border-box;
+}
+
+.app-grid-small .app-grid-container {
+    --pad: 20;
+    --icon: 40;
+    --label: 10;
+    --label-lh: 12;
+    --label-mt: 4;
+    --gap-x: 8;
+    --gap-y: 8;
+}
+
+.app-grid-large .app-grid-container {
+    --pad: 30;
+    --icon: 70;
+    --label: 14;
+    --label-lh: 18;
+    --label-mt: 12;
+    --gap-x: 16;
+    --gap-y: 14;
+}
+
+/* Wide cards (colSpan 2/3 on larger screens) use the next larger design */
+@container appgrid (min-aspect-ratio: 3/2) {
+    .app-grid-small .app-grid-container {
+        --pad: 20;
+        --icon: 54;
+        --label: 12;
+        --label-lh: 14;
+        --label-mt: 8;
+        --gap-x: 14;
+        --gap-y: 9;
+    }
+
+    .app-grid-medium .app-grid-container {
+        --pad: 30;
+        --icon: 70;
+        --label: 14;
+        --label-lh: 18;
+        --label-mt: 12;
+        --gap-x: 16;
+        --gap-y: 14;
+    }
+
+    .app-grid-large .app-grid-container {
+        --pad: 30;
+        --icon: 80;
+        --label: 15;
+        --label-lh: 18;
+        --label-mt: 12;
+        --gap-x: 20;
+        --gap-y: 14;
+    }
 }
 
 .app-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: start;
+    min-width: 0;
+    padding: calc(3 * var(--u)) calc(1 * var(--u));
     text-decoration: none;
     cursor: pointer;
-    transition: transform 0.2s, background 0.2s;
-    border-radius: 12px;
-    padding: 4px;
+    transition: transform 0.2s cubic-bezier(0.32, 0.08, 0.24, 1);
+    border-radius: calc(10 * var(--u));
     user-select: none;
     -webkit-user-select: none;
 }
 
-.app-item:hover {
-    transform: scale(1.05);
+@media (pointer: fine) {
+    .app-item:hover {
+        transform: scale(1.05);
+    }
 }
 
-.app-grid-icon {
-    width: 56px;
-    height: 56px;
-    margin-bottom: 6px;
-    padding: 8px;
+.app-item:focus-visible {
+    outline: 2px solid var(--card-primary);
+    outline-offset: 2px;
+}
+
+.app-icon-wrap {
+    position: relative;
+    width: calc(var(--icon) * var(--u));
+    aspect-ratio: 1 / 1;
+    flex-shrink: 0;
+}
+
+.app-grid-icon.app-icon-container {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    padding: 16%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 12px;
+    border-radius: 22.5%;
     overflow: hidden;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    /* Subtle backing for transparent pngs */
+    box-shadow: 0 calc(2 * var(--u)) calc(10 * var(--u)) rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    transition: filter 0.2s, opacity 0.2s;
 }
 
 .app-icon {
@@ -62,12 +158,62 @@
 }
 
 .app-name {
+    margin-top: calc(var(--label-mt) * var(--u));
     color: var(--text-primary);
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-size: calc(var(--label) * var(--u));
+    line-height: calc(var(--label-lh) * var(--u));
+    font-weight: 400;
     text-align: center;
-    white-space: pre-line;
+    /* Labels may run slightly wider than their column, like on iOS */
+    max-width: calc(100% + 10 * var(--u));
+    overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100%;
-    line-height: 1.2;
+    white-space: nowrap;
+}
+
+/* Offline state */
+.app-item.offline .app-grid-icon {
+    filter: grayscale(0.8);
+    opacity: 0.6;
+}
+
+.app-item.offline .app-name {
+    color: var(--text-secondary);
+}
+
+/* Sits on the icon's corner, within the card padding, so it is never clipped */
+.app-status-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translate(35%, -35%);
+    width: calc(var(--icon) * 0.34 * var(--u));
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    background: #ff3b30;
+    color: #fff;
+    font-size: calc(var(--icon) * 0.24 * var(--u));
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 calc(1 * var(--u)) calc(4 * var(--u)) rgba(0, 0, 0, 0.3);
+    animation: app-badge-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+}
+
+@keyframes app-badge-in {
+    from {
+        transform: translate(35%, -35%) scale(0);
+    }
+    to {
+        transform: translate(35%, -35%) scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-status-badge {
+        animation: none;
+    }
 }

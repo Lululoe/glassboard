@@ -21,10 +21,14 @@ All cards support these base options:
 Displays a grid of application shortcuts.
 
 ### Configuration
-| Option | Type | Description |
-|--------|------|-------------|
-| `columns` | number | Optional. Number of columns in the grid (default: 3). |
-| `data.apps` | array | List of apps to display. If empty, falls back to `launcher.apps` defined in header config. |
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `size` | string | `medium` | Icon size: `small`, `medium` or `large`. Each size is a fixed layout that scales with the card, so a square card always shows the same grid (small 5×4, medium 4×3, large 3×2; one more row without labels). Wide cards (`colSpan` 2–3) switch to the next larger icons, e.g. medium shows 6×2 at `colSpan: 2`. Apps fill from the top left. |
+| `showLabels` | boolean | `true` | Show app names under the icons. |
+| `columns` | number | | Optional. Fixed number of columns instead of fitting to the card width. |
+| `maxApps` | number | | Optional. Limit the number of apps shown. The grid never shows more apps than fit in full rows; extra apps are hidden. |
+| `statusCheck` | boolean | `true` | Check whether each app is reachable and show a red badge on apps that are offline. |
+| `data.apps` | array | | List of apps to display. If empty, falls back to `launcher.apps` defined in header config. |
 
 **App Object**:
 | Field | Type | Description |
@@ -33,12 +37,18 @@ Displays a grid of application shortcuts.
 | `url` | string | URL to open when clicked. |
 | `icon` | string/object | URL (svg/png), Lucide icon name, or object `{ source, value }`. |
 | `bgColor` | string | Optional CSS background (e.g., gradient). |
+| `statusUrl` | string | Optional. URL the server checks instead of `url` (e.g. an internal address). |
+| `statusCheck` | boolean | Optional. Set to `false` to skip the status check for this app. |
+
+**Status check**: the server sends a `HEAD` request to each app every 60 seconds (results cached for 30 seconds, 5 second timeout, TLS certificates not verified). Any response below 500 counts as online, so login pages and `401`/`403` responses are fine; timeouts, connection errors and `5xx` responses mark the app offline. The URLs are read from the server-side config only.
 
 ### Example
 ```yaml
 - id: my_apps
   type: appgrid
   colSpan: 1
+  size: small
+  showLabels: false
   data:
     apps:
       - name: "Plex"
@@ -47,6 +57,7 @@ Displays a grid of application shortcuts.
       - name: "Sonarr"
         url: "http://sonarr.local:8989"
         icon: "video"
+        statusUrl: "http://10.0.0.5:8989/ping"
 ```
 
 ---

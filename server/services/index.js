@@ -1,3 +1,4 @@
+import { handleAppStatusRequest } from './appstatus.js';
 import { handleGitRequest } from './git.js';
 import { handleHaRequest, handleWeatherRequest } from './homeassistant.js';
 import { handleMediaRequest } from './media.js';
@@ -12,6 +13,7 @@ import { handleTransmissionRequest } from './transmission.js';
  * @type {Object<string, (params: Object) => Promise<*>>}
  */
 export const serviceHandlers = {
+    appstatus: handleAppStatusRequest,
     git: handleGitRequest,
     homeassistant: handleHaRequest,
     media: handleMediaRequest,

@@ -112,6 +112,15 @@ Only entities that appear on an `hacontrol` or `weather` card can be read, and o
   }
   ```
 
+### `appstatus`
+- **Parameters**:
+  - `cardId` (string): Id of an `appgrid` card. The app URLs (`statusUrl` or `url`) are read from that
+    card's configuration, or from `launcher.apps` when the card has none; they cannot be passed in the request.
+- **Response** (one entry per app, `null` when not checked; results cached for 30 seconds per URL):
+  ```json
+  { "statuses": [true, false, null] }
+  ```
+
 ### `git`
 - **Parameters**:
   - `cardId` (string): Id of a `git` card. The repositories and filters are read from that card's
