@@ -7,7 +7,7 @@ import React from 'react';
 window.fetch = vi.fn();
 
 const mockConfig = {
-    service: 'weather',
+    id: 'weather',
     entity_id: 'weather.home'
 };
 

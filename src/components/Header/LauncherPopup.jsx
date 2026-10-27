@@ -8,7 +8,7 @@ import AppIcon from '../../components/Shared/AppIcon';
  * Automatically focuses and handles clicks outside the dialog to close it.
  * @param {Object} props
  * @param {Object} props.config - Application configuration object.
- * @param {Function} props.onClose - Callback triggered when the popup should be closed.
+ * @param {() => void} props.onClose - Callback triggered when the popup should be closed.
  * @returns {JSX.Element} The rendered dialog modal.
  */
 const LauncherPopup = ({ config = {}, onClose }) => {

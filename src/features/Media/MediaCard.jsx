@@ -81,15 +81,11 @@ const MediaCard = ({ config = {} }) => {
 
     const endDate = days[days.length - 1];
 
-    // IMPORTANT: endDate needs to cover the full last day for the API range 
-    // but our useMedia hooks expects just the date boundaries.
-
-    // Adjust end date for hook to be inclusive of the last day
+    // The range end is exclusive, so request through the day after the last visible day.
     const fetchEndDate = new Date(endDate);
     fetchEndDate.setDate(fetchEndDate.getDate() + 1);
 
-    const service = config.service || 'media';
-    const { events, error } = useMedia(startDate, fetchEndDate, service);
+    const { events, error } = useMedia(startDate, fetchEndDate);
 
     const prevDay = () => setStartDate(d => {
         const n = new Date(d); n.setDate(n.getDate() - 1); return n;
@@ -100,7 +96,6 @@ const MediaCard = ({ config = {} }) => {
 
     return (
         <TwoToneBase
-            colSpan={colSpan}
             title="Media"
             url={config.services?.[0]?.url || config.url}
             subtitle={<span>{`${events.length} upcoming`}</span>}
@@ -110,8 +105,8 @@ const MediaCard = ({ config = {} }) => {
 
             actions={(
                 <>
-                    <div className="two-tone-header-action" onClick={prevDay}><Icon icon="lu-ChevronLeft" size={18} /></div>
-                    <div className="two-tone-header-action" onClick={nextDay}><Icon icon="lu-ChevronRight" size={18} /></div>
+                    <div className="two-tone-header-action" onClick={prevDay} role="button" aria-label="Previous day"><Icon icon="lu-ChevronLeft" size={18} /></div>
+                    <div className="two-tone-header-action" onClick={nextDay} role="button" aria-label="Next day"><Icon icon="lu-ChevronRight" size={18} /></div>
                 </>
             )}
         >
@@ -129,7 +124,7 @@ const MediaCard = ({ config = {} }) => {
                                         <div className="media-empty">TBA</div>
                                     ) : (
                                         dayEvents.map((ev, i) => (
-                                            <MediaEvent key={i} event={ev} />
+                                            <MediaEvent key={ev.id ?? i} event={ev} />
                                         ))
                                     )
                                 )}

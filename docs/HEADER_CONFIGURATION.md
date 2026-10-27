@@ -30,6 +30,16 @@ launcher:
 
 ---
 
+## Theme Toggle
+Set `themeToggle: true` at the top level of `config.yaml` to show a light/dark mode button in the header.
+The chosen mode is remembered in the browser.
+
+```yaml
+themeToggle: true
+```
+
+---
+
 ## Quick Links
 A list of links displayed below the apps in the launcher popup.
 

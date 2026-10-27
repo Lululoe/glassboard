@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import MediaCard from './MediaCard';
 import React from 'react';
@@ -39,7 +39,7 @@ describe('Media Feature', () => {
             json: async () => mockEvents
         });
 
-        render(<MediaCard config={{ service: 'media', colSpan: 1 }} />);
+        render(<MediaCard config={{ id: 'media', colSpan: 1 }} />);
 
         // Wait for events to load using unique text
         await waitFor(() => {
@@ -54,31 +54,17 @@ describe('Media Feature', () => {
         expect(screen.getByText('Today')).toBeInTheDocument();
     });
 
-    it('navigates days', async () => {
-        fetch.mockResolvedValue({
-            ok: true,
-            headers: { get: () => 'application/json' },
-            json: async () => []
-        });
+    it('requests the next range when navigating days', async () => {
+        fetch.mockResolvedValue({ ok: true, json: async () => [] });
 
-        render(<MediaCard config={{ service: 'media' }} />);
+        render(<MediaCard config={{ id: 'media', colSpan: 1 }} />);
+        await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+        const firstStart = JSON.parse(fetch.mock.calls[0][1].body).start;
 
-        // Find next arrow (ChevronRight) - we might need to rely on class or role
-        // The arrows are divs with className "two-tone-header-action"
-        // Let's use getByRole if possible, or query selector
-        // Icon doesn't have role by default.
-        // We can query by svg or class.
+        fireEvent.click(screen.getByRole('button', { name: 'Next day' }));
+        await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
 
-        // Since we can't easily select by icon, let's assume the DOM structure
-        // TwoToneBase renders actions.
-
-        // Let's update MediaCard to have aria-labels on buttons for better testing?
-        // Or just find by class.
-
-        // For now, let's skip strict interaction test if selectors are hard without modification,
-        // or try to find by click.
-
-        // Let's modify the component in a separate step if needed. 
-        // For now I'll trust the fetch calls update.
+        const nextStart = JSON.parse(fetch.mock.calls[1][1].body).start;
+        expect(new Date(nextStart) - new Date(firstStart)).toBe(86400000);
     });
 });

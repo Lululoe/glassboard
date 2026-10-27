@@ -150,7 +150,6 @@ const ServerStatsCard = ({ config }) => {
 
     return (
         <BaseCard
-            colSpan={config.colSpan}
             className={`server-stats-card col-span-${config.colSpan || 1}`}
             hoverable={false}
         >

@@ -1,167 +1,123 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useConfig } from './hooks/useConfig';
-import { ThemeProvider } from './context/ThemeContext';
+import { usePageNavigation } from './hooks/usePageNavigation';
 import { useSwipe } from './hooks/useSwipe';
-import { useRouteSync, getInitialPageIndex } from './hooks/useRouteSync';
+import { ThemeProvider } from './context/ThemeContext';
+import { PageActiveContext } from './context/pageActive';
 import BentoGrid from './components/Grid/BentoGrid';
 import IframeView from './components/Layout/IframeView';
 import Header from './components/Header/Header';
 import ParticlesBackground from './components/Layout/ParticlesBackground';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import './App.css';
 
 /**
- * Main application component.
- * Manages configuration loading, routing, theme initialization, and page navigation via swipe/keyboard.
+ * Renders the pages of a loaded config with swipe, keyboard and URL navigation.
+ * Only the active page polls its services; the others stay mounted but idle.
+ * @param {Object} props
+ * @param {Object} props.config - The dashboard configuration.
+ * @returns {JSX.Element} The dashboard.
+ */
+function Dashboard({ config }) {
+    const pages = useMemo(() => {
+        if (Array.isArray(config.pages)) return config.pages;
+        if (Array.isArray(config.cards)) return [{ id: 'default', cards: config.cards }];
+        return [];
+    }, [config]);
+
+    const { pageIndex, goTo, next, prev, hasNext, hasPrev } = usePageNavigation(pages);
+    const swipeHandlers = useSwipe({ onSwipeLeft: next, onSwipeRight: prev, threshold: 75 });
+    const contentRef = useRef(null);
+
+    const onKeyDown = useEffectEvent((e) => {
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
+        if (e.key === 'ArrowRight') next();
+        if (e.key === 'ArrowLeft') prev();
+    });
+
+    useEffect(() => {
+        const handler = (e) => onKeyDown(e);
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, []);
+
+    // Restart the entrance animation of the cards when switching pages.
+    useEffect(() => {
+        const items = contentRef.current?.querySelectorAll('.page-active .grid-item') || [];
+        items.forEach(el => {
+            el.style.animation = 'none';
+            void el.offsetHeight;
+            el.style.animation = '';
+        });
+    }, [pageIndex]);
+
+    return (
+        <div className="App" {...swipeHandlers}>
+            <ParticlesBackground />
+            <Header config={config} />
+
+            <div className="app-content" ref={contentRef}>
+                {hasPrev && (
+                    <div className="nav-zone nav-zone-left" onClick={prev}>
+                        <ChevronLeft size={48} />
+                    </div>
+                )}
+
+                {pages.map((page, idx) => (
+                    <div
+                        key={page.id ?? idx}
+                        className={`scroll-content ${idx === pageIndex ? 'page-active' : 'page-hidden'}`}
+                    >
+                        <PageActiveContext value={idx === pageIndex}>
+                            {page.type === 'iframe'
+                                ? <IframeView config={page} />
+                                : <BentoGrid cards={page.cards} globalConfig={config} />}
+                        </PageActiveContext>
+                    </div>
+                ))}
+
+                {hasNext && (
+                    <div className="nav-zone nav-zone-right" onClick={next}>
+                        <ChevronRight size={48} />
+                    </div>
+                )}
+            </div>
+
+            {pages.length > 1 && (
+                <div className="page-indicators">
+                    {pages.map((page, idx) => !page.hidden && (
+                        <div
+                            key={page.id ?? idx}
+                            className={`page-dot ${idx === pageIndex ? 'active' : ''}`}
+                            onClick={() => goTo(idx)}
+                        />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+/**
+ * Root component: loads the configuration and renders the dashboard once it is available.
  * @returns {JSX.Element} The rendered application.
  */
 function App() {
-  const { config } = useConfig();
+    const { config, error } = useConfig();
 
-  // Normalize config to Pages
-  const pages = useMemo(() => {
-    if (!config) return [];
-    if (config.pages && Array.isArray(config.pages)) return config.pages;
-    if (config.cards && Array.isArray(config.cards)) return [{ id: 'default', cards: config.cards }];
-    return [];
-  }, [config]);
-
-  // Initialize state based on URL
-  const [pageIndex, setPageIndex] = useState(() => getInitialPageIndex(pages));
-
-  // Sync state <-> URL
-  useRouteSync(pages, pageIndex, setPageIndex);
-
-  // Navigation Handlers
-  const nextPage = () => {
-    let nextIndex = pageIndex + 1;
-    while (nextIndex < pages.length && pages[nextIndex].hidden) {
-      nextIndex++;
+    if (!config) {
+        return (
+            <div className="loading-screen">
+                {error ? <p className="loading-error">{error}</p> : <div className="loading-spinner" />}
+            </div>
+        );
     }
-    if (nextIndex < pages.length) setPageIndex(nextIndex);
-  };
 
-  const prevPage = () => {
-    let prevIndex = pageIndex - 1;
-    while (prevIndex >= 0 && pages[prevIndex].hidden) {
-      prevIndex--;
-    }
-    if (prevIndex >= 0) setPageIndex(prevIndex);
-  };
-
-  // Check for available visible pages
-  const hasNextVisible = useMemo(() => {
-    let i = pageIndex + 1;
-    while (i < pages.length) {
-      if (!pages[i].hidden) return true;
-      i++;
-    }
-    return false;
-  }, [pageIndex, pages]);
-
-  const hasPrevVisible = useMemo(() => {
-    let i = pageIndex - 1;
-    while (i >= 0) {
-      if (!pages[i].hidden) return true;
-      i--;
-    }
-    return false;
-  }, [pageIndex, pages]);
-
-  const swipeHandlers = useSwipe({
-    onSwipeLeft: nextPage,
-    onSwipeRight: prevPage,
-    threshold: 75
-  });
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
-      if (e.key === 'ArrowRight') nextPage();
-      if (e.key === 'ArrowLeft') prevPage();
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [pageIndex, pages]);
-
-  const contentRef = useRef(null);
-
-  // Re-trigger entrance animations when switching pages
-  useEffect(() => {
-    if (!contentRef.current) return;
-    const activeContainer = contentRef.current.querySelector('.page-active');
-    if (!activeContainer) return;
-    const items = activeContainer.querySelectorAll('.grid-item');
-    items.forEach(el => {
-      el.style.animation = 'none';
-      el.offsetHeight; // force reflow
-      el.style.animation = '';
-    });
-  }, [pageIndex, nextPage, prevPage]);
-
-  if (!config) {
     return (
-      <div className="loading-screen">
-        <div className="loading-spinner" />
-      </div>
+        <ThemeProvider config={config}>
+            <Dashboard config={config} />
+        </ThemeProvider>
     );
-  }
-
-  return (
-    <ThemeProvider config={config}>
-      <div className="App" {...swipeHandlers}>
-        <ParticlesBackground />
-        <Header config={config} />
-
-        <div className="app-content" ref={contentRef}>
-          {/* Left Navigation Zone */}
-          {hasPrevVisible && (
-            <div className="nav-zone nav-zone-left" onClick={prevPage}>
-              <ChevronLeft size={48} />
-            </div>
-          )}
-
-          {pages.map((page, idx) => (
-            <div
-              key={page.id || idx}
-              className={`scroll-content ${idx === pageIndex ? 'page-active' : 'page-hidden'}`}
-            >
-              {page.type === 'iframe' ? (
-                <IframeView config={page} />
-              ) : (
-                <BentoGrid config={{ ...config, cards: page.cards }} />
-              )}
-            </div>
-          ))}
-
-          {/* Right Navigation Zone */}
-          {hasNextVisible && (
-            <div className="nav-zone nav-zone-right" onClick={nextPage}>
-              <ChevronRight size={48} />
-            </div>
-          )}
-        </div>
-
-        {/* Page Indicator */}
-        {pages.length > 1 && (
-          <div className="page-indicators">
-            {pages.map((page, idx) => {
-              if (page.hidden) return null;
-              return (
-                <div
-                  key={idx}
-                  className={`page-dot ${idx === pageIndex ? 'active' : ''}`}
-                  onClick={() => setPageIndex(idx)}
-                />
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </ThemeProvider>
-  );
 }
-
 
 export default App;

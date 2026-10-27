@@ -1,61 +1,33 @@
-import { useState, useEffect } from 'react';
+import { useRef } from 'react';
+import { callService } from '../../lib/api';
+import { usePolling } from '../../hooks/usePolling';
+
+const TEMP_HISTORY_LENGTH = 10;
+
+const INITIAL = {
+    info: { hostname: 'Loading...', ip: '...' },
+    cpu: 0,
+    ram: { used: 0, total: 0 },
+    storage: { used: 0, free: 0, total: 0 },
+    network: { in: 0, out: 0 },
+    temp: [],
+};
 
 /**
- * Hook to fetch system resource statistics for the server.
- * Maintains history for temperature metrics.
- * @param {number} [intervalMs=2000] - Polling interval in milliseconds.
- * @returns {Object} Server stats object (info, cpu, ram, storage, network, temp).
+ * Polls host resource statistics and keeps a short temperature history.
+ * @param {number} [interval=2000] - Polling interval in milliseconds.
+ * @returns {Object} Server stats (info, cpu, ram, storage, network) with `temp` as an array of recent readings.
  */
-const useServerStats = (intervalMs = 2000) => {
-    const [stats, setStats] = useState({
-        info: { hostname: 'Loading...', ip: '...' },
-        cpu: 0,
-        ram: { used: 0, total: 16 },
-        storage: { used: 0, total: 0 },
-        network: { in: 0, out: 0 },
-        temp: [] // History of temps
-    });
+const useServerStats = (interval = 2000) => {
+    const tempHistory = useRef([]);
 
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                // Fetch from central API with service=serverstats
-                const res = await fetch('/api?service=serverstats');
-                if (!res.ok) throw new Error('Failed to fetch stats');
-                const data = await res.json();
+    const { data = INITIAL } = usePolling(async () => {
+        const stats = await callService('serverstats');
+        tempHistory.current = [...tempHistory.current, stats.temp].slice(-TEMP_HISTORY_LENGTH);
+        return { ...stats, temp: tempHistory.current };
+    }, { interval });
 
-                setStats(prev => {
-                    // Update temp history
-                    const newTempHistory = [...prev.temp];
-                    if (data.temp !== undefined) {
-                        newTempHistory.push(data.temp);
-                        if (newTempHistory.length > 10) newTempHistory.shift(); // Keep last 10
-                    }
-
-                    return {
-                        info: data.info || prev.info,
-                        cpu: data.cpu !== undefined ? data.cpu : prev.cpu,
-                        ram: data.ram || prev.ram,
-                        storage: data.storage || prev.storage,
-                        network: data.network || prev.network,
-                        temp: newTempHistory
-                    };
-                });
-            } catch (err) {
-                console.error('Error fetching server stats:', err);
-            }
-        };
-
-        // Initial fetch
-        fetchStats();
-
-        // Polling
-        const interval = setInterval(fetchStats, intervalMs);
-
-        return () => clearInterval(interval);
-    }, [intervalMs]);
-
-    return stats;
+    return data;
 };
 
 export default useServerStats;

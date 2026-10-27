@@ -42,7 +42,7 @@ This project was born out of a desire for a dashboard that didn't just function 
 
 ## Configuration
 
-Configuration is managed through `config.yaml` (layout), `services.yaml` (secrets), and `theme.yaml` (styles) in the root directory.
+Configuration is managed through `config.yaml` (layout), `services.yaml` (secrets), and an optional `theme.yaml` (styles) in the root directory. Changes are picked up without a restart, and open dashboards reload automatically.
 
 ### Structure (`config.yaml`)
 ```yaml
@@ -101,7 +101,8 @@ services:
 This project uses a **Backend-for-Frontend (BFF)** architecture.
 -   **No Secrets in Client**: API keys and tokens are stored server-side and never sent to the browser.
 -   **Sanitized Config**: The frontend receives a stripped-down version of the configuration.
--   **Proxying**: All requests to internal services (Sonarr, HA, etc.) are proxied and validated by the Node.js server to prevent CORS issues and expose only necessary endpoints.
+-   **Proxying**: All requests to internal services (Sonarr, HA, etc.) are proxied and validated by the Node.js server. Only the entities, actions and repositories listed in `config.yaml` can be reached.
+-   **No authentication**: The dashboard itself has no login. Run it on a trusted network or behind a reverse proxy that handles authentication.
 
 ## Documentation
 All documentation is hosted on the [Glassboard GitHub Wiki](https://github.com/Lululoe/glassboard/wiki).
@@ -125,7 +126,7 @@ All documentation is hosted on the [Glassboard GitHub Wiki](https://github.com/L
     ```bash
     cp .env.example .env
     ```
-    Ensure `config.yaml`, `services.yaml`, and `theme.yaml` exist.
+    Ensure `config.yaml` and `services.yaml` exist. To override the default themes or add `custom.css`, uncomment the matching volumes in `docker-compose.yml`.
 
 2.  **Run**:
     ```bash
@@ -140,8 +141,8 @@ All documentation is hosted on the [Glassboard GitHub Wiki](https://github.com/L
     ```
 
 2.  **Configure**:
-    Copy `config.yaml.example` (if available) or create `config.yaml` in the root directory following the structure above.
-    Ensure `theme.yaml` is present for default styles.
+    Copy `config.example.yaml` to `config.yaml` and `services.example.yaml` to `services.yaml`, then adjust them.
+    Node.js 22.19 or newer is required.
 
 ### 🔐 Environment Variables
 You can override any service configuration using environment variables. This is useful for Docker setups to keep secrets out of files.
@@ -155,6 +156,8 @@ You can override any service configuration using environment variables. This is 
 | `SERVICES__SONARR__APIKEY` | Override Sonarr API Key |
 | `SERVICES__GIT__GITHUB__TOKEN` | Override GitHub Token |
 
+Service-specific variables are also supported: `HA_URL`, `HA_TOKEN`, `SONARR_URL`, `SONARR_API_KEY`, `RADARR_URL`, `RADARR_API_KEY`, `TRANSMISSION_URL`, `TRANSMISSION_USERNAME`, `TRANSMISSION_PASSWORD`, `PROXMOX_URL`, `PROXMOX_TOKEN_ID`, `PROXMOX_SECRET`, `PROXMOX_VERIFY_TLS`, `GLANCES_URL`, `GITHUB_TOKEN`, `GITLAB_URL`, `GITLAB_TOKEN`, `GITEA_URL`, `GITEA_TOKEN`.
+
 Example (`.env`):
 ```bash
 SERVICES__HOMEASSISTANT__URL=http://homeassistant.local:8123
@@ -162,11 +165,13 @@ SERVICES__HOMEASSISTANT__TOKEN=ey...
 SERVICES__SONARR__APIKEY=abc123...
 ```
 
-3.  **Start Server**: hiding
-    The backend server handles API proxying (to avoid CORS) and serves the frontend.
+3.  **Start Server**:
+    The backend server proxies the API and serves the frontend.
     ```bash
-    npm run start:server
+    npm run build
+    npm start
     ```
+    For development with hot reload, run `npm run dev` instead.
     Access the dashboard at `http://localhost:3001`.
 
 ## Development Note

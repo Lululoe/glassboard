@@ -1,69 +1,32 @@
-import { useState, useEffect } from 'react';
+import { callService } from '../../lib/api';
+import { usePolling } from '../../hooks/usePolling';
 
 /**
- * Custom hook to fetch calendar events from the Media API (Sonarr/Radarr).
- * @param {Date} start - Start date of the range
- * @param {Date} end - End date of the range
- * @param {string} [service='media'] - Service name (default 'media')
- * @param {number} [interval=60000] - Polling interval in ms (default 1 min)
- * @returns {Object} { events, loading, error }
+ * Formats a date as YYYY-MM-DD in local time (toISOString would shift it to UTC).
+ * @param {Date} d - The date.
+ * @returns {string} Local date string.
  */
-export const useMedia = (start, end, service = 'media', interval = 60000) => {
-    // Use timestamps for dependency stability
-    const startTime = start ? start.getTime() : 0;
-    const endTime = end ? end.getTime() : 0;
+const toLocalISODate = (d) => [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+].join('-');
 
-    const [events, setEvents] = useState([]);
-    const [loading, setLoading] = useState(!events.length);
-    const [error, setError] = useState(null);
+/**
+ * Polls calendar events from Sonarr/Radarr for a date range.
+ * @param {Date} start - First day of the range.
+ * @param {Date} end - Day after the last day of the range.
+ * @param {number} [interval=60000] - Polling interval in ms.
+ * @returns {{events: Array<Object>, loading: boolean, error: string|null}}
+ */
+export const useMedia = (start, end, interval = 60000) => {
+    const startStr = start ? toLocalISODate(start) : '';
+    const endStr = end ? toLocalISODate(end) : '';
 
-    useEffect(() => {
-        if (!startTime || !endTime) return;
+    const { data, loading, error } = usePolling(
+        () => callService('media', { start: startStr, end: endStr }),
+        { interval, enabled: Boolean(startStr && endStr), key: `${startStr}|${endStr}` }
+    );
 
-        let mounted = true;
-
-        const run = async () => {
-            if (events.length === 0) setLoading(true);
-            setError(null);
-            try {
-                const s = new Date(startTime);
-                const e = new Date(endTime);
-
-                // Format as YYYY-MM-DD local time to avoid timezone shifts (toISOString() is UTC)
-                const toLocalISODate = (d) => {
-                    const year = d.getFullYear();
-                    const month = String(d.getMonth() + 1).padStart(2, '0');
-                    const day = String(d.getDate()).padStart(2, '0');
-                    return `${year}-${month}-${day}`;
-                };
-
-                const startStr = toLocalISODate(s);
-                const endStr = toLocalISODate(e);
-
-                const res = await fetch(`/api?service=${service}&start=${startStr}&end=${endStr}`);
-                if (!res.ok) throw new Error(`Media fetch failed: ${res.status}`);
-
-                const list = await res.json();
-                if (!mounted) return;
-                setEvents(list || []);
-            } catch (err) {
-                if (!mounted) return;
-                setError(String(err));
-                setEvents([]);
-            } finally {
-                if (mounted) setLoading(false);
-            }
-        };
-
-        run();
-
-        if (interval > 0) {
-            const id = setInterval(run, interval);
-            return () => { mounted = false; clearInterval(id); };
-        }
-
-        return () => { mounted = false; };
-    }, [startTime, endTime, interval]);
-
-    return { events, loading, error };
+    return { events: data || [], loading, error };
 };

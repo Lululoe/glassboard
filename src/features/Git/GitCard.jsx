@@ -57,8 +57,9 @@ const formatDate = (isoString) => {
  * @returns {JSX.Element} The rendered PR item.
  */
 const PrItem = ({ pr }) => {
-    const isBot = pr.author.endsWith('[bot]');
-    const authorName = isBot ? pr.author.replace('[bot]', '').trim() : pr.author;
+    const author = pr.author || 'unknown';
+    const isBot = author.endsWith('[bot]');
+    const authorName = isBot ? author.replace('[bot]', '').trim() : author;
 
     return (
         <div
@@ -106,7 +107,7 @@ const PrItem = ({ pr }) => {
  * @returns {JSX.Element|null} The rendered card or null if empty.
  */
 const GitCard = ({ config }) => {
-    const { prs, stats, loading, error } = useGit(config);
+    const { prs, stats, loading, error } = useGit(config?.id);
 
     if (config?.hideEmpty && !loading && prs.length === 0) {
         return null;
@@ -119,23 +120,17 @@ const GitCard = ({ config }) => {
 
     return (
         <TwoToneBase
-            colSpan={(config && config.colSpan) || 1}
             title="Pull Requests"
             url={url}
             subtitle={
-                <>
-                    <span><Icon icon="lu-GitPullRequest" size={12} /> {stats.open} Open</span>
-                    {stats.review_requested > 0 && (
-                        <span style={{ marginLeft: 8 }}>• {stats.review_requested} Review Req.</span>
-                    )}
-                </>
+<span><Icon icon="lu-GitPullRequest" size={12} /> {stats.open} Open</span>
             }
             icon={icon}
             iconColor={iconColor}
             iconBackground={iconBackground}
         >
             {error ? (
-                <EmptyState message="Error loading Github data" />
+                <EmptyState message={`Error loading pull requests: ${error}`} />
             ) : prs.length === 0 ? (
                 <EmptyState message="No active PRs" />
             ) : (

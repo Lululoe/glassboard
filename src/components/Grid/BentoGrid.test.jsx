@@ -1,42 +1,42 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import BentoGrid from './BentoGrid';
-import React from 'react';
 
-describe('BentoGrid Layout Framework', () => {
-    it('returns null if config is absent or empty', () => {
-        const { container } = render(<BentoGrid config={null} />);
+vi.mock('../../features/registry', () => ({
+    getCardComponent: (type) => ({
+        ok: ({ config }) => <div>ok card {config.id}</div>,
+        crash: () => { throw new Error('kaboom'); },
+    })[type] || null,
+}));
+
+describe('BentoGrid', () => {
+    it('renders nothing without cards', () => {
+        const { container } = render(<BentoGrid cards={undefined} />);
         expect(container.firstChild).toBeNull();
     });
 
-    it('injects FallbackCard natively for unregistered grid items', () => {
-        const fakeConfig = {
-            cards: [{ id: '1', type: 'UnrecognizedBlahType' }]
-        };
-        render(<BentoGrid config={fakeConfig} />);
-        
-        // Our FallbackCard renders 'Unknown Card Type'
-        expect(screen.getByText('Unknown Card Type')).toBeInTheDocument();
+    it('renders a fallback for unknown and missing card types', () => {
+        render(<BentoGrid cards={[{ id: '1', type: 'Unrecognized' }, { id: '2' }]} />);
+        expect(screen.getByText('Unknown card type "Unrecognized"')).toBeInTheDocument();
+        expect(screen.getByText('Card is missing a type')).toBeInTheDocument();
     });
 
-    it('defaults to a col-span of 1 when card size config is natively absent', () => {
-        const fakeConfig = {
-            cards: [{ id: '1', type: 'UnrecognizedBlahType' }]
-        };
-        const { container } = render(<BentoGrid config={fakeConfig} />);
-        const gridItem = container.querySelector('.grid-item');
-        expect(gridItem).toHaveClass('col-span-1');
+    it('applies col-span and primary color', () => {
+        const { container } = render(
+            <BentoGrid cards={[{ id: '1', type: 'ok' }, { id: '2', type: 'ok', colSpan: 3, primaryColor: '#ff0000' }]} />
+        );
+        const items = container.querySelectorAll('.grid-item');
+        expect(items[0]).toHaveClass('col-span-1');
+        expect(items[1]).toHaveClass('col-span-3');
+        expect(items[1]).toHaveStyle({ '--card-primary': '#ff0000' });
     });
 
-    it('applies the mathematically appropriate explicit CSS properties based on card size configuration', () => {
-        const fakeConfig = {
-            cards: [{ id: '1', type: 'UnrecognizedBlahType', colSpan: 3, primaryColor: '#ff0000' }]
-        };
-        
-        const { container } = render(<BentoGrid config={fakeConfig} />);
-        const gridItem = container.querySelector('.grid-item');
-        expect(gridItem).toBeInTheDocument();
-        expect(gridItem).toHaveClass('col-span-3');
-        expect(gridItem).toHaveStyle({ '--card-primary': '#ff0000' });
+    it('isolates a crashing card from the rest of the grid', () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        render(<BentoGrid cards={[{ id: 'bad', type: 'crash' }, { id: 'good', type: 'ok' }]} />);
+
+        expect(screen.getByText('Card "bad" failed to render: kaboom')).toBeInTheDocument();
+        expect(screen.getByText('ok card good')).toBeInTheDocument();
+        console.error.mockRestore();
     });
 });

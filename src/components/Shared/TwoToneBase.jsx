@@ -7,14 +7,15 @@ import './TwoToneBase.css';
  * 
  * @param {object} props
  * @param {string} props.title
- * @param {React.ReactNode} props.subtitle
- * @param {string} props.icon
- * @param {string} props.iconBackground
- * @param {string} props.iconColor
- * @param {React.ReactNode} props.actions
- * @param {string} props.url
- * @param {string} props.className
+ * @param {React.ReactNode} [props.subtitle]
+ * @param {string|Object} [props.icon]
+ * @param {string} [props.iconBackground]
+ * @param {string} [props.iconColor]
+ * @param {React.ReactNode} [props.actions]
+ * @param {string} [props.url] - When set, the header links to this URL.
+ * @param {string} [props.className]
  * @param {React.ReactNode} props.children
+ * @returns {JSX.Element} The rendered card.
  */
 const TwoToneBase = ({
     title,
@@ -27,10 +28,12 @@ const TwoToneBase = ({
     url,
     className = ''
 }) => {
+    const HeaderInfo = url ? 'a' : 'div';
+
     return (
         <div className={`glass-card two-tone-card ${className}`}>
             <div className="two-tone-header">
-                <a className="two-tone-header-info" href={`${url}`}>
+                <HeaderInfo className="two-tone-header-info" href={url || undefined}>
                     {icon && (
                         <AppIcon
                             icon={icon}
@@ -43,7 +46,7 @@ const TwoToneBase = ({
                         <div className="two-tone-title">{title}</div>
                         {subtitle && <div className="two-tone-subtitle">{subtitle}</div>}
                     </div>
-                </a>
+                </HeaderInfo>
                 {actions && (
                     <div className="two-tone-header-actions">
                         {actions}

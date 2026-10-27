@@ -6,15 +6,14 @@ This document outlines the reusable components available for building dashboard 
 
 `src/components/Shared/BaseCard.jsx`
 
-The foundational container for all cards. It handles the grid positioning (`colSpan`) and basic styling (glassmorphism effect).
+The foundational container for all cards. It provides the basic styling (glassmorphism effect); grid positioning (`colSpan`) is handled by the grid.
 
 ### Props
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `colSpan` | number | 1 | Number of grid columns the card should span. |
+| `title` | string | | Optional title shown in the card header. |
 | `children` | node | | Content to render inside the card. |
 | `className` | string | | Additional CSS classes. |
-| `style` | object | | Inline styles. |
 | `hoverable` | boolean | true | Whether to apply hover scale effect. |
 
 ---
@@ -28,14 +27,14 @@ A specialized card layout used by most feature cards (Weather, Media, etc.). It 
 ### Props
 | Prop | Type | Description |
 |------|------|-------------|
-| `colSpan` | number | Grid span. |
 | `title` | string | Main title text. |
 | `subtitle` | node | Secondary title or status text. |
 | `icon` | string | Icon name (Lucide) or URL. |
 | `iconBackground` | string | CSS background for the icon container. |
 | `iconColor` | string | CSS color for the icon. |
 | `actions` | node | React node for header actions (buttons). |
-| `url` | string | URL the header should link to. |
+| `url` | string | Optional. When set, the header links to this URL. |
+| `className` | string | Additional CSS classes. |
 | `children` | node | Card body content. |
 
 ---

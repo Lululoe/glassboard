@@ -80,9 +80,7 @@ const TorrentItem = ({ torrent }) => {
  * @returns {JSX.Element} The rendered Transmission card.
  */
 const TransmissionCard = ({ config }) => {
-    // Pass configured service or default to 'transmission'
-    const service = config?.service || 'transmission';
-    const { torrents, totals, error } = useTransmission(service);
+    const { torrents, totals, error } = useTransmission();
     const url = (config && config.url) || '';
     const icon = (config && config.icon) || "sh-transmission";
     const iconColor = config && config.iconColor;
@@ -91,7 +89,6 @@ const TransmissionCard = ({ config }) => {
 
     return (
         <TwoToneBase
-            colSpan={(config && config.colSpan) || 1}
             title="Transmission"
             url={url}
             subtitle={

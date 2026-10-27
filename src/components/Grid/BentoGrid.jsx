@@ -1,56 +1,47 @@
-import React from 'react';
+import { getCardComponent } from '../../features/registry';
+import CardErrorBoundary from './CardErrorBoundary';
 import './BentoGrid.css';
 
 /**
- * Fallback component rendered when a specified card type is not found.
+ * Fallback rendered when a card's type is not registered.
+ * @param {Object} props
+ * @param {string} [props.type] - The configured card type.
  * @returns {JSX.Element} The fallback card UI.
  */
-const FallbackCard = () => <div className="glass-card"><div className="card-content">Unknown Card Type</div></div>;
-
-// Eagerly load all *Card.jsx files in the ../../features directory (recursive)
-const cardsModules = import.meta.glob('../../features/**/*Card.jsx', { eager: true });
-
-// Normalize the map: { 'Profile': Component, 'Calendar': Component }
-const cardComponents = Object.keys(cardsModules).reduce((acc, path) => {
-    // path is like "../Cards/ProfileCard.jsx"
-    // extract "ProfileCard"
-    const fileName = path.split('/').pop().replace('.jsx', '');
-    // extract "Profile" from "ProfileCard" by removing "Card" suffix if present
-    // or just map key to the component default export
-    const key = fileName.replace(/Card$/, '').toLowerCase();
-    // Map "profile" -> ProfileCard
-
-    acc[key] = cardsModules[path].default;
-    return acc;
-}, {});
+const FallbackCard = ({ type }) => (
+    <div className="glass-card">
+        <div className="card-content">
+            {type ? `Unknown card type "${type}"` : 'Card is missing a type'}
+        </div>
+    </div>
+);
 
 /**
- * Renders a grid layout of dashboard cards based on the provided configuration.
+ * Renders a grid of dashboard cards.
  * @param {Object} props
- * @param {Object} props.config - The page/global configuration object containing the cards array.
- * @returns {JSX.Element|null} The rendered grid or null if config is missing.
+ * @param {Array<Object>} [props.cards] - Card configs for this page.
+ * @param {Object} [props.globalConfig] - The full dashboard config, passed to every card.
+ * @returns {JSX.Element|null} The rendered grid, or null when there are no cards.
  */
-const BentoGrid = ({ config }) => {
-    if (!config || !config.cards) return null;
+const BentoGrid = ({ cards, globalConfig }) => {
+    if (!Array.isArray(cards)) return null;
 
     return (
         <div className="bento-grid-container">
-            {config.cards.map((cardConfig, idx) => {
-                const typeKey = cardConfig.type.toLowerCase();
-
-                // Dynamically select component or fallback to GenericCard
-                const CardComponent = cardComponents[typeKey] || FallbackCard;
-
-                // Apply column span classes dynamically
-                const colSpanClass = `col-span-${cardConfig.colSpan || 1}`;
-
-                const style = cardConfig.primaryColor
-                    ? { '--card-primary': cardConfig.primaryColor, '--i': idx }
+            {cards.map((card, idx) => {
+                const CardComponent = getCardComponent(card.type);
+                /** @type {import('react').CSSProperties & Object<string, string|number>} */
+                const style = card.primaryColor
+                    ? { '--card-primary': card.primaryColor, '--i': idx }
                     : { '--i': idx };
 
                 return (
-                    <div key={cardConfig.id} className={`grid-item ${colSpanClass}`} style={style}>
-                        <CardComponent config={cardConfig} globalConfig={config} />
+                    <div key={card.id ?? idx} className={`grid-item col-span-${card.colSpan || 1}`} style={style}>
+                        <CardErrorBoundary label={card.id ?? card.type} resetKey={card}>
+                            {CardComponent
+                                ? <CardComponent config={card} globalConfig={globalConfig} />
+                                : <FallbackCard type={card.type} />}
+                        </CardErrorBoundary>
                     </div>
                 );
             })}

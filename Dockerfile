@@ -4,7 +4,7 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 RUN npm run build
@@ -18,13 +18,13 @@ ENV NODE_ENV=production
 ENV PORT=3001
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 COPY server ./server
-COPY theme.yaml ./theme.yaml
-# server.js imports config.js which might rely on other server files, so we copy the whole server dir.
+# Default themes; mount a theme.yaml to override them.
+COPY theme.example.yaml ./theme.example.yaml
 
 EXPOSE 3001
 
-CMD ["npm", "run", "start:server"]
+CMD ["node", "server/server.js"]

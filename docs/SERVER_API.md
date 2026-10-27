@@ -1,34 +1,50 @@
 # Server API Documentation
 
-The server exposes a centralized API endpoint for various services and a configuration endpoint.
+The server exposes one service endpoint, a configuration endpoint and a configuration change stream.
 
 ## Base URL
-All APIs are prefixed with `/api`.
+All APIs are prefixed with `/api`. Unknown `/api/...` paths return `404` with a JSON body.
+
+The API is meant for the dashboard served from the same origin; no CORS headers are sent.
+
+## Errors
+Errors are returned as JSON with a matching HTTP status:
+
+```json
+{ "error": "Entity not authorized: lock.front_door" }
+```
+
+| Status | Meaning |
+|--------|---------|
+| `400` | Missing or invalid parameters. |
+| `403` | The request targets something not present in `config.yaml` (an entity, an action). |
+| `404` | Unknown service, card or API path. |
+| `502` | The upstream service (Home Assistant, Proxmox, ...) returned an error. |
+| `503` | The service is not configured in `services.yaml` / environment variables. |
+| `500` | Unexpected server error. |
+
+Outside production (`NODE_ENV !== 'production'`) the body also contains a `stack` field.
 
 ---
 
-## 1. Centralized Service API
-**Endpoint**: `POST /api` or `GET /api`  
+## 1. Service API
+**Endpoint**: `POST /api` (JSON body) or `GET /api` (query parameters)
 **Description**: Single entry point for all dashboard services. Dispatch is based on the `service` parameter.
 
-### Parameters
-| Name | Type | Params Type | Description |
-|------|------|--------|-------------|
-| `service` | string | Body/Query | Required. The service identifier. |
-| `...params` | mixed | Body/Query | Service-specific parameters. |
+| Name | Type | Description |
+|------|------|-------------|
+| `service` | string | Required. One of the services below. |
+| `...params` | mixed | Service-specific parameters. |
 
-> **Note**: For `POST` requests, parameters should be in the JSON body. For `GET` requests, use query parameters.
+Services are registered in `server/services/index.js`.
 
-### Supported Services
-
-#### `transmission`
-- **Description**: Fetches active torrents and global stats.
+### `transmission`
 - **Parameters**: None.
 - **Response**:
   ```json
   {
     "torrents": [
-      { "id": 1, "name": "Linux ISO", "progress": 50, "speedDown": "2 MB/s", "status": "downloading", ... }
+      { "id": 1, "name": "Linux ISO", "progress": 50, "speedDown": "2.00 MB/s", "status": 4, ... }
     ],
     "totalRateDown": 2048000,
     "totalRateUp": 1024,
@@ -36,90 +52,94 @@ All APIs are prefixed with `/api`.
   }
   ```
 
-#### `media`
-- **Description**: Fetches calendar/upcoming events from configured Media services (Sonarr/Radarr).
+### `media`
 - **Parameters**:
-  - `start` (string): ISO start date.
-  - `end` (string): ISO end date.
-- **Response**: Array of event objects.
+  - `start` (string): Start date, `YYYY-MM-DD`.
+  - `end` (string): End date, `YYYY-MM-DD`.
+- **Response**: Events from all configured Sonarr/Radarr instances, sorted by date.
   ```json
   [
     {
-      "id": 123,
+      "id": "sonarr-123",
       "type": "sonarr",
       "title": "Series Name",
       "secondary": "1x05",
       "datetime": "2023-10-27T20:00:00Z",
-      "status": "upcoming"
+      "status": "upcoming",
+      "url": "http://sonarr.local/series/series-name"
     }
   ]
   ```
 
-#### `homeassistant`
-- **Description**: Proxies requests to Home Assistant.
-- **Parameters**:
-  - `endpoint` (string): **Required**. Either `'states/:entity_id'` or `'services'`.
-- **Sub-Endpoints**:
-  - **Get State**: `{ service: 'homeassistant', endpoint: 'states/light.living_room' }`
-  - **Call Service**:
-    - `endpoint`: `'services'`
-    - `entity_id`: Target entity (e.g., `light.living_room`)
-    - `service`: Service call (e.g., `light.turn_on`)
+### `homeassistant`
+Only entities that appear on an `hacontrol` or `weather` card can be read, and only the
+`on_action` / `off_action` configured for an entity can be called.
 
-#### `weather`
-- **Description**: Fetches weather forecast from Home Assistant.
-- **Parameters**:
-  - `entity_id` (string): Weather entity ID.
-  - `type` (string): Forecast type (`daily` or `hourly`). Default: `daily`.
+- **Get several states**: `{ "service": "homeassistant", "endpoint": "states", "entity_ids": ["light.office", "switch.fan"] }`
+  returns `{ "light.office": { ...state }, "switch.fan": null }` (`null` when a single state could not be fetched).
+- **Get one state**: `{ "service": "homeassistant", "endpoint": "states/light.office" }`
+- **Call an action**: `{ "service": "homeassistant", "endpoint": "services", "entity_id": "light.office", "action": "light.turn_on" }`
 
-#### `proxmox`
-- **Description**: Fetches status of Proxmox VMs and LXC containers.
+### `weather`
+- **Parameters**:
+  - `entity_id` (string): A weather entity configured on a `weather` card.
+  - `type` (string): `daily` (default), `hourly` or `twice_daily`.
+- **Response**: The `weather.get_forecasts` service response. Cached for 30 minutes.
+
+### `proxmox`
 - **Parameters**: None.
 - **Response**:
   ```json
   {
     "nodes": [
-      { "id": 100, "name": "docker-host", "status": "running", "cpu": 5.5, "ram": 40.2, ... }
+      { "id": 100, "name": "docker-host", "type": "vm", "status": "running", "cpu": 5.5, "ram": 40.2, "disk": 12.0 }
     ],
     "summary": { "running": 5, "total": 6, "cpuAvg": 10 }
   }
   ```
 
-#### `serverstats`
-- **Description**: Fetches system resources via Glances.
-- **Parameters**: None (currently).
-- **Response**:
+### `serverstats`
+- **Parameters**: None.
+- **Response** (sizes in GB, network in bytes):
   ```json
   {
+    "info": { "hostname": "server", "ip": "192.168.1.10" },
     "cpu": 15.2,
-    "ram": { "used": "8.5", "total": "16.0" },
+    "ram": { "used": 8.5, "total": 16 },
+    "storage": { "used": 120.4, "free": 380.1, "total": 500.5 },
+    "network": { "in": 1048576, "out": 524288 },
     "temp": 45
   }
   ```
 
-#### `git`
-- **Description**: Fetches Pull Requests from configured repositories.
+### `git`
 - **Parameters**:
-  - `repos` (string/array): Optional override.
-  - `filterStatus` (array): e.g. `["open"]`.
-- **Response**:
+  - `cardId` (string): Id of a `git` card. The repositories and filters are read from that card's
+    configuration on the server; they cannot be passed in the request.
+- **Response** (cached for one minute per card):
   ```json
   {
-    "prs": [ ... ],
-    "stats": { "count": 1, "open": 1, ... }
+    "prs": [ { "id": "github-1", "title": "...", "repo": "owner/repo", "state": "open", ... } ],
+    "stats": { "count": 1, "open": 1 }
   }
   ```
 
 ---
 
 ## 2. Configuration API
-**Endpoint**: `GET /api/config`  
-**Description**: Returns the sanitized frontend configuration (secrets removed).
+**Endpoint**: `GET /api/config`
+**Description**: Returns the frontend configuration. The `services` section is removed and credential-like
+keys (`apiKey`, `token`, `secret`, `tokenId`, `password`, `username`) are stripped at any depth.
 
-**Response**:
 ```json
 {
   "pages": [ ... ],
-  "theme": "dark"
+  "theme": "default"
 }
 ```
+
+## 3. Configuration Change Stream
+**Endpoint**: `GET /api/config/events`
+**Description**: [Server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) stream.
+A `config` event is sent whenever `config.yaml`, `services.yaml` or `theme.yaml` changes; open dashboards reload their
+configuration when they receive it.

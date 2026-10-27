@@ -75,7 +75,6 @@ const ProxmoxItem = ({ node }) => {
  */
 const ProxmoxCard = ({ config }) => {
     const { nodes, summary } = useProxmox();
-    const colSpan = config.colSpan || 1;
     const url = config.url || '';
 
     const [sortMode, setSortMode] = useState('id-asc');
@@ -123,7 +122,6 @@ const ProxmoxCard = ({ config }) => {
 
     return (
         <TwoToneBase
-            colSpan={colSpan}
             title="Proxmox"
             url={url}
             subtitle={

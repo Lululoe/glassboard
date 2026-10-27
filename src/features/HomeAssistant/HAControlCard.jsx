@@ -17,9 +17,7 @@ const HAControlCard = ({ config }) => {
     const maxItems = (config.colSpan || 1) * 4;
     const displayEntities = entities.slice(0, maxItems);
 
-    // Use the Home Assistant hook
-    const service = config.service || 'homeassistant';
-    const { entityStates, loading, toggleEntity } = useHomeAssistant(displayEntities, service);
+    const { entityStates, loading, toggleEntity } = useHomeAssistant(displayEntities);
 
     const getIcon = (iconName) => {
         if (!iconName) return 'lu-HelpCircle';
@@ -64,13 +62,13 @@ const HAControlCard = ({ config }) => {
     };
 
     return (
-        <BaseCard colSpan={config.colSpan} className={`ha-control-card col-span-${config.colSpan || 1}`} hoverable={false}>
+        <BaseCard className={`ha-control-card col-span-${config.colSpan || 1}`} hoverable={false}>
             <div className="ha-control-grid">
                 {displayEntities.map((entity, idx) => {
                     // Get live state from HA, fallback to config
                     const liveState = entityStates[entity.entity_id];
                     const currentState = liveState?.state || entity.state || 'unknown';
-                    const iconString = getIcon(entity.icon, entity.entity_id || '');
+                    const iconString = getIcon(entity.icon);
 
                     // Determine if "on"
                     let isOn = false;
@@ -95,7 +93,7 @@ const HAControlCard = ({ config }) => {
 
                     return (
                         <div
-                            key={idx}
+                            key={entity.entity_id ?? idx}
                             className={tileClass}
                             onClick={hasActions ? () => toggleEntity(entity, isOn) : undefined}
                             style={{ cursor: hasActions ? 'pointer' : 'default' }}

@@ -28,7 +28,7 @@ describe('Transmission Feature', () => {
             json: async () => mockTorrents
         });
 
-        render(<TransmissionCard config={{ service: 'transmission' }} />);
+        render(<TransmissionCard config={{ id: 'transmission' }} />);
 
         // Wait for torrents to appear
         await waitFor(() => {
@@ -49,7 +49,7 @@ describe('Transmission Feature', () => {
     it('handles error state', async () => {
         fetch.mockRejectedValueOnce(new Error('API Error'));
 
-        render(<TransmissionCard config={{ service: 'transmission' }} />);
+        render(<TransmissionCard config={{ id: 'transmission' }} />);
 
         await waitFor(() => {
             expect(screen.getByText(/Error loading Transmission data/i)).toBeInTheDocument();

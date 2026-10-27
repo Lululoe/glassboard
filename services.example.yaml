@@ -23,13 +23,16 @@ services:
 
   transmission:
     url: "http://transmission.local:9091"
+    # Optional basic auth
     # username: "admin"
     # password: "password"
 
   proxmox:
     url: "https://proxmox.local:8006"
-    tokenId: "YOUR_TOKEN_ID"
-    tokenSecret: "YOUR_TOKEN_SECRET"
+    tokenId: "user@pam!dashboard"
+    secret: "YOUR_TOKEN_SECRET"
+    # Verify the TLS certificate (leave false for self-signed certificates)
+    # verifyTls: true
 
   glances:
     url: "http://localhost:61208"

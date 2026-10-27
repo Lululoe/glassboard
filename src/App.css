@@ -88,6 +88,12 @@
     background: var(--bg-page-gradient);
 }
 
+.loading-error {
+    max-width: 32rem;
+    padding: 0 1rem;
+    text-align: center;
+}
+
 .loading-spinner {
     width: 40px;
     height: 40px;

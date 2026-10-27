@@ -22,9 +22,11 @@ const Header = ({ config }) => {
             </div>
 
             <div className="header-right">
-                <div className="icon-button" onClick={toggleMode} style={{ display: 'none' }}>
-                    {mode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                </div>
+                {config?.themeToggle && (
+                    <div className="icon-button" onClick={toggleMode} title="Toggle light/dark mode">
+                        {mode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                    </div>
+                )}
                 <div className="icon-button" onClick={() => setIsLauncherOpen(!isLauncherOpen)}>
                     <LayoutGrid size={20} />
                 </div>

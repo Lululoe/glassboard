@@ -1,139 +1,52 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { callService } from '../../lib/api';
+import { usePolling } from '../../hooks/usePolling';
 
-// ...
+const CONFIRM_DELAY = 500;
+
 /**
- * Custom hook for interacting with Home Assistant entities.
- * Polls entity states and provides a toggle function with optimistic updates.
- * @param {Array} entities - List of entity configurations to track.
- * @param {string} [service='homeassistant'] - The Home Assistant service name.
- * @param {number} [interval=5000] - Polling interval in milliseconds.
- * @returns {Object} Object containing entityStates map, loading boolean, error string, and toggleEntity function.
+ * Polls the states of Home Assistant entities in a single request and toggles them with
+ * optimistic updates. An optimistic state is shown until newer data arrives from the
+ * server, and is dropped if the action fails.
+ * @param {Array<Object>} entities - Entity configs (entity_id, on_action, off_action, on_state, off_state).
+ * @param {number} [interval=5000] - Polling interval in ms.
+ * @returns {{entityStates: Object<string, Object>, loading: boolean, error: string|null, toggleEntity: (entity: Object, isOn: boolean) => Promise<void>}}
  */
-export const useHomeAssistant = (entities, service = 'homeassistant', interval = 5000) => {
-    const [entityStates, setEntityStates] = useState({});
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+export const useHomeAssistant = (entities, interval = 5000) => {
+    const ids = entities.map(e => e.entity_id).filter(Boolean);
+    const { data, loading, error, updatedAt, refresh } = usePolling(
+        () => callService('homeassistant', { endpoint: 'states', entity_ids: ids }),
+        { interval, enabled: ids.length > 0, key: ids.join(',') }
+    );
+    const [overrides, setOverrides] = useState(/** @type {Object<string, {state: string, at: number}>} */ ({}));
 
-    // Fetch states for all entities
-    useEffect(() => {
-        if (!entities || entities.length === 0) {
-            setLoading(false);
-            return;
-        }
+    const entityStates = useMemo(() => {
+        const states = { ...data };
+        Object.entries(overrides).forEach(([id, override]) => {
+            if (override.at > updatedAt) states[id] = { ...states[id], state: override.state };
+        });
+        return states;
+    }, [data, overrides, updatedAt]);
 
-        let mounted = true;
+    const toggleEntity = useCallback(async (entity, isOn) => {
+        const action = isOn ? entity.off_action : entity.on_action;
+        if (!action?.service) return;
 
-        const fetchStates = async () => {
-            try {
-                const statePromises = entities.map(async (entity) => {
-                    try {
-                        const response = await fetch(`/api?service=${service}&endpoint=states/${entity.entity_id}`);
-                        if (response.ok) {
-                            const state = await response.json();
-                            return { entity_id: entity.entity_id, state };
-                        }
-                    } catch (err) {
-                        console.error(`Failed to fetch state for ${entity.entity_id}:`, err);
-                    }
-                    return null;
-                });
-
-                const results = await Promise.all(statePromises);
-                if (!mounted) return;
-
-                const statesMap = {};
-                results.forEach(result => {
-                    if (result) {
-                        statesMap[result.entity_id] = result.state;
-                    }
-                });
-                setEntityStates(statesMap);
-                setError(null);
-            } catch (err) {
-                console.error('Failed to fetch entity states:', err);
-                if (!mounted) return;
-                setError(String(err));
-            } finally {
-                if (mounted) setLoading(false);
-            }
-        };
-
-        fetchStates();
-        const id = setInterval(fetchStates, interval);
-
-        return () => {
-            mounted = false;
-            clearInterval(id);
-        };
-    }, [entities.length, interval]);
-
-    // Toggle entity with optimistic update
-    const toggleEntity = useCallback(async (entity, currentIsOn) => {
-        const action = currentIsOn ? entity.off_action : entity.on_action;
-        if (!action || !action.service) {
-            console.warn('No action configured for entity:', entity.entity_id);
-            return;
-        }
-
-        // Optimistic update - immediately update local state
-        const optimisticState = currentIsOn ? 'off' : 'on';
-        setEntityStates(prev => ({
-            ...prev,
-            [entity.entity_id]: {
-                ...prev[entity.entity_id],
-                state: optimisticState
-            }
-        }));
+        const id = String(entity.entity_id);
+        const optimisticState = isOn ? (entity.off_state || 'off') : (entity.on_state || 'on');
+        setOverrides(prev => ({ ...prev, [id]: { state: optimisticState, at: Date.now() } }));
 
         try {
-            // Use query param for service dispatch to avoid collision with 'service' in body
-            const response = await fetch(`/api?service=${service}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    endpoint: 'services',
-                    entity_id: entity.entity_id,
-                    service: action.service
-                })
-            });
-
-            if (!response.ok) {
-                const error = await response.json();
-                console.error('Failed to call service:', error);
-                // Revert optimistic update on error
-                setEntityStates(prev => ({
-                    ...prev,
-                    [entity.entity_id]: prev[entity.entity_id]
-                }));
-                return;
-            }
-
-            // Fetch actual state after a short delay to confirm
-            setTimeout(async () => {
-                try {
-                    const stateResponse = await fetch(`/api/homeassistant/states/${entity.entity_id}`);
-                    if (stateResponse.ok) {
-                        const newState = await stateResponse.json();
-                        setEntityStates(prev => ({
-                            ...prev,
-                            [entity.entity_id]: newState
-                        }));
-                    }
-                } catch (err) {
-                    console.error('Error fetching updated state:', err);
-                }
-            }, 500);
+            await callService('homeassistant', { endpoint: 'services', entity_id: id, action: action.service });
+            setTimeout(refresh, CONFIRM_DELAY);
         } catch (err) {
-            console.error('Error toggling entity:', err);
-            // Revert optimistic update on error
-            setEntityStates(prev => ({
-                ...prev,
-                [entity.entity_id]: prev[entity.entity_id]
-            }));
+            console.error(`Failed to toggle ${id}:`, err);
+            setOverrides(prev => {
+                const { [id]: _removed, ...rest } = prev;
+                return rest;
+            });
         }
-    }, []);
+    }, [refresh]);
 
     return { entityStates, loading, error, toggleEntity };
 };

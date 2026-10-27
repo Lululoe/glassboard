@@ -7,4 +7,7 @@ services:
     volumes:
       - ${CONFIG_FILE:-./config.yaml}:/app/config.yaml
       - ${SERVICES_FILE:-./services.yaml}:/app/services.yaml
+      # Optional: override the default themes or add custom styles.
+      # - ./theme.yaml:/app/theme.yaml
+      # - ./custom.css:/app/custom.css
     restart: unless-stopped

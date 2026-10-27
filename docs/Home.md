@@ -37,7 +37,9 @@ Glassboard utilizes a Backend-for-Frontend (BFF) architecture. The Node.js serve
 2. **Configure**: Copy `config.example.yaml` to `config.yaml` and configure your layout. Copy `services.example.yaml` to `services.yaml` for your secrets.
 3. **Start**:
     ```bash
-    npm run start:server
+    npm run build
+    npm start
     ```
+    Use `npm run dev` during development.
 
 Access the dashboard at `http://localhost:3001`.

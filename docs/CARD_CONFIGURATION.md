@@ -3,14 +3,16 @@
 This document defines the configuration options for all available dashboard cards in [config.yaml](../config.yaml).
 
 > **Note**: Service credentials and connection details (like API keys or URLs for Sonarr, Radarr, etc.) should be configured in **[services.yaml](../services.yaml)**. This keeps your layout configuration separate from your secrets.
+>
+> The server validates `config.yaml` on startup and on every change, and logs problems such as missing card ids, duplicate ids or an invalid `colSpan` (e.g. `Config: pages[0].cards[2].colSpan: ...`). Edits are picked up without a restart and open dashboards reload automatically.
 
 ## Global Options
 All cards support these base options:
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| id | string | required | Unique identifier for the card. |
+| `id` | string | required | Unique identifier for the card (across all pages). |
 | `type` | string | required | The component type of the card. |
-| `colSpan` | number | 1 | Width of the card in grid columns. |
+| `colSpan` | number | 1 | Width of the card in grid columns (1-3). |
 | `primaryColor` | string | | Sets `--card-primary` for the card (overrides theme/default). |
 
 ---
@@ -58,16 +60,15 @@ Displays Pull Requests from GitHub, GitLab, or Gitea.
 | `hideEmpty` | boolean | `false` | If true, hides the card when no PRs are found. |
 | `filterLabels`| array | `[]` | Only show PRs with these labels. |
 | `filterStatus`| array | `[]` | Filter by status (`open`, `merged`, `draft`). |
-| `repositories`| array | required | List of repositories to watch. |
+| `repositories`| array | required | List of repositories to watch. Read by the server only; the browser cannot request other repositories. |
 | `url` | string | | Fallback URL for the card header. |
 
 **Repository Object**:
 | Field | Type | Description |
 |-------|------|-------------|
 | `type` | string | `github`, `gitlab`, or `gitea`. |
-| `owner` | string | Repository owner/group. |
+| `owner` | string | Repository owner. For GitLab this may include subgroups (`group/subgroup`). |
 | `repo` | string | Repository name. |
-| id | string | Optional ID for local reference. |
 *(String shorthand supported: `"owner/repo"` defaults to GitHub)*
 
 ### Example
@@ -92,7 +93,6 @@ Control Home Assistant entities (lights, switches, etc.).
 ### Configuration
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `service` | string | `homeassistant` | Key in `services` config to use. |
 | `data.entities`| array | required | List of entities to control. |
 
 **Entity Object**:
@@ -101,11 +101,14 @@ Control Home Assistant entities (lights, switches, etc.).
 | `entity_id` | string | HA Entity ID (e.g. `light.living_room`). |
 | `name` | string | Display name. |
 | `icon` | string/object | Icon name (Lucide or simple names like `lamp`) or object `{ source, value }`. |
-| `on_state` | string | State value considered "on" (default differs by type). |
+| `on_state` | string | State value considered "on". If unset, anything except `off`, `unavailable` and `unknown` counts as on. |
+| `off_state` | string | State value considered "off" (used when `on_state` is not set). |
 | `attributes` | array | List of attributes to show in secondary text. |
 | `color` | string | Highlight color when active. |
 | `on_action` | object | `{ service: 'domain.service' }` to call when turning on. |
 | `off_action` | object | `{ service: 'domain.service' }` to call when turning off. |
+
+Only the entities listed here can be read through the API, and only their `on_action`/`off_action` can be called. The tile is clickable when both actions are set.
 
 ### Example
 ```yaml
@@ -128,8 +131,8 @@ Displays upcoming episodes and movies from Sonarr/Radarr (via backend aggregator
 ### Configuration
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `service` | string | `media` | Key in `services` config to use. |
 | `url` | string | | URL for the card header. |
+| `services` | array | | Optional list of `{ type: sonarr\|radarr, url, apiKey }`. Overrides `services.sonarr` / `services.radarr`. Prefer `services.yaml` for API keys. |
 
 ### Example
 ```yaml
@@ -146,7 +149,7 @@ Displays status of Proxmox VMs and LXC containers.
 ### Configuration
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `url` | string | | URL for the card header (link to Proxmox UI). |
+| `url` | string | | URL for the card header (link to Proxmox UI). Also used for the API when `services.proxmox.url` is not set. |
 
 ### Example
 ```yaml
@@ -182,8 +185,8 @@ Displays active torrent downloads/seeds.
 ### Configuration
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `service` | string | `transmission` | Key in `services` config. |
-| `url` | string | | URL for the card header. |
+| `url` | string | | URL for the card header. Also used for the RPC connection when `services.transmission.url` is not set. |
+| `downloadsUrl` | string | | Optional link shown as a folder button in the header. |
 
 ### Example
 ```yaml
@@ -201,7 +204,7 @@ Displays daily or hourly weather forecast.
 ### Configuration
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `entity_id` | string | required | Home Assistant weather entity ID. |
+| `entity_id` | string | required | Home Assistant weather entity ID. The forecast refreshes every 30 minutes. |
 | `icon` | string/object | Custom icon for the card header. |
 
 ### Example

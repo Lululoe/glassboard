@@ -4,9 +4,12 @@ import AppIcon from '../../components/Shared/AppIcon';
 import './AppGridCard.css';
 
 /**
- * AppGridCard Features
- * - Configurable columns (default 3)
- * - Renders list of apps
+ * Grid of app shortcuts. Uses `data.apps`, falling back to the launcher apps.
+ * Shows at most 12 apps.
+ * @param {Object} props
+ * @param {Object} props.config - Card configuration (`data.apps`, `columns`).
+ * @param {Object} props.globalConfig - Full dashboard config, used for the launcher fallback.
+ * @returns {JSX.Element} The rendered app grid.
  */
 const AppGridCard = ({ config, globalConfig }) => {
     let { apps = [] } = config.data || {};
@@ -18,13 +21,6 @@ const AppGridCard = ({ config, globalConfig }) => {
 
     const columns = config.columns || 4;
 
-    // Calculate limit based on columns x 3 rows (or just generic limit)
-    // User requested default 3.
-    // If we want to keep a 4x3 grid feel but dynamic:
-    // Let's assume we want to show enough items to fill rows. 
-    // Maybe still cap at 12 or dynamic. 
-    // Original was: const displayApps = apps.slice(0, 12); (4x3)
-    // If cols=3, 3x4=12 still works.
     const displayApps = apps.slice(0, 12);
 
     const gridStyle = {
@@ -32,7 +28,7 @@ const AppGridCard = ({ config, globalConfig }) => {
     };
 
     return (
-        <BaseCard colSpan={config.colSpan} className="app-grid-card" hoverable={false}>
+        <BaseCard className="app-grid-card" hoverable={false}>
             <div className="app-grid-container" style={gridStyle}>
                 {displayApps.map((app, index) => (
                     <a key={index} href={app.url} className="app-item" target="_blank" rel="noopener noreferrer">

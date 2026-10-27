@@ -9,7 +9,7 @@ import * as LucideIcons from 'lucide-react';
  * @param {string} alt - Alternate text for accessibility.
  * @param {boolean} isPng - Whether the image is a PNG.
  * @param {number|string} size - CSS dimension for width and height.
- * @param {string} [color] - Optional color to apply via mask (SVGs only).
+ * @param {string|undefined} color - Color to apply via mask (SVGs only).
  * @param {string} className - Additional CSS classes.
  * @param {Object} style - Additional inline styles.
  * @returns {JSX.Element} The rendered image or mask element.
@@ -62,9 +62,10 @@ const renderImageOrMask = (url, alt, isPng, size, color, className, style) => {
  * @param {string} [props.color] - Override color for the icon.
  * @param {string} [props.className] - Additional CSS classes.
  * @param {Object} [props.style] - Additional inline styles.
+ * @param {number} [props.strokeWidth] - Stroke width for Lucide icons.
  * @returns {JSX.Element|null} The rendered icon or null if invalid.
  */
-const Icon = ({ icon, size = 24, color, className = '', style = {} }) => {
+const Icon = ({ icon, size = 24, color, className = '', style = {}, strokeWidth }) => {
     if (!icon) return null;
 
     let iconConfig = {};
@@ -101,6 +102,7 @@ const Icon = ({ icon, size = 24, color, className = '', style = {} }) => {
             <IconComponent
                 size={size}
                 color={finalColor}
+                strokeWidth={strokeWidth}
                 className={className}
                 style={style}
             />

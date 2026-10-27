@@ -2,423 +2,272 @@ import fs from 'fs';
 import path from 'path';
 import yaml from 'js-yaml';
 import logger from './logger.js';
+import { validateConfig } from './configSchema.js';
 
-let CONFIG = {};
 const configPath = path.resolve(process.cwd(), 'config.yaml');
 const servicesPath = path.resolve(process.cwd(), 'services.yaml');
 const themePath = path.resolve(process.cwd(), 'theme.yaml');
-let configLoaded = false;
+const defaultThemePath = path.resolve(process.cwd(), 'theme.example.yaml');
 
-// Load Config
+const SECRET_KEY = /^(api_?key|token|secret|token_?secret|token_?id|password|username)$/i;
+
+let CONFIG = {};
+let version = 0;
+const listeners = new Set();
+
 /**
- * Loads the configuration from config.yaml and services.yaml into memory.
- * Merges them into a single global CONFIG object.
- * Logs success or failure.
+ * Returns `true` for plain objects (not arrays, null or class instances).
+ * @param {*} value - Value to test.
+ * @returns {boolean} Whether the value is a plain object.
  */
-/**
- * Performs a deep merge of a source object into a target object.
- * @param {Object} target - The target object.
- * @param {Object} source - The source object.
- * @returns {Object} The merged object.
- */
-function deepMerge(target, source) {
-    for (const key of Object.keys(source)) {
-        if (source[key] instanceof Object && key in target) {
-            Object.assign(source[key], deepMerge(target[key], source[key]));
-        }
-    }
-    Object.assign(target || {}, source);
-    return target;
+function isPlainObject(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-// Helper: Load Environment Config
+/**
+ * Deep merges `override` over `base` without mutating either argument.
+ * Arrays and scalars in `override` replace the base value.
+ * @param {Object} base - Base object.
+ * @param {Object} override - Values that take precedence.
+ * @returns {Object} A new merged object.
+ */
+export function deepMerge(base, override) {
+    const result = { ...base };
+    for (const [key, value] of Object.entries(override || {})) {
+        result[key] = isPlainObject(value) && isPlainObject(base?.[key])
+            ? deepMerge(base[key], value)
+            : value;
+    }
+    return result;
+}
+
+/**
+ * Builds a `services` config tree from `SERVICES__SECTION__KEY` environment variables.
+ * Keys are lowercased, e.g. `SERVICES__SONARR__URL` becomes `services.sonarr.url`.
+ * @returns {Object} Config fragment containing only `services`, or an empty object.
+ */
 function loadEnvConfig() {
-    const envConfig = {};
-    for (const key in process.env) {
-        if (key.startsWith('SERVICES__')) {
-            // Format: SERVICES__SECTION__KEY
-            // Example: SERVICES__SONARR__URL -> services.sonarr.url
-            const parts = key.split('__').slice(1).map(p => p.toLowerCase());
-            let current = envConfig;
-
-            let targetKey = 'services';
-            if (!envConfig[targetKey]) envConfig[targetKey] = {};
-            current = envConfig[targetKey];
-
-            for (let i = 0; i < parts.length; i++) {
-                const part = parts[i];
-                if (i === parts.length - 1) {
-                    current[part] = process.env[key];
-                } else {
-                    if (!current[part]) current[part] = {};
-                    current = current[part];
-                }
-            }
-        }
+    const services = {};
+    for (const [key, value] of Object.entries(process.env)) {
+        if (!key.startsWith('SERVICES__')) continue;
+        const parts = key.split('__').slice(1).map(p => p.toLowerCase());
+        let current = services;
+        parts.slice(0, -1).forEach(part => {
+            if (!isPlainObject(current[part])) current[part] = {};
+            current = current[part];
+        });
+        current[parts[parts.length - 1]] = value;
     }
-    return envConfig;
+    return Object.keys(services).length > 0 ? { services } : {};
 }
 
 /**
- * Reads and parses a YAML file safely, returning an empty object if it fails or is missing.
+ * Reads and parses a YAML file, returning an empty object if it is missing or invalid.
  * @param {string} filePath - Absolute path to the YAML file.
  * @returns {Object} Parsed configuration object.
  */
 function readYamlSafe(filePath) {
-    if (fs.existsSync(filePath)) {
-        try {
-            const stat = fs.statSync(filePath);
-            if (stat.isFile()) {
-                const raw = fs.readFileSync(filePath, 'utf8');
-                return yaml.load(raw) || {};
-            } else {
-                logger.warn(`Expected file at ${filePath} but found directory.`);
-            }
-        } catch (e) {
-            logger.warn(`Error reading ${filePath}: ${e.message}`);
+    if (!fs.existsSync(filePath)) return {};
+    try {
+        if (!fs.statSync(filePath).isFile()) {
+            logger.warn(`Expected file at ${filePath} but found a directory.`);
+            return {};
         }
+        return yaml.load(fs.readFileSync(filePath, 'utf8')) || {};
+    } catch (e) {
+        logger.warn(`Error reading ${filePath}: ${e.message}`);
+        return {};
     }
-    return {};
 }
 
-// Load Config
 /**
- * Loads the configuration from config.yaml and services.yaml into memory.
- * Merges them into a single global CONFIG object.
- * Logs success or failure.
+ * Merges default themes from theme.yaml (or the bundled theme.example.yaml) with
+ * theme overrides from config.yaml, matching themes by id.
+ * @param {Array<Object>} defaults - Themes from the theme file.
+ * @param {Array<Object>} overrides - Themes from config.yaml.
+ * @returns {Array<Object>} Merged theme list.
+ */
+function mergeThemes(defaults = [], overrides = []) {
+    const merged = defaults.map(theme => {
+        const override = overrides.find(t => t.id === theme.id);
+        return override ? deepMerge(theme, override) : theme;
+    });
+    overrides.forEach(theme => {
+        if (!defaults.some(t => t.id === theme.id)) merged.push(theme);
+    });
+    return merged;
+}
+
+/**
+ * Loads config.yaml, services.yaml, the theme file and `SERVICES__*` environment
+ * variables into the in-memory config, validates it and notifies change listeners.
  */
 export function loadConfig() {
-    try {
-        let mainConfig = {};
-        let servicesConfig = {};
-        let envConfig = loadEnvConfig();
+    if (!fs.existsSync(configPath)) {
+        logger.warn(`config.yaml not found at ${configPath}`);
+    }
 
-        // Load Main Config
-        mainConfig = readYamlSafe(configPath);
-        if (Object.keys(mainConfig).length === 0 && !fs.existsSync(configPath)) {
-            logger.warn('config.yaml not found at', configPath);
-        }
+    const mainConfig = readYamlSafe(configPath);
+    const servicesConfig = readYamlSafe(servicesPath);
+    const themeConfig = readYamlSafe(fs.existsSync(themePath) ? themePath : defaultThemePath);
 
-        // Load Services Config
-        servicesConfig = readYamlSafe(servicesPath);
+    let merged = deepMerge(mainConfig, servicesConfig);
+    merged.themes = mergeThemes(themeConfig.themes, mainConfig.themes);
+    merged = deepMerge(merged, loadEnvConfig());
 
-        // Load Themes Config
-        let themeConfig = readYamlSafe(themePath);
+    validateConfig(merged).forEach(problem => logger.warn(`Config: ${problem}`));
 
-        // Merge: Main + Services + Themes + Env
-        // 1. Initial merge of main config and services
-        CONFIG = { ...mainConfig, ...servicesConfig };
-
-        // 2. Merge themes
-        // We want to merge theme.yaml themes with config.yaml themes
-        // If config.yaml has a theme with same ID, it merges/overrides the default one
-        if (themeConfig.themes) {
-            if (!CONFIG.themes) CONFIG.themes = [];
-
-            // For each theme in theme.yaml
-            themeConfig.themes.forEach(defaultTheme => {
-                const existingIndex = CONFIG.themes.findIndex(t => t.id === defaultTheme.id);
-                if (existingIndex >= 0) {
-                    // Merge override over default
-                    CONFIG.themes[existingIndex] = deepMerge(defaultTheme, CONFIG.themes[existingIndex]);
-                } else {
-                    // Add default theme
-                    CONFIG.themes.push(defaultTheme);
-                }
-            });
-        }
-
-        // 3. Env overrides
-        deepMerge(CONFIG, envConfig);
-
-        // Only log on fresh load or meaningful reload, simple state tracking
-        if (!configLoaded) {
-            logger.info('Config loaded successfully (Main + Services + Env)');
-            configLoaded = true;
-        }
-    } catch (e) {
-        logger.warn('Could not load configuration:', e.message);
+    CONFIG = merged;
+    version += 1;
+    if (version === 1) {
+        logger.info('Config loaded');
+    } else {
+        logger.info('Config reloaded');
+        listeners.forEach(listener => listener(version));
     }
 }
 
-// Watch Config
 /**
- * Watches config.yaml and services.yaml for changes and reloads automatically.
- * Debounces the reload to prevent multiple triggers.
+ * Polls the config files for changes and reloads automatically.
+ * Polling (rather than fs.watch) survives editors that save by replacing the file,
+ * files created after startup and Docker bind mounts.
  */
 export function watchConfig() {
     let reloadTimeout;
-    const reload = () => {
+    const onChange = (curr, prev) => {
+        if (curr.mtimeMs === prev.mtimeMs) return;
         clearTimeout(reloadTimeout);
-        reloadTimeout = setTimeout(() => {
-            logger.info('Configuration changed, reloading...');
-            loadConfig();
-        }, 100);
+        reloadTimeout = setTimeout(loadConfig, 100);
     };
-
-    if (fs.existsSync(configPath)) {
-        fs.watch(configPath, (eventType) => {
-            if (eventType === 'change') reload();
-        });
-        logger.info('Watching config.yaml for changes');
-    }
-
-    if (fs.existsSync(servicesPath)) {
-        fs.watch(servicesPath, (eventType) => {
-            if (eventType === 'change') reload();
-        });
-        logger.info('Watching services.yaml for changes');
-    }
-
-    if (fs.existsSync(themePath)) {
-        fs.watch(themePath, (eventType) => {
-            if (eventType === 'change') reload();
-        });
-        logger.info('Watching theme.yaml for changes');
-    }
+    [configPath, servicesPath, themePath].forEach(p => fs.watchFile(p, { interval: 1000 }, onChange));
+    logger.info('Watching config files for changes');
 }
 
-// Get Full Config (Sanitized)
 /**
- * Returns a sanitized version of the configuration for frontend use.
- * Strips out API keys and sensitive service details.
- * @returns {Object} Sanitized configuration object
+ * Registers a callback invoked after each config reload.
+ * @param {(version: number) => void} listener - Called with the new config version.
+ * @returns {() => void} Function that unregisters the listener.
+ */
+export function onConfigChange(listener) {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+}
+
+/**
+ * Returns a number that increases every time the config is reloaded.
+ * @returns {number} Current config version.
+ */
+export function getConfigVersion() {
+    return version;
+}
+
+/**
+ * Recursively removes keys that look like credentials.
+ * @param {*} value - Value to clean.
+ * @returns {*} A copy of the value without secret-like keys.
+ */
+function stripSecrets(value) {
+    if (Array.isArray(value)) return value.map(stripSecrets);
+    if (!isPlainObject(value)) return value;
+    return Object.fromEntries(
+        Object.entries(value)
+            .filter(([key]) => !SECRET_KEY.test(key))
+            .map(([key, v]) => [key, stripSecrets(v)])
+    );
+}
+
+/**
+ * Returns the configuration for the frontend: the `services` section is removed and
+ * credential-like keys (apiKey, token, secret, password, ...) are stripped at any depth.
+ * @returns {Object} Sanitized configuration object.
  */
 export function getSanitizedConfig() {
-    // Deep clone
-    const sanitized = JSON.parse(JSON.stringify(CONFIG));
-    // Remove secrets
-    delete sanitized.services;
-    if (Array.isArray(sanitized.pages)) {
-        sanitized.pages.forEach(page => {
-            if (Array.isArray(page.cards)) {
-                page.cards.forEach(card => {
-                    delete card.apiKey;
-                    delete card.apikey;
-                });
-            }
-        });
-    }
-    if (Array.isArray(sanitized.cards)) {
-        sanitized.cards.forEach(card => {
-            delete card.apiKey;
-            delete card.apikey;
-        });
-    }
-    return sanitized;
+    const { services: _services, ...rest } = CONFIG;
+    return stripSecrets(rest);
 }
 
-// Raw Config Access (for internal use)
 /**
- * Returns the raw configuration object.
- * @returns {Object} Raw config object
+ * Returns the raw configuration object (server-side use only).
+ * @returns {Object} Raw config object.
  */
 export function getConfig() {
     return CONFIG;
 }
 
-// Feature specific config getters
 /**
- * recieves the transmission URL from env or config.
- * @returns {string} Transmission RPC URL
+ * Replaces the in-memory configuration. Intended for tests.
+ * @param {Object} config - The configuration to use.
  */
-export function getConfigTransmissionUrl() {
-    if (process.env.TRANSMISSION_URL) return process.env.TRANSMISSION_URL;
-    if (CONFIG.services?.transmission?.url) return CONFIG.services.transmission.url;
-    const cards = getAllCards();
-    const card = cards.find(c => c.type === 'transmission' && c.url);
-    if (card) return card.url;
-    return 'http://localhost:9091/transmission/rpc';
+export function setConfig(config) {
+    CONFIG = config;
 }
 
 /**
- * recieves Sonarr URL and API Key from env or config.
- * @returns {Object} Object containing SONARR_URL and SONARR_API_KEY
+ * Returns every card in the configuration, flattened across pages.
+ * @returns {Array<Object>} All configured cards.
  */
-export function getConfigSonarr() {
-    const result = {};
-    if (process.env.SONARR_URL) result.SONARR_URL = process.env.SONARR_URL;
-    else if (CONFIG.services?.sonarr?.url) result.SONARR_URL = CONFIG.services.sonarr.url;
-    if (!result.SONARR_URL) {
-        const cards = getAllCards();
-        const card = cards.find(c => c.type === 'sonarr' && c.url);
-        if (card) result.SONARR_URL = card.url;
-    }
-
-    if (process.env.SONARR_API_KEY) result.SONARR_API_KEY = process.env.SONARR_API_KEY;
-    else if (CONFIG.services?.sonarr?.apiKey) result.SONARR_API_KEY = CONFIG.services.sonarr.apiKey;
-    else if (CONFIG.services?.sonarr?.apikey) result.SONARR_API_KEY = CONFIG.services.sonarr.apikey;
-    else {
-        const cards = getAllCards();
-        const card = cards.find(c => c.type === 'sonarr' && (c.apiKey || c.apikey));
-        if (card) result.SONARR_API_KEY = card.apiKey || card.apikey;
-    }
-    return result;
-}
-
-/**
- * recieves Home Assistant URL and Token from env or config.
- * @returns {Object} Object containing HA_URL and HA_TOKEN
- */
-export function getConfigHomeAssistant() {
-    const result = {};
-    if (process.env.HA_URL) result.HA_URL = process.env.HA_URL;
-    else if (CONFIG.services?.homeassistant?.url) result.HA_URL = CONFIG.services.homeassistant.url;
-
-    if (process.env.HA_TOKEN) result.HA_TOKEN = process.env.HA_TOKEN;
-    else if (CONFIG.services?.homeassistant?.token) result.HA_TOKEN = CONFIG.services.homeassistant.token;
-
-    return result;
-}
-
-/**
- * Helper to extract all cards from config (flattened).
- * @returns {Array<Object>} Array of all configured cards.
- */
-function getAllCards() {
+export function getAllCards() {
+    if (Array.isArray(CONFIG.pages)) return CONFIG.pages.flatMap(p => p.cards || []);
     if (Array.isArray(CONFIG.cards)) return CONFIG.cards;
-    if (Array.isArray(CONFIG.pages)) {
-        return CONFIG.pages.flatMap(p => p.cards || []);
-    }
     return [];
 }
 
 /**
- * Extracts a Set of all valid entity IDs defined in the configuration.
- * Used for security validation of API requests.
- * @returns {Set<string>} Set of valid entity IDs
+ * Finds a configured card by id.
+ * @param {string|number} id - The card id.
+ * @returns {Object|undefined} The card config, if found.
  */
-export function getValidEntityIds() {
-    const entityIds = new Set();
-    const cards = getAllCards();
-
-    cards.forEach(card => {
-        if (card.type === 'hacontrol' && card.data && Array.isArray(card.data.entities)) {
-            card.data.entities.forEach(entity => {
-                if (entity.entity_id) entityIds.add(entity.entity_id);
-            });
-        } else if (card.type === 'weather' && card.entity_id) {
-            entityIds.add(card.entity_id);
-        }
-    });
-
-    return entityIds;
+export function findCard(id) {
+    return getAllCards().find(card => String(card.id) === String(id));
 }
 
 /**
- * Validates if a specific service call is authorized for a given entity.
- * Checks against the on_action/off_action definitions in the card config.
- * @param {string} entityId - The Entity ID
- * @param {string} service - The service to call (e.g. 'light.turn_on')
- * @returns {boolean} True if authorized
+ * Looks up a key in an object case-insensitively, trying each candidate name in order.
+ * @param {Object} obj - Object to search.
+ * @param {string[]} names - Candidate key names.
+ * @returns {*} The first non-empty value found, or undefined.
  */
-export function validateEntityAction(entityId, service) {
-    const cards = getAllCards();
-    for (const card of cards) {
-        if (card.type === 'hacontrol' && card.data && Array.isArray(card.data.entities)) {
-            const entity = card.data.entities.find(e => e.entity_id === entityId);
-            if (entity) {
-                const onService = entity.on_action?.service;
-                const offService = entity.off_action?.service;
-                return service === onService || service === offService;
-            }
-        }
+function findValue(obj, names) {
+    if (!isPlainObject(obj)) return undefined;
+    for (const name of names) {
+        const key = Object.keys(obj).find(k => k.toLowerCase() === name.toLowerCase());
+        if (key !== undefined && obj[key] !== '' && obj[key] != null) return obj[key];
     }
-    return false;
+    return undefined;
 }
 
 /**
- * Aggregates all Media services (Sonarr/Radarr) from config.
- * Supports both the new 'media' card type services list and legacy global/env config.
- * @returns {Array<{type: string, url: string, apiKey: string}>} List of media services
+ * @typedef {Object} FieldSpec
+ * @property {string[]} [env] - Environment variables checked first, in order.
+ * @property {string[]} [aliases] - Alternative key names accepted in services.yaml.
+ * @property {*} [default] - Value used when nothing else is set.
  */
-export function getMediaServices() {
-    const services = [];
-
-    // 1. Check for specific 'media' card configuration
-    const cards = getAllCards();
-    const mediaCard = cards.find(c => c.type === 'media');
-    if (mediaCard && Array.isArray(mediaCard.services)) {
-        mediaCard.services.forEach(s => {
-            if (s.type && s.url && (s.apiKey || s.apikey)) {
-                services.push({
-                    type: s.type.toLowerCase(), // sonarr or radarr
-                    url: s.url,
-                    apiKey: s.apiKey || s.apikey
-                });
-            }
-        });
-        // If card has services, we prioritize them and return
-        if (services.length > 0) return services;
-    }
-
-    // 2. Fallback: Global Config & Backward Compatibility
-    // Sonarr
-    const sonarrVar = getConfigSonarr();
-    if (sonarrVar.SONARR_URL && sonarrVar.SONARR_API_KEY) {
-        services.push({ type: 'sonarr', url: sonarrVar.SONARR_URL, apiKey: sonarrVar.SONARR_API_KEY });
-    }
-
-    // Radarr environment support
-    const radarrUrl = process.env.RADARR_URL || CONFIG.services?.radarr?.url;
-    const radarrKey = process.env.RADARR_API_KEY || CONFIG.services?.radarr?.apiKey || CONFIG.services?.radarr?.apikey;
-
-    if (radarrUrl && radarrKey) {
-        services.push({ type: 'radarr', url: radarrUrl, apiKey: radarrKey });
-    }
-
-    return services;
-}
 
 /**
- * receives Glances URL from env or config.
- * @returns {string} Glances URL
+ * Resolves a service's settings. Each field is taken from, in order: its environment
+ * variables, the `services` section (case-insensitive, aliases allowed), the first card
+ * of `cardType` (when given), then its default.
+ * @param {string|string[]} sectionPath - Dotted path(s) under `services`, e.g. 'sonarr' or
+ *   ['git.github', 'github']. The first path that exists is used.
+ * @param {Object<string, FieldSpec>} fields - Fields to resolve.
+ * @param {Object} [options]
+ * @param {string} [options.cardType] - Card type whose config is used as a fallback.
+ * @returns {Object<string, *>} Resolved settings keyed by field name.
  */
-export function getConfigGlancesUrl() {
-    if (process.env.GLANCES_URL) return process.env.GLANCES_URL;
-    if (CONFIG.services?.glances?.url) return CONFIG.services.glances.url;
-    return 'http://localhost:61208'; // Default Glances port
-}
+export function getServiceConfig(sectionPath, fields, { cardType } = {}) {
+    const paths = Array.isArray(sectionPath) ? sectionPath : [sectionPath];
+    const section = paths
+        .map(p => p.split('.').reduce((obj, key) => findValue(obj, [key]), CONFIG.services))
+        .find(isPlainObject) || {};
+    const card = cardType ? getAllCards().find(c => c.type === cardType) : undefined;
 
-/**
- * receives Proxmox config from env or config.
- * @returns {Object} Object containing url, box (optional), tokenId, secret (or user/pass)
- */
-export function getConfigProxmox() {
-    const result = {
-        url: process.env.PROXMOX_URL || CONFIG.services?.proxmox?.url,
-        tokenId: process.env.PROXMOX_TOKEN_ID || CONFIG.services?.proxmox?.tokenId || CONFIG.services?.proxmox?.tokenid,
-        secret: process.env.PROXMOX_SECRET || CONFIG.services?.proxmox?.secret,
-        // Fallback or additional options if needed
-        node: process.env.PROXMOX_NODE || CONFIG.services?.proxmox?.node || 'pve'
-    };
-
-    // Fallback URL from card if not in services?
-    if (!result.url) {
-        const cards = getAllCards();
-        const card = cards.find(c => c.type === 'proxmox' && c.url);
-        if (card) result.url = card.url;
+    const result = {};
+    for (const [field, spec] of Object.entries(fields)) {
+        const names = [field, ...(spec.aliases || [])];
+        result[field] = (spec.env || []).map(name => process.env[name]).find(Boolean)
+            ?? findValue(section, names)
+            ?? findValue(card, names)
+            ?? spec.default;
     }
-
     return result;
-}
-
-/**
- * Recieves Git credentials from env or config.
- * Supports github, gitlab, gitea.
- */
-export function getConfigGit() {
-    return {
-        github: {
-            token: process.env.GITHUB_TOKEN || CONFIG.services?.github?.token || CONFIG.services?.git?.github?.token
-        },
-        gitlab: {
-            token: process.env.GITLAB_TOKEN || CONFIG.services?.gitlab?.token || CONFIG.services?.git?.gitlab?.token,
-            url: process.env.GITLAB_URL || CONFIG.services?.gitlab?.url || CONFIG.services?.git?.gitlab?.url
-        },
-        gitea: {
-            token: process.env.GITEA_TOKEN || CONFIG.services?.gitea?.token || CONFIG.services?.git?.gitea?.token,
-            url: process.env.GITEA_URL || CONFIG.services?.gitea?.url || CONFIG.services?.git?.gitea?.url
-        }
-    };
 }

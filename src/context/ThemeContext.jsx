@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const ThemeContext = createContext();
+export const ThemeContext = createContext({ mode: 'dark', toggleMode: () => {}, themeId: 'default', particles: null });
 
 /**
  * Hook to access the current theme context, including mode (light/dark) and toggle functions.
@@ -9,8 +9,6 @@ export const ThemeContext = createContext();
  */
 // eslint-disable-next-line react-refresh/only-export-components
 export const useTheme = () => useContext(ThemeContext);
-
-// No hardcoded defaults anymore, we rely on 'default' theme from config
 
 /**
  * Provider component that manages the application theme state, applying CSS variables to the document root.
@@ -38,7 +36,8 @@ export const ThemeProvider = ({ children, config }) => {
     // Extract particles config
     const activeParticles = activeThemeConfig?.particles || defaultThemeConfig?.particles || null;
 
-    // Toggle function
+    const appliedVars = useRef([]);
+
     const toggleMode = () => {
         setMode(prev => {
             const next = prev === 'dark' ? 'light' : 'dark';
@@ -47,25 +46,23 @@ export const ThemeProvider = ({ children, config }) => {
         });
     };
 
-    // Apply variables
+    // Apply the default theme's colors overlaid with the active theme's, removing
+    // variables left over from a previous theme or mode.
     useEffect(() => {
-        document.documentElement.setAttribute('data-theme', mode);
+        const root = document.documentElement;
+        root.setAttribute('data-theme', mode);
 
-        // 1. Get Base Defaults from 'default' theme in config
-        const baseColors = defaultThemeConfig?.colors?.[mode] || {};
+        const finalColors = {
+            ...defaultThemeConfig?.colors?.[mode],
+            ...activeThemeConfig?.colors?.[mode],
+        };
 
-        // 2. Get Config Overrides
-        const configColors = activeThemeConfig?.colors?.[mode] || {};
-
-        // 3. Merge
-        const finalColors = { ...baseColors, ...configColors };
-
-        // 4. Apply to root
-        Object.entries(finalColors).forEach(([key, value]) => {
-            document.documentElement.style.setProperty(key, value);
-        });
-
-    }, [mode, activeThemeId, activeThemeConfig, defaultThemeConfig]);
+        appliedVars.current
+            .filter(key => !(key in finalColors))
+            .forEach(key => root.style.removeProperty(key));
+        Object.entries(finalColors).forEach(([key, value]) => root.style.setProperty(key, value));
+        appliedVars.current = Object.keys(finalColors);
+    }, [mode, activeThemeConfig, defaultThemeConfig]);
 
     // Custom CSS Injection
     useEffect(() => {

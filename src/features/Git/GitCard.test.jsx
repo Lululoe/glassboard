@@ -31,8 +31,7 @@ vi.mock('./useGit', () => ({
         ],
         stats: {
             count: 2,
-            open: 1,
-            review_requested: 0
+            open: 1
         },
         loading: false,
         error: null

@@ -2,6 +2,11 @@
 
 Glassboard supports a powerful theming system that allows you to customize the look and feel via `theme.yaml`. You can create multiple themes and switch between them (or let the system default based on preference).
 
+`theme.yaml` is optional: without it, the default themes from `theme.example.yaml` are used. Themes in `config.yaml` with the same `id` are merged over the theme file, and `theme: <id>` in `config.yaml` selects the active theme.
+
+## Custom CSS
+Place a `custom.css` in the project root (or mount it to `/app/custom.css` in Docker) to add your own styles. It is loaded after the built-in styles. Changes apply on page reload.
+
 ## Defining Themes in `theme.yaml`
 Configuration is simple. Each theme has an `id` (must be unique) and a `colors` object containing `light` and `dark` mode definitions.
 

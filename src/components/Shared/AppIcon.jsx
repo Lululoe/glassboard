@@ -8,11 +8,12 @@ import './AppIcon.css';
  * Renders an icon inside a squircle styled container (like a mobile app icon).
  * 
  * @param {object} props
- * @param {string} props.icon - Icon name or URL.
- * @param {string} props.background - CSS background value.
- * @param {string} props.color - CSS color value for the icon.
- * @param {string} props.className - Additional classes.
- * @param {string|number} props.size - Size of the inner icon.
+ * @param {string|Object} props.icon - Icon name, URL or icon config object.
+ * @param {string} [props.background] - CSS background value.
+ * @param {string} [props.color] - CSS color value for the icon.
+ * @param {string} [props.className] - Additional classes.
+ * @param {string|number} [props.size] - Size of the inner icon.
+ * @returns {JSX.Element} The rendered icon container.
  */
 const AppIcon = ({ icon, background, color, className = '', size = "100%" }) => {
     return (

@@ -40,17 +40,15 @@ const WeatherCard = ({ config = {} }) => {
     const iconColor = config.iconColor;
 
     const [forecastType, setForecastType] = useState('daily');
-    const service = config.service || 'weather';
-    const { weather, loading, error } = useWeather(entityId, forecastType, service);
+    const { weather, loading, error } = useWeather(entityId, forecastType);
 
     const toggleType = () => {
         setForecastType(prev => prev === 'daily' ? 'hourly' : 'daily');
     };
 
-    if (loading) {
+    if (loading && !weather) {
         return (
             <TwoToneBase
-                colSpan={colSpan}
                 title="Weather"
                 subtitle={<span>Loading...</span>}
                 icon={icon}
@@ -62,10 +60,9 @@ const WeatherCard = ({ config = {} }) => {
         );
     }
 
-    if (error || !weather) {
+    if (!weather) {
         return (
             <TwoToneBase
-                colSpan={colSpan}
                 title="Weather"
                 subtitle={<span>Error</span>}
                 icon={icon}
@@ -88,7 +85,6 @@ const WeatherCard = ({ config = {} }) => {
 
     return (
         <TwoToneBase
-            colSpan={colSpan}
             title="Weather"
             subtitle={
                 <div className="weather-header-info">
