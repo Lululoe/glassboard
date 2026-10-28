@@ -64,31 +64,27 @@
 }
 
 .pr-status-badge {
-    font-size: 0.7rem;
-    padding: 2px 6px;
-    border-radius: 4px;
+    --badge-color: var(--system-gray);
+    font-size: 12px;
+    line-height: 16px;
+    padding: 2px 8px;
+    border-radius: 999px;
     font-weight: 600;
     text-transform: capitalize;
+    background-color: color-mix(in srgb, var(--badge-color) 20%, transparent);
+    color: var(--badge-color);
 }
 
 .pr-status-badge.open {
-    background-color: rgba(46, 160, 67, 0.15);
-    color: #3fb950;
+    --badge-color: var(--system-green);
 }
 
 .pr-status-badge.merged {
-    background-color: rgba(137, 87, 229, 0.15);
-    color: #a371f7;
-}
-
-.pr-status-badge.draft {
-    background-color: rgba(110, 118, 129, 0.15);
-    color: #8b949e;
+    --badge-color: var(--system-purple);
 }
 
 .pr-status-badge.review_required {
-    background-color: rgba(198, 144, 38, 0.15);
-    color: #d29922;
+    --badge-color: var(--system-orange);
 }
 
 .check-status {
@@ -98,15 +94,15 @@
 }
 
 .check-status.success {
-    color: #3fb950;
+    color: var(--system-green);
 }
 
 .check-status.failed {
-    color: #f85149;
+    color: var(--system-red);
 }
 
 .check-status.pending {
-    color: #d29922;
+    color: var(--system-orange);
 }
 
 .bot-icon {

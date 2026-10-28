@@ -1,9 +1,9 @@
 .bento-grid-container {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-    padding: 24px calc(24px + env(safe-area-inset-right)) 24px calc(24px + env(safe-area-inset-left));
-    max-width: 1200px;
+    gap: var(--gap-grid);
+    padding: 30px calc(30px + env(safe-area-inset-right)) 30px calc(30px + env(safe-area-inset-left));
+    max-width: 1220px;
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
@@ -88,6 +88,7 @@
 @media (max-width: 768px) {
     .bento-grid-container {
         grid-template-columns: 1fr;
+        gap: 20px;
         padding: 16px calc(16px + env(safe-area-inset-right)) 16px calc(16px + env(safe-area-inset-left));
     }
 

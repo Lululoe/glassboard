@@ -27,7 +27,7 @@ const Header = ({ config }) => {
                         {mode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                     </div>
                 )}
-                <div className="icon-button" onClick={() => setIsLauncherOpen(!isLauncherOpen)}>
+                <div className={`icon-button${isLauncherOpen ? ' active' : ''}`} onClick={() => setIsLauncherOpen(!isLauncherOpen)}>
                     <LayoutGrid size={20} />
                 </div>
             </div>

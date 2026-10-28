@@ -45,8 +45,8 @@
 
 .progress-bar {
     flex: 1 1 auto;
-    height: 8px;
-    background: rgba(255, 255, 255, 0.08);
+    height: 6px;
+    background: var(--bg-fill);
     border-radius: 999px;
     overflow: hidden;
 }
@@ -54,16 +54,17 @@
 .progress-fill {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, var(--text-primary), var(--text-primary-light));
-    transition: width 300ms ease;
+    background: var(--text-tertiary);
+    border-radius: 999px;
+    transition: width 300ms var(--ease-standard);
 }
 
 .progress-fill.downloading {
-    background: linear-gradient(90deg, var(--card-primary), var(--color-primary-light));
+    background: var(--card-primary);
 }
 
 .progress-fill.seeding {
-    background: linear-gradient(90deg, var(--color-quaternary), var(--color-quaternary-light));
+    background: var(--color-quaternary);
 }
 
 .progress-percent {

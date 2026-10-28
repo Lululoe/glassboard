@@ -1,22 +1,27 @@
+/* Popover in the style of iCloud's app switcher: dark frosted glass with a hairline border */
 dialog.launcher-popup {
     position: fixed;
-    top: 60px;
-    /* Below the header (approx height) */
-    right: 20px;
+    top: calc(52px + env(safe-area-inset-top));
+    /* Just below the header */
+    right: calc(12px + env(safe-area-inset-right));
     left: auto;
     /* Force override of default centering or left alignment */
-    width: 340px;
+    width: 323px;
+    max-height: calc(100vh - 64px - env(safe-area-inset-top));
+    overflow-y: auto;
     margin: 0;
     /* Add margin 0 to override default centering */
     background: var(--bg-popup);
-    border-radius: 16px;
-    border: 1px solid var(--color-separator);
-    box-shadow: none;
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    border-radius: 12px;
+    border: 0.5px solid var(--border-popup);
+    box-shadow: var(--shadow-popup);
     z-index: 999;
-    padding: 16px;
+    padding: 16px 20px;
     color: var(--text-primary);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    animation: launcherFadeIn 0.2s ease-out;
+    font-family: var(--font-family);
+    animation: launcherFadeIn var(--duration-standard) var(--ease-standard);
     user-select: none;
     -webkit-user-select: none;
     outline: none;
@@ -29,82 +34,91 @@ dialog.launcher-popup::backdrop {
 @keyframes launcherFadeIn {
     from {
         opacity: 0;
-        transform: translateY(-10px);
+        transform: scale(0.96);
     }
 
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: scale(1);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    dialog.launcher-popup {
+        animation: none;
     }
 }
 
 .launcher-section-title {
     font-size: 14px;
     font-weight: 600;
+    line-height: 20px;
     margin-bottom: 12px;
     color: var(--text-primary);
 }
 
-/* App Grid 4x3 */
+/* App Grid 4x3, with the same spacing as the app library tile */
 .launcher-app-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 24px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px 17px;
+    margin-bottom: 20px;
 }
 
 .launcher-app {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    min-width: 0;
+    padding: 3px 1px;
+    border-radius: 10px;
     text-decoration: none;
     color: var(--text-primary);
     cursor: pointer;
-    transition: transform 0.1s;
+    transition: transform var(--duration-standard) var(--ease-standard);
+    /* Shadow under each app (icon and label), as on iCloud */
+    filter: drop-shadow(0 2px 10px var(--shadow-app));
 }
 
-.launcher-app:hover {
-    transform: scale(1.05);
+@media (pointer: fine) {
+    .launcher-app:hover:not(:active) {
+        transform: scale(1.05);
+    }
 }
 
-.launcher-app:active {
-    transform: scale(0.95);
+.launcher-app:active .launcher-app-icon-container {
+    opacity: 0.6;
+}
+
+.launcher-app:active .launcher-app-name {
+    color: var(--text-secondary);
 }
 
 .launcher-app:focus:not(:focus-visible) {
     outline: none;
 }
 
-.launcher-app-icon-container {
-    width: 50px;
-    height: 50px;
-    margin-bottom: 6px;
-    padding: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: var(--shadow-card);
-    /* Subtle backing for transparent pngs */
+.launcher-app:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
-.launcher-app-icon {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.launcher-app-icon-container.app-icon-container {
+    width: 54px;
+    height: 54px;
+    min-width: 54px;
+    padding: 16%;
 }
 
 .launcher-app-name {
-    font-size: 11px;
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 14px;
     text-align: center;
     white-space: nowrap;
-    width: 100%;
+    max-width: calc(100% + 10px);
     overflow: hidden;
     text-overflow: ellipsis;
-    padding: 0 2px;
 }
 
 /* Link List */
@@ -118,20 +132,20 @@ dialog.launcher-popup::backdrop {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 0;
+    padding: 6px 0;
     text-decoration: none;
-    text-decoration: none;
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--color-separator);
-    transition: background 0.2s, color 0.2s;
-}
-
-.launcher-link:last-child {
-    border-bottom: none;
-}
-
-.launcher-link:hover {
     color: var(--text-primary);
+    border-radius: 6px;
+    transition: opacity var(--duration-standard) var(--ease-standard);
+}
+
+.launcher-link:active {
+    opacity: 0.4;
+}
+
+.launcher-link:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 .launcher-link-icon {
@@ -141,15 +155,12 @@ dialog.launcher-popup::backdrop {
 
 .launcher-link-text {
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 400;
+    line-height: 20px;
 }
 
-/* Scrollbar styling for popup if content overflows (unlikely with fixed size but good to have) */
-.launcher-popup::-webkit-scrollbar {
-    width: 4px;
-}
-
-.launcher-popup::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
+@media (pointer: fine) {
+    .launcher-link:hover .launcher-link-text {
+        text-decoration: underline;
+    }
 }

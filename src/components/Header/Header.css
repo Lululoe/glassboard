@@ -5,15 +5,14 @@
     padding: env(safe-area-inset-top) 24px 0 24px;
     padding-left: calc(24px + env(safe-area-inset-left));
     padding-right: calc(24px + env(safe-area-inset-right));
-    height: calc(48px + env(safe-area-inset-top));
-    background: var(--bg-card-glass);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    height: calc(44px + env(safe-area-inset-top));
+    background: var(--bg-toolbar);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     position: sticky;
     top: 0;
     z-index: 100;
     color: var(--text-primary);
-    border-bottom: 1px solid var(--color-separator);
     user-select: none;
     -webkit-user-select: none;
     animation: header-enter 0.4s ease-out forwards;
@@ -38,31 +37,43 @@
 }
 
 .header-title {
-    font-weight: 500;
-    font-size: 1.1rem;
+    font-weight: 600;
+    font-size: 19px;
+    letter-spacing: -0.2px;
 }
 
 .header-right {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 6px;
 }
 
+/* Toolbar buttons get a rounded-square highlight, as on iCloud */
 .icon-button {
     width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background 0.2s;
-    opacity: 0.8;
+    transition: background var(--duration-standard) var(--ease-standard), opacity var(--duration-standard) var(--ease-standard);
 }
 
-.icon-button:hover {
-    background: var(--color-separator);
-    opacity: 1;
+@media (pointer: fine) {
+    .icon-button:hover {
+        background: var(--bg-fill);
+    }
+}
+
+.icon-button:active,
+.icon-button.active {
+    background: var(--bg-fill-hover);
+}
+
+.icon-button:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 .avatar-small {

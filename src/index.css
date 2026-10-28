@@ -7,14 +7,69 @@
 :root {
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  /* Layout variables - static */
-  --radius-card: 24px;
-  --gap-grid: 24px;
-  --seperator-width: 2px;
+  /* Layout variables - static (modelled on iCloud's tiles) */
+  --radius-card: 11px;
+  --gap-grid: 30px;
+  --seperator-width: 1px;
+
+  /* Motion and focus, shared by all interactive elements */
+  --ease-standard: cubic-bezier(0.32, 0.08, 0.24, 1);
+  --duration-standard: 0.2s;
+  --focus-ring: 0 0 0 3px rgba(10, 132, 255, 0.7);
 
   /* Default card primary color (defaults to global primary) */
   --card-primary: var(--color-primary);
   --text-accent: var(--card-primary);
+
+  /* Design tokens with per-mode defaults (dark here, light below). A theme may override any
+     of them; themes that predate these tokens keep working with the defaults. */
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+  --text-quaternary: rgba(255, 255, 255, 0.42);
+  --bg-card-surface: radial-gradient(circle at 97% 3.3%, rgba(0, 0, 0, 0.35) 0, rgba(0, 0, 0, 0.6) 164%);
+  --bg-toolbar: rgba(56, 56, 61, 0.6);
+  --bg-fill: rgba(118, 118, 128, 0.24);
+  --bg-fill-hover: rgba(118, 118, 128, 0.32);
+  --border-popup: rgba(116, 116, 128, 0.25);
+  --shadow-tile: 17px 20px 40px rgba(0, 0, 0, 0.65);
+  --shadow-popup: 0 11px 34px rgba(0, 0, 0, 0.65);
+  --shadow-app: rgba(0, 0, 0, 0.65);
+
+  /* Apple system colors */
+  --system-red: #ff453a;
+  --system-orange: #ff9f0a;
+  --system-yellow: #ffd60a;
+  --system-green: #30d158;
+  --system-teal: #40c8e0;
+  --system-cyan: #64d2ff;
+  --system-blue: #0a84ff;
+  --system-indigo: #5e5ce6;
+  --system-purple: #bf5af2;
+  --system-pink: #ff375f;
+  --system-gray: #8e8e93;
+}
+
+:root[data-theme="light"] {
+  --text-tertiary: rgba(60, 60, 67, 0.3);
+  --text-quaternary: rgba(60, 60, 67, 0.18);
+  --bg-card-surface: radial-gradient(circle at 100% 0, rgba(255, 255, 255, 0.85) 0, rgba(245, 245, 245, 0.13) 183%);
+  --bg-toolbar: rgba(248, 248, 252, 0.4);
+  --bg-fill: rgba(120, 120, 128, 0.12);
+  --bg-fill-hover: rgba(120, 120, 128, 0.2);
+  --border-popup: rgba(60, 60, 67, 0.18);
+  --shadow-tile: 17px 20px 40px rgba(0, 0, 0, 0.2);
+  --shadow-popup: 0 11px 34px rgba(0, 0, 0, 0.2);
+  --shadow-app: rgba(0, 0, 0, 0.25);
+
+  --system-red: #ff3b30;
+  --system-orange: #ff9500;
+  --system-yellow: #ffcc00;
+  --system-green: #34c759;
+  --system-teal: #30b0c7;
+  --system-cyan: #32ade6;
+  --system-blue: #007aff;
+  --system-indigo: #5856d6;
+  --system-purple: #af52de;
+  --system-pink: #ff2d55;
 }
 
 html {
@@ -52,7 +107,7 @@ body {
   overflow-y: auto;
   scrollbar-width: thin;
   /* Firefox */
-  scrollbar-color: var(--text-primary) rgba(255, 255, 255, 0.08);
+  scrollbar-color: var(--text-tertiary) transparent;
   scrollbar-gutter: stable;
 }
 
@@ -63,18 +118,16 @@ body {
 }
 
 .scrollable::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 999px;
+  background: transparent;
 }
 
 .scrollable::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.2);
-  background: linear-gradient(90deg, var(--card-primary), var(--color-primary-light));
+  background-color: var(--text-quaternary);
   border-radius: 999px;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   background-clip: padding-box;
 }
 
 .scrollable::-webkit-scrollbar-thumb:hover {
-  filter: brightness(0.92);
+  background-color: var(--text-tertiary);
 }

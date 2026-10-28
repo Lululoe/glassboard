@@ -121,7 +121,7 @@
     justify-content: center;
     z-index: 100;
     cursor: pointer;
-    transition: background 0.2s, opacity 0.2s;
+    transition: background var(--duration-standard) var(--ease-standard), opacity var(--duration-standard) var(--ease-standard);
     opacity: 0;
     /* Hidden by default */
     color: white;
@@ -163,7 +163,7 @@
     background: rgba(255, 255, 255, 0.2);
     cursor: pointer;
     pointer-events: auto;
-    transition: background 0.3s, transform 0.3s;
+    transition: background 0.3s var(--ease-standard), transform 0.3s var(--ease-standard);
 }
 
 .page-dot.active {

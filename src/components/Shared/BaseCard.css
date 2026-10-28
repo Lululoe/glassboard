@@ -1,28 +1,25 @@
+/* Single-surface tile, like iCloud's profile and app library tiles: lit from the top right
+   corner and casting a soft offset shadow. Tiles do not move on hover; their links do. */
 .glass-card {
-    background: var(--bg-card-glass);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: var(--bg-card-surface);
+    backdrop-filter: blur(15px) saturate(86%);
+    -webkit-backdrop-filter: blur(15px) saturate(86%);
     border-radius: var(--radius-card);
+    box-shadow: var(--shadow-tile);
     padding: 20px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-}
-
-.glass-card.hoverable:hover {
-    transform: scale(1.01);
 }
 
 .card-header {
     display: flex;
     align-items: center;
     margin-bottom: 12px;
-    font-size: 0.9rem;
+    font-size: 14px;
     font-weight: 600;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    line-height: 20px;
+    color: var(--text-primary);
 }
 
 .card-content {
@@ -30,4 +27,5 @@
     display: flex;
     flex-direction: column;
 }
+
 /* Use the utility class `scrollable` (in src/index.css) on any element to enable themed scrollbars */

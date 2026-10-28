@@ -7,7 +7,7 @@ import './BaseCard.css';
  * @param {string} [props.title] - Optional title displayed in the card header.
  * @param {React.ReactNode} props.children - Content to be rendered inside the card.
  * @param {string} [props.className] - Additional CSS classes.
- * @param {boolean} [props.hoverable=true] - Whether the card should scale up slightly on hover.
+ * @param {boolean} [props.hoverable=true] - Adds the `hoverable` class for card-specific hover styles.
  * @returns {JSX.Element} The rendered base card.
  */
 const BaseCard = ({ title, children, className = '', hoverable = true }) => {

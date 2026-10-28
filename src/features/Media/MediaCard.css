@@ -65,10 +65,9 @@
 }
 
 .media-day-header {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text-primary);
     margin-bottom: 8px;
     font-weight: 600;
 }
@@ -89,55 +88,59 @@
 }
 
 .media-empty {
-    font-size: 0.8rem;
+    font-size: 13px;
     color: var(--text-secondary);
-    font-style: italic;
     margin-top: 4px;
 }
 
 .media-event {
     position: relative;
     padding: 8px;
-    background: var(--bg-on-card);
-    border-radius: 6px;
+    background: var(--bg-fill);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     gap: 8px;
-    transition: background 0.2s;
+    transition: background var(--duration-standard) var(--ease-standard);
     text-decoration: none;
+    overflow: hidden;
 }
 
-.media-event-link:hover {
-    background: rgba(255, 255, 255, 0.08);
+.media-event-link {
     cursor: pointer;
+}
+
+@media (pointer: fine) {
+    .media-event-link:hover {
+        background: var(--bg-fill-hover);
+    }
 }
 
 /* Status Indicator */
 .media-event-status {
-    width: 6px;
+    width: 4px;
     height: 100%;
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
-    border-radius: 3px 0 0 3px;
 }
 
 .media-event-status.downloaded {
-    background: linear-gradient(to top, var(--color-primary-light), var(--color-primary));
+    background: var(--color-primary);
 }
 
 .media-event-status.downloading {
-    background: linear-gradient(to top, var(--color-secondary-light), var(--color-secondary));
+    background: var(--color-secondary);
 }
 
 .media-event-status.missing {
-    background: linear-gradient(to top, var(--color-tertiary-light), var(--color-tertiary));
+    background: var(--color-tertiary);
 }
 
 .media-event-status.upcoming,
 .media-event-status.not_yet_out {
-    background: linear-gradient(to top, var(--text-primary), var(--text-primary));
+    background: var(--text-tertiary);
 }
 
 .media-event-icon {

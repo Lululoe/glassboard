@@ -1,3 +1,4 @@
+/* Two-tone tile, like iCloud's app tiles: a translucent 80px banner over a darker content area */
 .two-tone-card {
     padding: 0 !important;
     /* Override BaseCard padding to allow full flush header */
@@ -7,113 +8,130 @@
     background: transparent !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    box-shadow: none !important;
-    --two-tone-header-opacity: 0.15;
-    --two-tone-content-opacity: 0.08;
-}
-
-.two-tone-card:hover {
-    transform: scale(1.01);
 }
 
 .two-tone-header {
     position: relative;
-    padding: 10px;
+    flex-shrink: 0;
+    min-height: 80px;
+    padding: 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     background: var(--bg-card-glass-header);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(15px) saturate(86%);
+    -webkit-backdrop-filter: blur(15px) saturate(86%);
     border-radius: var(--radius-card) var(--radius-card) 0 0;
 }
 
 .two-tone-header-actions {
     display: flex;
     align-items: center;
-    margin-left: 10px;
+    align-self: flex-start;
+    margin-left: 8px;
 }
 
 .two-tone-header-info {
     display: flex;
     align-items: center;
-    cursor: pointer;
     gap: 16px;
-    width: 100%;
-    padding: 10px;
-    border-radius: 12px;
+    flex: 1;
+    min-width: 0;
+    padding: 8px 10px;
+    border-radius: 7px;
+    color: inherit;
     text-decoration: none;
     user-select: none;
     -webkit-user-select: none;
-    transition: background 0.2s;
-    /* Instant exit */
 }
 
-.two-tone-header-info:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transition: background 0.2s 0.1s;
-    /* 0.5s delay on entry */
+a.two-tone-header-info {
+    cursor: pointer;
+    transition: background var(--duration-standard) var(--ease-standard);
 }
 
-.two-tone-icon-box {
-    width: 48px;
-    height: 48px;
-    padding: 8px;
-    background: var(--icon-background);
-    border: 1px solid var(--icon-border-color);
-    /* Dark icon bg */
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: none;
+@media (pointer: fine) {
+    a.two-tone-header-info:hover {
+        background: var(--bg-fill);
+    }
 }
 
-.two-tone-icon {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    user-select: none;
-    -webkit-user-select: none;
-    /* Or contain depending on icon style */
+/* Pressed: dim the title, subtitle and icon */
+a.two-tone-header-info:active .two-tone-title {
+    color: var(--text-quaternary);
 }
 
-/* If the user passes specific icon color/bg via props we might need inline styles, 
-   but for now mimic the screenshot's generic "Mail" look or defined via CSS */
+a.two-tone-header-info:active .two-tone-subtitle,
+a.two-tone-header-info:active .app-icon-container {
+    opacity: 0.3;
+}
+
+a.two-tone-header-info:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* Header icons are 40px, like iCloud's tile icons */
+.two-tone-header .app-icon-container {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    padding: 7px;
+}
 
 .two-tone-titles {
     display: flex;
     flex-direction: column;
+    min-width: 0;
 }
 
 .two-tone-title {
-    font-size: 1.2rem;
-    font-weight: 700;
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 25px;
     color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .two-tone-subtitle {
-    font-size: 0.85rem;
+    font-size: 14px;
+    line-height: 20px;
     color: var(--text-secondary);
     display: flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .two-tone-header-action {
     color: var(--card-primary);
     cursor: pointer;
-    opacity: 0.9;
-    padding: 8px;
+    width: 38px;
+    height: 38px;
     border-radius: 8px;
-    transition: background 0.2s;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    transition: background var(--duration-standard) var(--ease-standard), opacity var(--duration-standard) var(--ease-standard);
 }
 
-.two-tone-header-action:hover {
-    background: rgba(255, 255, 255, 0.1);
+@media (pointer: fine) {
+    .two-tone-header-action:hover {
+        background: var(--bg-fill);
+    }
+}
+
+.two-tone-header-action:active {
+    opacity: 0.4;
+}
+
+.two-tone-header-action:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 .two-tone-content {
@@ -121,8 +139,8 @@
     padding: 20px;
     position: relative;
     background: var(--bg-card-glass);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
     border-radius: 0 0 var(--radius-card) var(--radius-card);
 }
 

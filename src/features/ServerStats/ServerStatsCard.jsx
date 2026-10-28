@@ -19,8 +19,8 @@ const InfoTile = ({ hostname, ip }) => {
                 <div className="stat-hostname">{hostname}</div>
                 <div className="stat-ip">{ip}</div>
             </div>
-            <div className="stat-icon-circle" style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'white' }}>
-                <Icon icon="lu-Server" size={24} />
+            <div className="stat-icon-circle">
+                <Icon icon="lu-Server" size={20} />
             </div>
         </div>
     );
@@ -44,7 +44,7 @@ const BarTile = ({ title, iconName, value, max, label, colorClass }) => {
         <div className={`stat-tile ${colorClass}`}>
             <div className="stat-header">
                 <div className="stat-icon-circle">
-                    <Icon icon={iconName} size={24} />
+                    <Icon icon={iconName} size={20} />
                 </div>
                 <div style={{ flex: 1 }}>
                     <div className="stat-title">{title}</div>
@@ -77,7 +77,7 @@ const NetworkTile = ({ title, iconName, netIn, netOut }) => {
         <div className="stat-tile stat-network">
             <div className="stat-header">
                 <div className="stat-icon-circle">
-                    <Icon icon={iconName} size={24} />
+                    <Icon icon={iconName} size={20} />
                 </div>
                 <div className="stat-title">{title}</div>
             </div>
@@ -112,7 +112,7 @@ const GraphTile = ({ title, iconName, data, unit = '°C', colorClass }) => {
         <div className={`stat-tile ${colorClass}`}>
             <div className="stat-header">
                 <div className="stat-icon-circle">
-                    <Icon icon={iconName} size={24} />
+                    <Icon icon={iconName} size={20} />
                 </div>
                 <div style={{ flex: 1 }}>
                     <div className="stat-title">{title}</div>

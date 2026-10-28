@@ -99,7 +99,7 @@ const HAControlCard = ({ config }) => {
                             style={{ cursor: hasActions ? 'pointer' : 'default' }}
                         >
                             <div className={circleClass} style={circleStyle}>
-                                <Icon icon={iconString} size={24} />
+                                <Icon icon={iconString} size={20} />
                             </div>
                             <div className="ha-tile-content">
                                 <div className="ha-tile-name" title={entity.name}>{entity.name}</div>

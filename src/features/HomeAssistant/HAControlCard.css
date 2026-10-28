@@ -2,7 +2,7 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-template-rows: repeat(2, 1fr);
-    gap: 20px;
+    gap: 12px;
     height: 100%;
     /* Was 50vh, but card aspect ratio should drive it now */
 }
@@ -19,18 +19,16 @@
 }
 
 .ha-tile {
+    /* On tiles are solid white with dark text in both modes, like Apple Home */
     background: var(--bg-tile);
-    border-radius: 12px;
+    border-radius: 9px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: flex-start;
     padding: 12px;
-    border: 1px solid var(--bg-card-border);
-    box-shadow: none;
-    transition: transform 0.2s, box-shadow 0.2s;
-    cursor: pointer;
-    color: #333;
+    transition: transform var(--duration-standard) var(--ease-standard), background var(--duration-standard) var(--ease-standard);
+    color: #1c1c1e;
     position: relative;
     overflow: hidden;
     user-select: none;
@@ -40,36 +38,32 @@
 .ha-tile.off {
     background: var(--bg-tile-off);
     color: var(--text-primary);
-    box-shadow: none;
 }
 
-.ha-tile[style*="cursor: pointer"]:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-    box-shadow: none;
+.ha-tile[style*="cursor: pointer"]:active {
+    transform: scale(0.97);
 }
 
 /* Icon Circle updates */
 .ha-icon-circle {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    /* No margin bottom needed as we justify space-between */
-    font-size: 24px;
 }
 
-/* On state - Keep yellow circle */
+/* On state - yellow circle unless the entity sets its own color */
 .ha-icon-circle.on {
-    background-color: #fbc02d;
-    color: white;
+    background-color: var(--system-yellow);
+    color: #fff;
 }
 
-/* Off state - Minimal/Transparent circle */
+/* Off state - neutral fill */
 .ha-tile.off .ha-icon-circle {
-    background-color: rgba(0, 0, 0, 0.5);
-    color: #ccc;
+    background-color: var(--bg-fill);
+    color: var(--text-secondary);
 }
 
 .ha-tile-content {
@@ -80,8 +74,7 @@
 .ha-tile-name {
     font-weight: 600;
     font-size: 15px;
-    line-height: 1.2;
-    margin-bottom: 2px;
+    line-height: 20px;
     width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -94,7 +87,8 @@
 
 .ha-tile-state {
     font-size: 13px;
-    color: #888;
+    line-height: 18px;
+    color: rgba(60, 60, 67, 0.6);
 }
 
 .ha-tile.off .ha-tile-state {
