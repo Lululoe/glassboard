@@ -77,7 +77,7 @@ themes:
         "--bg-popup": "rgba(0, 0, 0, 0.85)"
         "--text-primary": "#ffffff"
         "--text-secondary": "rgba(255, 255, 255, 0.6)"
-        "--icon-background": "linear-gradient(135deg, #333, #111)"
+        "--icon-background": "linear-gradient(180deg, #3a3a3c, #1c1c1e)"
         "--icon-border-color": "#444"
 
         # Solid defaults

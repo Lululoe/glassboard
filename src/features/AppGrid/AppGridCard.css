@@ -5,6 +5,20 @@
 .app-grid-card {
     container: appgrid / size;
     padding: 0 !important;
+    /* Shadow under each app (icon and label), as on iCloud */
+    --app-shadow: rgba(0, 0, 0, 0.65);
+}
+
+/* iCloud's app library surface: lit from the top right corner */
+.glass-card.app-grid-card {
+    background: radial-gradient(circle at 97% 3.3%, rgba(0, 0, 0, 0.35) 0, rgba(0, 0, 0, 0.6) 164%);
+    backdrop-filter: blur(15px) saturate(86%);
+    -webkit-backdrop-filter: blur(15px) saturate(86%);
+}
+
+[data-theme="light"] .glass-card.app-grid-card {
+    --app-shadow: rgba(0, 0, 0, 0.25);
+    background: radial-gradient(circle at 100% 0, rgba(255, 255, 255, 0.85) 0, rgba(245, 245, 245, 0.13) 183%);
 }
 
 .app-grid-card>.card-content {
@@ -105,17 +119,27 @@
     border-radius: calc(10 * var(--u));
     user-select: none;
     -webkit-user-select: none;
+    filter: drop-shadow(0 calc(2 * var(--u)) calc(10 * var(--u)) var(--app-shadow));
 }
 
 @media (pointer: fine) {
-    .app-item:hover {
+    .app-item:hover:not(:active) {
         transform: scale(1.05);
     }
 }
 
 .app-item:focus-visible {
-    outline: 2px solid var(--card-primary);
-    outline-offset: 2px;
+    outline: none;
+    box-shadow: 0 0 0 3px var(--card-primary);
+}
+
+/* Pressed: dim the icon and label */
+.app-item:active .app-grid-icon {
+    opacity: 0.6;
+}
+
+.app-item:active .app-name {
+    color: var(--text-secondary);
 }
 
 .app-icon-wrap {
@@ -133,11 +157,24 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
     border-radius: 22.5%;
     overflow: hidden;
-    box-shadow: 0 calc(2 * var(--u)) calc(10 * var(--u)) rgba(0, 0, 0, 0.2);
+    --icon-shadow: drop-shadow(0 calc(2 * var(--u)) calc(3 * var(--u)) rgba(0, 0, 0, 0.15));
+    filter: var(--icon-shadow);
     box-sizing: border-box;
     transition: filter 0.2s, opacity 0.2s;
+}
+
+/* Icon material: a soft top sheen and a hairline edge, like a real app icon */
+.app-grid-icon.app-icon-container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 50%);
+    box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+    pointer-events: none;
 }
 
 .app-icon {
@@ -173,7 +210,7 @@
 
 /* Offline state */
 .app-item.offline .app-grid-icon {
-    filter: grayscale(0.8);
+    filter: grayscale(0.8) var(--icon-shadow);
     opacity: 0.6;
 }
 
