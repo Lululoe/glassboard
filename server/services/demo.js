@@ -111,7 +111,8 @@ const TORRENTS = [
     { id: 1, name: 'ubuntu-24.04.3-desktop-amd64.iso', size: 6.1 * GB, minutes: 0 },
     { id: 2, name: 'debian-13.1.0-amd64-DVD-1.iso', size: 3.9 * GB, minutes: 40 },
     { id: 3, name: 'archlinux-2026.10.01-x86_64.iso', size: 1.4 * GB, minutes: 12 },
-    { id: 4, name: 'fedora-workstation-43-x86_64.iso', size: 2.3 * GB, minutes: 25 },
+    // Stuck without peers, so the stalled state can be seen
+    { id: 4, name: 'fedora-workstation-43-x86_64.iso', size: 2.3 * GB, minutes: 25, stalled: true },
 ];
 
 function transmission() {
@@ -120,10 +121,10 @@ function transmission() {
         const progress = t.minutes === 0 ? 100 : Math.floor((Date.now() / 60000 / t.minutes * 100 + i * 23) % 100);
         const seeding = progress === 100;
         return {
-            progress,
+            progress: t.stalled ? 37 : progress,
             seeding,
-            down: seeding ? 0 : Math.round(drift(1.5, 9, 30, i) * MB),
-            up: Math.round((seeding ? drift(0.2, 1.2, 40, i) : drift(0, 0.2, 40, i)) * MB),
+            down: seeding || t.stalled ? 0 : Math.round(drift(1.5, 9, 30, i) * MB),
+            up: t.stalled ? 0 : Math.round((seeding ? drift(0.2, 1.2, 40, i) : drift(0, 0.2, 40, i)) * MB),
         };
     });
     return {
@@ -139,8 +140,9 @@ function transmission() {
                 speedUp: `${formatBytes(up)}/s`,
                 ratio: seeding ? 1.84 : round(progress / 250, 2),
                 isFinished: seeding,
-                isStalled: false,
+                isStalled: !!t.stalled,
                 status: seeding ? 6 : 4,
+                error: null,
             };
         }),
         totalRateDown: rates.reduce((sum, r) => sum + r.down, 0),

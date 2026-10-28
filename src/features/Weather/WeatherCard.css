@@ -55,44 +55,10 @@
 /* Weather Grid Layout (matching Media Grid) */
 .weather-grid {
     display: grid;
-    grid-template-columns: repeat(var(--cols, 2), 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
     height: 100%;
     overflow: hidden;
-}
-
-.weather-grid-cols-2 {
-    --cols: 2;
-}
-
-.weather-grid-cols-4 {
-    --cols: 4;
-}
-
-.weather-grid-cols-6 {
-    --cols: 6;
-}
-
-@media (max-width: 920px) {
-    .weather-grid-cols-4 {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .weather-grid-cols-6 {
-        grid-template-columns: repeat(3, 1fr);
-    }
-
-    /* Hide excess items on small screens */
-    .weather-grid-cols-4 .weather-day:nth-child(3),
-    .weather-grid-cols-4 .weather-day:nth-child(4) {
-        display: none;
-    }
-
-    .weather-grid-cols-6 .weather-day:nth-child(4),
-    .weather-grid-cols-6 .weather-day:nth-child(5),
-    .weather-grid-cols-6 .weather-day:nth-child(6) {
-        display: none;
-    }
 }
 
 .weather-day {
@@ -105,32 +71,9 @@
     /* Center content horizontally */
 }
 
-/* Remove border from last item per row context? 
-   Ideally last item in DOM for this flat list. */
 .weather-day:last-child {
     border-right: none;
     padding-right: 0;
-}
-
-/* Specific handling for responsive borders when wrapping happens?
-   Media grid simple approach: last-child has no border.
-   With wrapping, we might want to kill border for the "end of visual row".
-   But here we rely on hiding elements to maintain single row in most cases or just let it be.
-   The media query above hides extra items, so we stay on 1 row visually (2 or 3 items).
-   Wait, media query grid-template changes to 2 cols for 4 items -> 2 rows.
-   If 2 rows, index 2 (2nd item) needs no border if it's right edge.
-   Let's create rules similar to MediaCard.
-*/
-@media (max-width: 920px) {
-    .weather-grid-cols-4 .weather-day:nth-child(2) {
-        border-right: none;
-        padding-right: 0;
-    }
-
-    .weather-grid-cols-6 .weather-day:nth-child(3) {
-        border-right: none;
-        padding-right: 0;
-    }
 }
 
 .weather-day-header {

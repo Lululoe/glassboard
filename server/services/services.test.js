@@ -46,6 +46,16 @@ describe('transmission service', () => {
         const result = mapTorrents([{ id: 1, name: 'a', percentDone: 0.5, rateDownload: 2000, rateUpload: 10 }]);
         expect(result.torrents[0]).toMatchObject({ progress: 50, speedDown: '2.00 KB/s' });
         expect(result).toMatchObject({ totalRateDown: 2000, totalRateUp: 10, totalCount: 1 });
+        expect(result.torrents[0].error).toBeNull();
+    });
+
+    it('passes torrent errors through as a message', () => {
+        const [withText, withoutText] = mapTorrents([
+            { id: 1, error: 3, errorString: 'No data found' },
+            { id: 2, error: 1 },
+        ]).torrents;
+        expect(withText.error).toBe('No data found');
+        expect(withoutText.error).toBe('Unknown error');
     });
 
     it('performs the session handshake and sends basic auth', async () => {

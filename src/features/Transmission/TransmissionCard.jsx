@@ -11,11 +11,8 @@ import { formatSpeed, useTransmission } from './useTransmission';
  * @returns {JSX.Element} The rendered torrent item.
  */
 const TorrentItem = ({ torrent }) => {
-    const getProgressBarClass = () => {
-        if (torrent.state === 'seeding') return 'progress-fill seeding';
-        if (torrent.state === 'downloading') return 'progress-fill downloading';
-        return 'progress-fill';
-    };
+    // Problems are named as well as colored red, so they never rely on color alone
+    const problem = torrent.state === 'error' ? torrent.error : torrent.state === 'stalled' ? 'Stalled' : null;
 
     return (
         <div className="torrent-item">
@@ -45,9 +42,15 @@ const TorrentItem = ({ torrent }) => {
                         )}
                     </span>
                 </div>
-                <div className="torrent-secondary-right">
-                    Ratio: {torrent.ratio != null ? torrent.ratio : '-'}
-                </div>
+                {problem ? (
+                    <div className="torrent-secondary-right torrent-problem" title={problem}>
+                        <Icon icon="lu-CircleAlert" size={12} /> {problem}
+                    </div>
+                ) : (
+                    <div className="torrent-secondary-right">
+                        Ratio: {torrent.ratio != null ? torrent.ratio : '-'}
+                    </div>
+                )}
             </div>
 
             <div className="progress-row">
@@ -59,7 +62,7 @@ const TorrentItem = ({ torrent }) => {
                     aria-valuenow={Math.round(torrent.progress || 0)}
                 >
                     <div
-                        className={getProgressBarClass()}
+                        className={`progress-fill ${torrent.state}`}
                         style={{
                             width: `${Math.max(0, Math.min(100, torrent.progress || 0))}%`,
                         }}

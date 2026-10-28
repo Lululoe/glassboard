@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import TransmissionCard from './TransmissionCard';
+import { determineState } from './useTransmission';
 import React from 'react';
 
 // Mock fetch global
@@ -54,5 +55,32 @@ describe('Transmission Feature', () => {
         await waitFor(() => {
             expect(screen.getByText(/Error loading Transmission data/i)).toBeInTheDocument();
         });
+    });
+
+    it('names stalled downloads and errors instead of only coloring them', async () => {
+        fetch.mockResolvedValueOnce({
+            ok: true,
+            json: async () => ({
+                torrents: [
+                    { id: 1, name: 'stuck.iso', progress: 30, status: 4, isStalled: true },
+                    { id: 2, name: 'broken.iso', progress: 10, status: 0, error: 'No data found' },
+                ],
+                totalCount: 2,
+            }),
+        });
+
+        const { container } = render(<TransmissionCard config={{ id: 'transmission' }} />);
+
+        await waitFor(() => expect(screen.getByText('Stalled')).toBeInTheDocument());
+        expect(screen.getByText('No data found')).toBeInTheDocument();
+        expect(container.querySelector('.progress-fill.stalled')).toBeInTheDocument();
+        expect(container.querySelector('.progress-fill.error')).toBeInTheDocument();
+    });
+
+    it('only treats stalled downloads as a problem, not stalled seeds', () => {
+        expect(determineState({ status: 4, isStalled: true })).toBe('stalled');
+        expect(determineState({ status: 6, isStalled: true })).toBe('seeding');
+        expect(determineState({ status: 4, error: 'Tracker gave an error' })).toBe('error');
+        expect(determineState({ status: 4 })).toBe('downloading');
     });
 });

@@ -3,6 +3,7 @@ import TwoToneBase from '../../components/Shared/TwoToneBase';
 import Icon from '../../components/Shared/Icon';
 import './MediaCard.css';
 import { useMedia } from './useMedia';
+import { useFitCount } from '../../hooks/useFitCount';
 
 // Helpers
 /**
@@ -61,7 +62,8 @@ const groupByDay = (events, date) => {
  */
 const MediaCard = ({ config = {} }) => {
     const colSpan = config.colSpan || 1;
-    const visibleDays = colSpan * 2; // e.g. 2 cols -> 4 days
+    // Up to two days per grid column, as many as fit the card's current width
+    const [visibleDays, gridRef] = useFitCount(110, colSpan * 2);
 
     const icon = config.icon || "lu-Tv";
     const iconColor = config.iconColor || "#FDC7FF";
@@ -110,7 +112,7 @@ const MediaCard = ({ config = {} }) => {
                 </>
             )}
         >
-            <div className={`media-grid media-grid-cols-${visibleDays}`}>
+            <div className="media-grid" ref={gridRef} style={{ gridTemplateColumns: `repeat(${visibleDays}, minmax(0, 1fr))` }}>
                 {days.map((d, idx) => {
                     const dayEvents = groupByDay(events, d);
                     return (

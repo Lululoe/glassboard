@@ -37,6 +37,16 @@
     font-weight: 500;
 }
 
+.torrent-problem {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--system-red-text);
+}
+
 .progress-row {
     display: flex;
     align-items: center;
@@ -54,17 +64,25 @@
 .progress-fill {
     height: 100%;
     width: 0%;
+    /* Paused and stopped torrents */
     background: var(--text-tertiary);
     border-radius: 999px;
     transition: width 300ms var(--ease-standard);
 }
 
+/* Fixed status colors, independent of the card's primaryColor: blue while downloading,
+   green once complete and seeding, red only when something needs attention */
 .progress-fill.downloading {
-    background: var(--card-primary);
+    background: var(--system-blue);
 }
 
 .progress-fill.seeding {
-    background: var(--color-quaternary);
+    background: var(--system-green);
+}
+
+.progress-fill.stalled,
+.progress-fill.error {
+    background: var(--system-red);
 }
 
 .progress-percent {

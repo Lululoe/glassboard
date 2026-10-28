@@ -22,9 +22,35 @@ pages:
         type: appgrid
         colSpan: 1
 
+      - id: lights
+        type: hacontrol
+        colSpan: 1
+        data:
+          entities:
+            - entity_id: light.living_room
+              name: "Living Room"
+              icon: "lamp"
+              on_action: { service: light.turn_on }
+              off_action: { service: light.turn_off }
+            - entity_id: light.kitchen
+              name: "Kitchen"
+              icon: "lamp"
+              on_action: { service: light.turn_on }
+              off_action: { service: light.turn_off }
+            - entity_id: switch.coffee_machine
+              name: "Coffee Machine"
+              icon: "Coffee"
+              on_action: { service: switch.turn_on }
+              off_action: { service: switch.turn_off }
+            - entity_id: fan.bedroom
+              name: "Bedroom Fan"
+              icon: "Fan"
+              on_action: { service: fan.turn_on }
+              off_action: { service: fan.turn_off }
+
       - id: media_center
         type: media
-        colSpan: 3
+        colSpan: 2
         primaryColor: "#f078f0"
 
       - id: transmission

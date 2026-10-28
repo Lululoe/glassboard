@@ -4,6 +4,7 @@ import { HttpError, upstreamError } from '../errors.js';
 const TORRENT_FIELDS = [
     'id', 'name', 'leftUntilDone', 'percentDone', 'totalSize', 'downloadedEver',
     'rateDownload', 'rateUpload', 'uploadRatio', 'isFinished', 'isStalled', 'status',
+    'error', 'errorString',
 ];
 
 /**
@@ -104,6 +105,7 @@ export function mapTorrents(torrents = []) {
             isFinished: !!t.isFinished,
             isStalled: !!t.isStalled,
             status: t.status,
+            error: t.error ? (t.errorString || 'Unknown error') : null,
         })),
         totalRateDown: torrents.reduce((s, t) => s + (t.rateDownload || 0), 0),
         totalRateUp: torrents.reduce((s, t) => s + (t.rateUpload || 0), 0),

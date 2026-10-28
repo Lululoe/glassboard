@@ -4,12 +4,15 @@ import { usePolling } from '../../hooks/usePolling';
 /**
  * Derives a simplified state from a Transmission torrent.
  * Status codes: 0=stopped, 1=check wait, 2=check, 3=download wait, 4=downloading, 5=seed wait, 6=seeding.
+ * A download is stalled when it has had no peer activity for a while; a stalled seed is
+ * normal (nobody is downloading from it), so it stays 'seeding'.
  * @param {Object} t - Torrent object from the server.
- * @returns {'seeding'|'downloading'|'stopped'|'paused'} The simplified state.
+ * @returns {'error'|'stalled'|'seeding'|'downloading'|'stopped'|'paused'} The simplified state.
  */
 export function determineState(t) {
+    if (t.error) return 'error';
     if (t.isFinished || t.status === 6) return 'seeding';
-    if (t.status === 4 || t.status === 3) return 'downloading';
+    if (t.status === 4 || t.status === 3) return t.isStalled ? 'stalled' : 'downloading';
     if (t.status === 0) return 'stopped';
     return 'paused';
 }

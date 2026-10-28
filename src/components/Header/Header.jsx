@@ -25,7 +25,7 @@ const Header = ({ config }) => {
             </div>
 
             <div className="header-right">
-                {config?.themeToggle && (
+                {config?.themeToggle !== false && (
                     <button
                         type="button"
                         className="button-reset icon-button"

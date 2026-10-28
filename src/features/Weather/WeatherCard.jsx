@@ -3,6 +3,7 @@ import TwoToneBase from '../../components/Shared/TwoToneBase';
 import { useWeather } from './useWeather';
 import Icon from '../../components/Shared/Icon';
 import './WeatherCard.css';
+import { useFitCount } from '../../hooks/useFitCount';
 
 /**
  * Maps a weather condition string to a corresponding Lucide React icon name.
@@ -40,6 +41,8 @@ const WeatherCard = ({ config = {} }) => {
     const iconColor = config.iconColor;
 
     const [forecastType, setForecastType] = useState('daily');
+    // Up to two days per grid column, as many as fit the card's current width
+    const [visibleCols, gridRef] = useFitCount(80, colSpan * 2);
     const { weather, loading, error } = useWeather(entityId, forecastType);
 
     const toggleType = () => {
@@ -81,7 +84,6 @@ const WeatherCard = ({ config = {} }) => {
     const currentCondition = currentItem.condition || 'Unknown';
     const currentIcon = getWeatherIcon(currentCondition);
 
-    const visibleCols = colSpan * 2;
 
     return (
         <TwoToneBase
@@ -113,7 +115,7 @@ const WeatherCard = ({ config = {} }) => {
                 </button>
             }
         >
-            <div className={`weather-grid weather-grid-cols-${visibleCols}`}>
+            <div className="weather-grid" ref={gridRef} style={{ gridTemplateColumns: `repeat(${visibleCols}, minmax(0, 1fr))` }}>
                 {forecast.slice(0, visibleCols).map((item, idx) => {
                     const itemIcon = getWeatherIcon(item.condition);
                     const date = new Date(item.datetime);
