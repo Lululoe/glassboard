@@ -80,6 +80,8 @@ const HAControlCard = ({ config }) => {
                     const hasActions = entity.on_action && entity.off_action;
 
                     const tileClass = `ha-tile ${isOn ? 'on' : 'off'}`;
+                    // Tiles that can be toggled are buttons, so they work with keyboard and screen readers
+                    const Tile = hasActions ? 'button' : 'div';
                     const circleClass = isOn ? 'ha-icon-circle on' : 'ha-icon-circle off';
 
                     // Dynamic color override if on
@@ -92,20 +94,23 @@ const HAControlCard = ({ config }) => {
                     const displayState = getDisplayState(entity, liveState);
 
                     return (
-                        <div
+                        <Tile
                             key={entity.entity_id ?? idx}
-                            className={tileClass}
-                            onClick={hasActions ? () => toggleEntity(entity, isOn) : undefined}
-                            style={{ cursor: hasActions ? 'pointer' : 'default' }}
+                            className={hasActions ? `button-reset ${tileClass}` : tileClass}
+                            {...(hasActions && {
+                                type: 'button',
+                                'aria-pressed': isOn,
+                                onClick: () => toggleEntity(entity, isOn),
+                            })}
                         >
-                            <div className={circleClass} style={circleStyle}>
+                            <div className={circleClass} style={circleStyle} aria-hidden="true">
                                 <Icon icon={iconString} size={20} />
                             </div>
                             <div className="ha-tile-content">
                                 <div className="ha-tile-name" title={entity.name}>{entity.name}</div>
-                                <div className="ha-tile-state">{loading ? '...' : displayState}</div>
+                                <div className="ha-tile-state">{loading ? 'Loading…' : displayState}</div>
                             </div>
-                        </div>
+                        </Tile>
                     );
                 })}
             </div>

@@ -64,12 +64,12 @@
     border-radius: 999px;
     text-transform: capitalize;
     background: color-mix(in srgb, var(--system-gray) 20%, transparent);
-    color: var(--system-gray);
+    color: var(--system-gray-text);
 }
 
 .proxmox-status-badge.running {
     background: color-mix(in srgb, var(--system-green) 20%, transparent);
-    color: var(--system-green);
+    color: var(--system-green-text);
 }
 
 /* Stats Row */
@@ -90,7 +90,7 @@
 .stat-label-row {
     display: flex;
     justify-content: space-between;
-    font-size: 0.7rem;
+    font-size: 12px;
     color: var(--text-secondary);
 }
 

@@ -23,13 +23,27 @@ const Header = ({ config }) => {
 
             <div className="header-right">
                 {config?.themeToggle && (
-                    <div className="icon-button" onClick={toggleMode} title="Toggle light/dark mode">
-                        {mode === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                    </div>
+                    <button
+                        type="button"
+                        className="button-reset icon-button"
+                        onClick={toggleMode}
+                        title={mode === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+                        aria-label={mode === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+                    >
+                        {mode === 'dark' ? <Sun size={20} aria-hidden="true" /> : <Moon size={20} aria-hidden="true" />}
+                    </button>
                 )}
-                <div className={`icon-button${isLauncherOpen ? ' active' : ''}`} onClick={() => setIsLauncherOpen(!isLauncherOpen)}>
-                    <LayoutGrid size={20} />
-                </div>
+                <button
+                    type="button"
+                    className={`button-reset icon-button${isLauncherOpen ? ' active' : ''}`}
+                    onClick={() => setIsLauncherOpen(!isLauncherOpen)}
+                    title="Apps"
+                    aria-label="Apps"
+                    aria-haspopup="dialog"
+                    aria-expanded={isLauncherOpen}
+                >
+                    <LayoutGrid size={20} aria-hidden="true" />
+                </button>
             </div>
 
             {isLauncherOpen && (

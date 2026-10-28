@@ -58,9 +58,9 @@ function Dashboard({ config }) {
 
             <div className="app-content" ref={contentRef}>
                 {hasPrev && (
-                    <div className="nav-zone nav-zone-left" onClick={prev}>
-                        <ChevronLeft size={48} />
-                    </div>
+                    <button type="button" className="button-reset nav-zone nav-zone-left" onClick={prev} aria-label="Previous page">
+                        <ChevronLeft size={48} aria-hidden="true" />
+                    </button>
                 )}
 
                 {pages.map((page, idx) => (
@@ -77,22 +77,25 @@ function Dashboard({ config }) {
                 ))}
 
                 {hasNext && (
-                    <div className="nav-zone nav-zone-right" onClick={next}>
-                        <ChevronRight size={48} />
-                    </div>
+                    <button type="button" className="button-reset nav-zone nav-zone-right" onClick={next} aria-label="Next page">
+                        <ChevronRight size={48} aria-hidden="true" />
+                    </button>
                 )}
             </div>
 
             {pages.length > 1 && (
-                <div className="page-indicators">
+                <nav className="page-indicators" aria-label="Pages">
                     {pages.map((page, idx) => !page.hidden && (
-                        <div
+                        <button
+                            type="button"
                             key={page.id ?? idx}
-                            className={`page-dot ${idx === pageIndex ? 'active' : ''}`}
+                            className={`button-reset page-dot ${idx === pageIndex ? 'active' : ''}`}
                             onClick={() => goTo(idx)}
+                            aria-label={`Page ${idx + 1} of ${pages.length}${page.name ? `: ${page.name}` : ''}`}
+                            aria-current={idx === pageIndex ? 'page' : undefined}
                         />
                     ))}
-                </div>
+                </nav>
             )}
         </div>
     );

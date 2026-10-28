@@ -105,8 +105,8 @@ const MediaCard = ({ config = {} }) => {
 
             actions={(
                 <>
-                    <div className="two-tone-header-action" onClick={prevDay} role="button" aria-label="Previous day"><Icon icon="lu-ChevronLeft" size={18} /></div>
-                    <div className="two-tone-header-action" onClick={nextDay} role="button" aria-label="Next day"><Icon icon="lu-ChevronRight" size={18} /></div>
+                    <button type="button" className="button-reset two-tone-header-action" onClick={prevDay} aria-label="Previous day" title="Previous day"><Icon icon="lu-ChevronLeft" size={18} /></button>
+                    <button type="button" className="button-reset two-tone-header-action" onClick={nextDay} aria-label="Next day" title="Next day"><Icon icon="lu-ChevronRight" size={18} /></button>
                 </>
             )}
         >
@@ -137,6 +137,15 @@ const MediaCard = ({ config = {} }) => {
     );
 };
 
+// Each status gets a glyph and a name as well as a color, so it never relies on color alone
+const STATUS = {
+    downloaded: { icon: 'lu-CircleCheck', label: 'Downloaded' },
+    downloading: { icon: 'lu-CircleArrowDown', label: 'Downloading' },
+    missing: { icon: 'lu-CircleAlert', label: 'Missing' },
+    upcoming: { icon: 'lu-Clock', label: 'Not yet available' },
+    not_yet_out: { icon: 'lu-Clock', label: 'Not yet available' },
+};
+
 /**
  * Renders an individual media event item (movie or episode).
  * @param {Object} props
@@ -146,17 +155,26 @@ const MediaCard = ({ config = {} }) => {
 const MediaEvent = ({ event }) => {
     // Type icon
     const iconName = event.type === 'radarr' ? 'lu-Film' : 'lu-Tv';
+    const status = STATUS[event.status];
 
     const eventContent = (
         <>
-            <div className={`media-event-status ${event.status}`} />
+            <div className={`media-event-status ${event.status}`} aria-hidden="true" />
             <div className="media-event-icon">
                 <Icon icon={iconName} size={12} strokeWidth={2.5} />
             </div>
             <div className="media-event-body">
                 <div className="media-event-title">{event.title}</div>
                 <div className="media-event-meta">{event.secondary}</div>
-                <div className="media-event-time">{formatTime(event.datetime)}</div>
+                <div className="media-event-time">
+                    {status && (
+                        <span className={`media-event-status-glyph ${event.status}`} title={status.label}>
+                            <Icon icon={status.icon} size={12} strokeWidth={2.5} />
+                            <span className="visually-hidden">{status.label}, </span>
+                        </span>
+                    )}
+                    {formatTime(event.datetime)}
+                </div>
             </div>
         </>
     );

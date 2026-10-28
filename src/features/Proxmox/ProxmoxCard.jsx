@@ -133,13 +133,15 @@ const ProxmoxCard = ({ config }) => {
             iconColor={iconColor}
             iconBackground={iconBackground}
             actions={
-                <div
-                    className="two-tone-header-action"
+                <button
+                    type="button"
+                    className="button-reset two-tone-header-action"
                     onClick={toggleSort}
                     title="Change Sort Order"
+                    aria-label="Change sort order"
                 >
                     <Icon icon={sortIconName} size={20} />
-                </div>
+                </button>
             }
         >
             <div className="proxmox-list">

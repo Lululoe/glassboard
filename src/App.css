@@ -134,6 +134,16 @@
     }
 }
 
+.nav-zone:focus-visible {
+    opacity: 1;
+    outline: none;
+}
+
+.nav-zone:focus-visible svg {
+    border-radius: 12px;
+    box-shadow: var(--focus-ring);
+}
+
 .nav-zone-left {
     left: 0;
 }
@@ -142,37 +152,56 @@
     right: 0;
 }
 
-/* Page Indicators */
+/* Page Indicators: a frosted capsule, like the system page control, so the dots stay
+   visible over any background. Each dot sits in a 28px hit area. */
 .page-indicators {
     position: absolute;
-    bottom: 20px;
-    left: 0;
-    right: 0;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     justify-content: center;
-    gap: 8px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     z-index: 101;
-    pointer-events: none;
-    /* Let clicks pass through around dots */
 }
 
 .page-dot {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.page-dot::before {
+    content: '';
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
-    cursor: pointer;
-    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.5);
     transition: background 0.3s var(--ease-standard), transform 0.3s var(--ease-standard);
 }
 
-.page-dot.active {
-    background: var(--text-primary);
+.page-dot.active::before {
+    background: #fff;
     transform: scale(1.2);
 }
 
-.page-dot:hover {
-    background: rgba(255, 255, 255, 0.5);
+@media (pointer: fine) {
+    .page-dot:not(.active):hover::before {
+        background: rgba(255, 255, 255, 0.75);
+    }
+}
+
+.page-dot:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 /* Mobile Adjustments */

@@ -174,7 +174,26 @@
 }
 
 .media-event-time {
-    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
     color: var(--text-secondary);
     margin-top: 2px;
+}
+
+.media-event-status-glyph {
+    display: inline-flex;
+}
+
+.media-event-status-glyph.downloaded {
+    color: var(--color-primary);
+}
+
+.media-event-status-glyph.downloading {
+    color: var(--color-secondary-light);
+}
+
+.media-event-status-glyph.missing {
+    color: var(--color-tertiary);
 }

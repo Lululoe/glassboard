@@ -62,10 +62,11 @@ const PrItem = ({ pr }) => {
     const authorName = isBot ? author.replace('[bot]', '').trim() : author;
 
     return (
-        <div
+        <a
             className="pr-item"
-            onClick={() => window.open(pr.url, '_blank')}
-            style={{ cursor: 'pointer' }}
+            href={pr.url}
+            target="_blank"
+            rel="noopener noreferrer"
         >
             <div className="pr-header">
                 <div className="pr-title-wrap">
@@ -95,7 +96,7 @@ const PrItem = ({ pr }) => {
                     </span>
                 )}
             </div>
-        </div>
+        </a>
     );
 };
 

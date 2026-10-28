@@ -102,13 +102,15 @@ const WeatherCard = ({ config = {} }) => {
             iconBackground={iconBackground}
             iconColor={iconColor}
             actions={
-                <div
-                    className="two-tone-header-action"
+                <button
+                    type="button"
+                    className="button-reset two-tone-header-action"
                     onClick={toggleType}
-                    title={`Switch to ${forecastType === 'daily' ? 'Hourly' : 'Daily'}`}
+                    title={`Show ${forecastType === 'daily' ? 'hourly' : 'daily'} forecast`}
+                    aria-label={`Show ${forecastType === 'daily' ? 'hourly' : 'daily'} forecast`}
                 >
                     {forecastType === 'daily' ? <Icon icon="lu-Clock" size={18} /> : <Icon icon="lu-CalendarDays" size={18} />}
-                </div>
+                </button>
             }
         >
             <div className={`weather-grid weather-grid-cols-${visibleCols}`}>

@@ -1,5 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 import GitCard from './GitCard';
 import React from 'react';
 
@@ -39,16 +39,6 @@ vi.mock('./useGit', () => ({
 }));
 
 describe('GitCard', () => {
-    let windowOpenSpy;
-
-    beforeEach(() => {
-        windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => { });
-    });
-
-    afterEach(() => {
-        windowOpenSpy.mockRestore();
-    });
-
     it('renders PR items correctly', () => {
         render(<GitCard config={{ colSpan: 1 }} />);
 
@@ -60,12 +50,12 @@ describe('GitCard', () => {
         expect(screen.getByText('merged')).toBeInTheDocument();
     });
 
-    it('opens PR url on click', () => {
+    it('links each PR to its url in a new tab', () => {
         render(<GitCard config={{ colSpan: 1 }} />);
 
-        const prItem = screen.getByText('Test PR 1').closest('.pr-item');
-        fireEvent.click(prItem);
-
-        expect(windowOpenSpy).toHaveBeenCalledWith('http://github.com/owner/repo/pull/123', '_blank');
+        const prItem = screen.getByText('Test PR 1').closest('a');
+        expect(prItem).toHaveClass('pr-item');
+        expect(prItem).toHaveAttribute('href', 'http://github.com/owner/repo/pull/123');
+        expect(prItem).toHaveAttribute('target', '_blank');
     });
 });

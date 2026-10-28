@@ -107,6 +107,7 @@ const TransmissionCard = ({ config }) => {
                         className="two-tone-header-action"
                         href={downloadsUrl}
                         title="Open Downloads"
+                        aria-label="Open downloads"
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
