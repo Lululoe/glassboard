@@ -38,6 +38,10 @@ Outside production (`NODE_ENV !== 'production'`) the body also contains a `stack
 
 Services are registered in `server/services/index.js`.
 
+In demo mode (`demo: true` in `config.yaml`, or `GLASSBOARD_DEMO=true`) every service is answered by the
+simulated handlers in `server/services/demo.js` instead, with the same response shapes and validation errors
+for missing parameters. Home Assistant actions change the simulated state in memory only.
+
 ### `transmission`
 - **Parameters**: None.
 - **Response**:
@@ -143,9 +147,12 @@ keys (`apiKey`, `token`, `secret`, `tokenId`, `password`, `username`) are stripp
 ```json
 {
   "pages": [ ... ],
-  "theme": "default"
+  "theme": "default",
+  "demo": false
 }
 ```
+
+`demo` is always present and reflects both the config and the `GLASSBOARD_DEMO` environment variable.
 
 ## 3. Configuration Change Stream
 **Endpoint**: `GET /api/config/events`

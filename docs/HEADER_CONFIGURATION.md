@@ -32,7 +32,14 @@ launcher:
 
 ## Theme Toggle
 Set `themeToggle: true` at the top level of `config.yaml` to show a light/dark mode button in the header.
-The chosen mode is remembered in the browser.
+By default the dashboard follows the system appearance. Choosing the other mode with the button is remembered
+in the browser; switching back to the system's mode clears it, so the dashboard follows the system again.
+
+---
+
+## Demo Label
+In demo mode (`demo: true` or `GLASSBOARD_DEMO=true`) the header shows a "Demo" label next to the title, so
+simulated data is never mistaken for real data.
 
 ```yaml
 themeToggle: true

@@ -5,6 +5,10 @@
 theme: "default"
 themes: []
 
+# Fill every card with simulated data instead of calling your services, e.g. to try the
+# dashboard before setting anything up. Can also be set with GLASSBOARD_DEMO=true.
+# demo: true
+
 pages:
   - id: home
     name: "Home"

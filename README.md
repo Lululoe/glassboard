@@ -144,6 +144,14 @@ All documentation is hosted on the [Glassboard GitHub Wiki](https://github.com/L
     Copy `config.example.yaml` to `config.yaml` and `services.example.yaml` to `services.yaml`, then adjust them.
     Node.js 22.19 or newer is required.
 
+### 🧪 Demo Mode
+To try the dashboard without any services, set `demo: true` in `config.yaml` (or `GLASSBOARD_DEMO=true` in the environment). Every card is then filled with simulated data that changes slowly over time, Home Assistant toggles work in memory, and the header shows a "Demo" label. No requests are sent to your services while demo mode is on.
+
+```bash
+cp config.example.yaml config.yaml
+GLASSBOARD_DEMO=true npm run dev
+```
+
 ### 🔐 Environment Variables
 You can override any service configuration using environment variables. This is useful for Docker setups to keep secrets out of files.
 
@@ -152,6 +160,7 @@ You can override any service configuration using environment variables. This is 
 | Variable | Description |
 | :--- | :--- |
 | `PORT` | Server port (default: 3001) |
+| `GLASSBOARD_DEMO` | `true` fills every card with simulated data (overrides `demo` in `config.yaml`) |
 | `SERVICES__HOMEASSISTANT__TOKEN` | Override HA Token |
 | `SERVICES__SONARR__APIKEY` | Override Sonarr API Key |
 | `SERVICES__GIT__GITHUB__TOKEN` | Override GitHub Token |

@@ -1,12 +1,14 @@
 import express from 'express';
 import { getSanitizedConfig, onConfigChange } from '../config.js';
+import { isDemoMode } from '../services/demo.js';
 
 const KEEP_ALIVE_INTERVAL = 30 * 1000;
 
 const router = express.Router();
 
 router.get('/', (req, res) => {
-    res.set('Cache-Control', 'no-store').json(getSanitizedConfig());
+    // `demo` also reflects GLASSBOARD_DEMO, so the header can label simulated data
+    res.set('Cache-Control', 'no-store').json({ ...getSanitizedConfig(), demo: isDemoMode() });
 });
 
 /**

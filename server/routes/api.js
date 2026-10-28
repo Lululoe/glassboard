@@ -1,5 +1,6 @@
 import express from 'express';
 import { HttpError } from '../errors.js';
+import { demoHandlers, isDemoMode } from '../services/demo.js';
 import { serviceHandlers } from '../services/index.js';
 
 const router = express.Router();
@@ -10,9 +11,11 @@ router.all('/', async (req, res, next) => {
         const { service } = params;
 
         if (!service) throw new HttpError(400, 'Service parameter required');
-        if (!Object.hasOwn(serviceHandlers, service)) throw new HttpError(404, `Unknown service: ${service}`);
+        // In demo mode every service answers with simulated data instead of calling a backend
+        const handlers = isDemoMode() ? demoHandlers : serviceHandlers;
+        if (!Object.hasOwn(handlers, service)) throw new HttpError(404, `Unknown service: ${service}`);
 
-        res.json(await serviceHandlers[service](params));
+        res.json(await handlers[service](params));
     } catch (err) {
         next(err);
     }

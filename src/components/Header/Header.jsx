@@ -19,6 +19,9 @@ const Header = ({ config }) => {
             <div className="header-left">
                 <LayoutTemplate className="header-logo-icon" size={24} />
                 <span className="header-title">Glassboard</span>
+                {config?.demo && (
+                    <span className="header-demo-badge" title="Cards show simulated data">Demo</span>
+                )}
             </div>
 
             <div className="header-right">

@@ -26,6 +26,7 @@ const launcherItem = z.looseObject({
 export const configSchema = z.looseObject({
     theme: z.string().optional(),
     themeToggle: z.boolean().optional(),
+    demo: z.boolean().optional(),
     themes: z.array(z.looseObject({ id: z.string() })).optional(),
     pages: z.array(page).optional(),
     cards: z.array(card).optional(),
