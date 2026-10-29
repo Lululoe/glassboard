@@ -21,6 +21,11 @@ describe('Home Assistant service', () => {
                         },
                     },
                     { id: 'sensors', type: 'hacontrol', data: { entities: [{ entity_id: 'sensor.temp' }] } },
+                    { id: 'living', type: 'thermostat', entity_id: 'climate.living' },
+                    {
+                        id: 'office', type: 'thermostat', entity_id: 'climate.office', hvac_mode: 'heat_cool', min: 15, max: 25,
+                        presets: [{ name: 'Eco', preset: 'eco' }, { name: 'Comfort', temperature: 21 }],
+                    },
                 ],
             }],
         });
@@ -58,5 +63,38 @@ describe('Home Assistant service', () => {
     it('maps upstream failures to 502', async () => {
         fetch.mockResolvedValueOnce({ ok: false, status: 401, text: async () => 'Unauthorized' });
         await expect(handleHaRequest({ endpoint: 'states/light.allowed' })).rejects.toMatchObject({ status: 502 });
+    });
+
+    it('reads thermostat entities', async () => {
+        await handleHaRequest({ endpoint: 'states', entity_ids: ['climate.living'] });
+        expect(fetch).toHaveBeenCalledWith('http://ha.local/api/states/climate.living', expect.anything());
+    });
+
+    it('sends thermostat actions to the climate services', async () => {
+        await handleHaRequest({ endpoint: 'climate', entity_id: 'climate.living', action: 'set_temperature', temperature: 21.5 });
+        await handleHaRequest({ endpoint: 'climate', entity_id: 'climate.living', action: 'set_preset_mode', preset_mode: 'away' });
+        await handleHaRequest({ endpoint: 'climate', entity_id: 'climate.living', action: 'set_hvac_mode', hvac_mode: 'heat' });
+
+        const calls = fetch.mock.calls.map(([url, init]) => [url, JSON.parse(init.body)]);
+        expect(calls).toEqual([
+            ['http://ha.local/api/services/climate/set_temperature', { entity_id: 'climate.living', temperature: 21.5 }],
+            ['http://ha.local/api/services/climate/set_preset_mode', { entity_id: 'climate.living', preset_mode: 'away' }],
+            ['http://ha.local/api/services/climate/set_hvac_mode', { entity_id: 'climate.living', hvac_mode: 'heat' }],
+        ]);
+    });
+
+    it('limits thermostat actions to the card config', async () => {
+        const call = (params) => handleHaRequest({ endpoint: 'climate', ...params });
+        await expect(call({ entity_id: 'climate.other', action: 'set_temperature', temperature: 20 })).rejects.toMatchObject({ status: 403 });
+        await expect(call({ entity_id: 'light.allowed', action: 'set_temperature', temperature: 20 })).rejects.toMatchObject({ status: 403 });
+        await expect(call({ entity_id: 'climate.office', action: 'set_temperature', temperature: 30 })).rejects.toMatchObject({ status: 400 });
+        await expect(call({ entity_id: 'climate.office', action: 'set_preset_mode', preset_mode: 'boost' })).rejects.toMatchObject({ status: 403 });
+        await expect(call({ entity_id: 'climate.office', action: 'set_hvac_mode', hvac_mode: 'heat' })).rejects.toMatchObject({ status: 400 });
+        await expect(call({ entity_id: 'climate.office', action: 'turn_on' })).rejects.toMatchObject({ status: 400 });
+        expect(fetch).not.toHaveBeenCalled();
+
+        await call({ entity_id: 'climate.office', action: 'set_hvac_mode', hvac_mode: 'heat_cool' });
+        await call({ entity_id: 'climate.office', action: 'set_preset_mode', preset_mode: 'eco' });
+        expect(fetch).toHaveBeenCalledTimes(2);
     });
 });

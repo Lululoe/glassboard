@@ -1,6 +1,7 @@
 import { findCard, getAllCards, getConfig } from '../config.js';
 import { HttpError } from '../errors.js';
 import { getGridApps } from './appstatus.js';
+import { climateCall } from './homeassistant.js';
 
 /**
  * Demo mode answers every `/api` service with simulated data instead of calling real backends,
@@ -244,7 +245,60 @@ function findEntity(entityId) {
     return undefined;
 }
 
+// Simulated climate entities for thermostat cards: [current, target, hvac mode, preset]
+const CLIMATE_SEEDS = [[19.8, 21, 'heat', 'comfort'], [18.9, 18.5, 'heat', 'sleep'], [18.4, 20, 'heat', null], [21.2, 22, 'off', null]];
+const climateStates = new Map();
+
+function thermostatCards() {
+    return getAllCards().filter(card => card.type === 'thermostat' && card.entity_id);
+}
+
+function climateState(entityId) {
+    if (!climateStates.has(entityId)) {
+        const index = Math.max(0, thermostatCards().findIndex(c => c.entity_id === entityId));
+        const [current, target, mode, preset] = CLIMATE_SEEDS[index % CLIMATE_SEEDS.length];
+        climateStates.set(entityId, { current, target, mode, preset });
+    }
+    const c = climateStates.get(entityId);
+    const action = c.mode === 'off' ? 'off' : c.current < c.target - 0.2 ? 'heating' : 'idle';
+    return {
+        entity_id: entityId,
+        state: c.mode,
+        attributes: {
+            friendly_name: entityId.split('.')[1].replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase()),
+            current_temperature: c.current,
+            temperature: c.target,
+            hvac_action: action,
+            hvac_modes: ['off', 'heat'],
+            preset_mode: c.preset ?? 'none',
+            preset_modes: ['none', 'comfort', 'eco', 'sleep', 'away'],
+            min_temp: 7,
+            max_temp: 30,
+            target_temp_step: 0.5,
+        },
+    };
+}
+
+// Temperatures the demo presets set, so choosing one visibly changes the target
+const DEMO_PRESET_TEMPS = { comfort: 21, eco: 17, sleep: 18.5, away: 15 };
+
+function climate(params) {
+    const { service, body } = climateCall(params);
+    const c = climateStates.get(body.entity_id) || (climateState(body.entity_id), climateStates.get(body.entity_id));
+    if (service === 'set_temperature') {
+        c.target = body.temperature;
+        c.preset = null;
+    } else if (service === 'set_preset_mode') {
+        c.preset = body.preset_mode;
+        if (DEMO_PRESET_TEMPS[body.preset_mode]) c.target = DEMO_PRESET_TEMPS[body.preset_mode];
+    } else {
+        c.mode = body.hvac_mode;
+    }
+    return [climateState(body.entity_id)];
+}
+
 function entityState(entityId, index) {
+    if (thermostatCards().some(card => card.entity_id === entityId)) return climateState(entityId);
     if (!haStates.has(entityId)) {
         const entity = findEntity(entityId);
         // Alternate initial states so both on and off tiles show
@@ -265,6 +319,7 @@ function homeassistant(params) {
     if (endpoint.startsWith('states/')) {
         return entityState(endpoint.slice('states/'.length), 0);
     }
+    if (endpoint === 'climate') return climate(params);
     if (endpoint === 'services') {
         const { entity_id: entityId, action } = params;
         const entity = findEntity(entityId);

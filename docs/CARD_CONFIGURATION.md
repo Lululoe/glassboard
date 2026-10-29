@@ -39,7 +39,8 @@ two- and three-wide cards are one wide on a phone. The card is told its narrower
 layout rather than a squeezed wide one. On tablets later cards move up to fill gaps left by wide cards.
 
 Not every card works at every size. In edit mode each card only offers the sizes its type supports; most cards
-support one to three wide, and `hacontrol` and `spacer` also support half and quarter. A size set in
+support one to three wide, `hacontrol` and `spacer` also support half and quarter, and `thermostat` supports
+quarter, half and one wide. A size set in
 `config.yaml` is always used, even if edit mode would not offer it.
 
 ## Editing the Dashboard
@@ -271,6 +272,56 @@ Displays server resource usage (CPU, RAM, Disk, etc.).
   colSpan: 1
   data:
     sensors: ["cpu", "ram", "temp"]
+```
+
+---
+
+## Single Thermostat (`thermostat`)
+Shows and controls one Home Assistant `climate` entity: a vertical slider for the target temperature with the room
+temperature marked on it, the current state (heating, cooling, idle or off) and presets. The layout follows the
+card's size:
+
+| Size | Shows |
+|------|-------|
+| `tileSize: quarter` | Slider, name with a state dot, target. Tapping the tile (outside the slider) turns the thermostat on or off. |
+| `tileSize: half` | Slider, name, state badge, target and room temperature, and a row of preset chips plus **Off**. |
+| `colSpan: 1` (default) | Slider, name, state badge, target and room temperature, and a list of presets plus **Off**. |
+
+Drag the slider (or use the arrow keys) to change the target; it is sent when you let go. Choosing a preset or
+moving the slider while the thermostat is off turns it on first.
+
+### Configuration
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `entity_id` | string | required | The climate entity, e.g. `climate.living_room`. |
+| `name` | string | entity name | Name shown on the card. |
+| `hvac_mode` | string | `heat` | Mode used to turn the thermostat on (`heat`, `cool`, `heat_cool`, `auto`, ...). |
+| `min` / `max` | number | entity limits | Range of the slider. Targets outside it are rejected by the server. |
+| `presets` | array | | Presets to show instead of the entity's preset modes (see below). |
+
+**Presets**: without `presets`, the card shows the entity's Home Assistant preset modes (except `none`) and
+switches between them with `climate.set_preset_mode`; common modes get a matching icon. With `presets`, only these
+are shown, in this order:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Label. |
+| `temperature` | number | Sets this target temperature. |
+| `preset` | string | Switches to this Home Assistant preset mode instead. With `presets` configured, only the modes listed here can be set. |
+| `icon` | string | Lucide icon name, e.g. `Sun`, `Leaf`, `Moon`. |
+
+The heating state comes from the entity's `hvac_action`, so it shows whether the heating is actually running.
+
+### Example
+```yaml
+- id: living_climate
+  type: thermostat
+  entity_id: climate.living_room
+  tileSize: half
+  presets:
+    - { name: Comfort, temperature: 21, icon: Sun }
+    - { name: Eco, preset: eco, icon: Leaf }
+    - { name: Night, temperature: 18.5, icon: Moon }
 ```
 
 ---

@@ -26,6 +26,7 @@ describe('demo mode', () => {
                             ],
                         },
                     },
+                    { id: 'heat', type: 'thermostat', entity_id: 'climate.demo_room' },
                 ],
             }],
         });
@@ -91,6 +92,24 @@ describe('demo mode', () => {
         expect(after['light.b'].state).toBe('on');
 
         await expect(demoHandlers.homeassistant({ endpoint: 'services', entity_id: 'light.b', action: 'lock.unlock' }))
+            .rejects.toMatchObject({ status: 403 });
+    });
+
+    it('simulates thermostats and applies their actions', async () => {
+        const ha = demoHandlers.homeassistant;
+        const read = async () => (await ha({ endpoint: 'states', entity_ids: ['climate.demo_room'] }))['climate.demo_room'];
+
+        const before = await read();
+        expect(before.state).toBe('heat');
+        expect(before.attributes).toMatchObject({ friendly_name: 'Demo Room', hvac_action: 'heating', preset_mode: 'comfort' });
+
+        await ha({ endpoint: 'climate', entity_id: 'climate.demo_room', action: 'set_preset_mode', preset_mode: 'eco' });
+        expect((await read()).attributes).toMatchObject({ temperature: 17, preset_mode: 'eco', hvac_action: 'idle' });
+
+        await ha({ endpoint: 'climate', entity_id: 'climate.demo_room', action: 'set_hvac_mode', hvac_mode: 'off' });
+        expect((await read()).state).toBe('off');
+
+        await expect(ha({ endpoint: 'climate', entity_id: 'climate.nope', action: 'set_temperature', temperature: 20 }))
             .rejects.toMatchObject({ status: 403 });
     });
 

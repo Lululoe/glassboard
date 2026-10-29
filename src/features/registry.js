@@ -7,6 +7,8 @@ import MediaCard from './Media/MediaCard';
 import ProxmoxCard from './Proxmox/ProxmoxCard';
 import ServerStatsCard from './ServerStats/ServerStatsCard';
 import SpacerCard from './Spacer/SpacerCard';
+import ThermostatCard from './Thermostat/ThermostatCard';
+import ThermostatEditor from './Thermostat/ThermostatEditor';
 import TransmissionCard from './Transmission/TransmissionCard';
 import WeatherCard from './Weather/WeatherCard';
 import WeatherEditor from './Weather/WeatherEditor';
@@ -24,6 +26,7 @@ export const cardRegistry = {
     proxmox: ProxmoxCard,
     serverstats: ServerStatsCard,
     spacer: SpacerCard,
+    thermostat: ThermostatCard,
     transmission: TransmissionCard,
     weather: WeatherCard,
 };
@@ -62,6 +65,14 @@ export const cardInfo = {
         sizes: ALL_SIZES,
         defaults: { data: { entities: [] } },
         Editor: HAControlEditor,
+    },
+    thermostat: {
+        name: 'Single Thermostat',
+        description: 'Target temperature, presets and on/off for one climate entity',
+        icon: 'lu-Thermometer',
+        sizes: ['quarter', 'half', '1'],
+        defaults: { entity_id: '' },
+        Editor: ThermostatEditor,
     },
     appgrid: {
         name: 'App Grid',

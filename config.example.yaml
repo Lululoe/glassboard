@@ -54,6 +54,15 @@ pages:
               on_action: { service: fan.turn_on }
               off_action: { service: fan.turn_off }
 
+      - id: living_climate
+        type: thermostat
+        entity_id: climate.living_room
+        colSpan: 1
+        # Optional: replace the entity's Home Assistant presets
+        # presets:
+        #   - { name: Comfort, temperature: 21, icon: Sun }
+        #   - { name: Eco, preset: eco, icon: Leaf }
+
       - id: media_center
         type: media
         colSpan: 2

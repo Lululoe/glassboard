@@ -76,13 +76,19 @@ for missing parameters. Home Assistant actions change the simulated state in mem
   ```
 
 ### `homeassistant`
-Only entities that appear on an `hacontrol` card can be read, and only the
-`on_action` / `off_action` configured for an entity can be called.
+Only entities that appear on an `hacontrol` card or as the `entity_id` of a `thermostat` card can be read. Of
+`hacontrol` entities only the configured `on_action` / `off_action` can be called; thermostat entities only accept
+the climate actions below.
 
 - **Get several states**: `{ "service": "homeassistant", "endpoint": "states", "entity_ids": ["light.office", "switch.fan"] }`
   returns `{ "light.office": { ...state }, "switch.fan": null }` (`null` when a single state could not be fetched).
 - **Get one state**: `{ "service": "homeassistant", "endpoint": "states/light.office" }`
 - **Call an action**: `{ "service": "homeassistant", "endpoint": "services", "entity_id": "light.office", "action": "light.turn_on" }`
+- **Control a thermostat**: `{ "service": "homeassistant", "endpoint": "climate", "entity_id": "climate.living", "action": "set_temperature", "temperature": 21.5 }`.
+  `action` is one of:
+  - `set_temperature` with `temperature`, within the card's `min`/`max` if set (`400` otherwise),
+  - `set_preset_mode` with `preset_mode`; when the card has `presets`, only their `preset` values (`403` otherwise),
+  - `set_hvac_mode` with `hvac_mode` `off` or the card's `hvac_mode` (default `heat`).
 
 ### `weather`
 - **Parameters**:

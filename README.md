@@ -20,6 +20,7 @@ This project was born out of a desire for a dashboard that didn't just function 
 ### 🏠 Home Automation
 -   **Home Assistant Integration**: Direct control of entities (Lights, Switches, Media Players, Climate, Vacuums).
 -   **Live State**: Real-time status updates and attribute displays (e.g., brightness, temperature).
+-   **Single Thermostat**: Target slider, heating state and presets for one climate entity, as a quarter, half or full tile.
 
 ### 🎬 Media Center
 -   **Unified Media Card**: A powerful, consolidated view for **Sonarr** and **Radarr**.
