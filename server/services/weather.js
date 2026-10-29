@@ -59,7 +59,8 @@ export function describeWeatherCode(code) {
  * @returns {Promise<Object>} Parsed JSON response.
  */
 async function openMeteoFetch(baseUrl, params) {
-    const response = await fetch(`${baseUrl}?${new URLSearchParams(params)}`);
+    const query = new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)]));
+    const response = await fetch(`${baseUrl}?${query}`);
     if (!response.ok) throw await upstreamError('Open-Meteo', response);
     return response.json();
 }
