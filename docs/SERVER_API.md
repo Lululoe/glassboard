@@ -76,8 +76,8 @@ for missing parameters. Home Assistant actions change the simulated state in mem
   ```
 
 ### `homeassistant`
-Only entities that appear on an `hacontrol` card, as the `entity_id` of a `thermostat` card or in the first six
-`rooms` of a `thermostats` card can be read. Of
+Only entities that appear on an `hacontrol` card, as the `entity_id` of a `thermostat` card, in the first six
+`rooms` of a `thermostats` card or as a player or speaker of a `mediaplayer` card can be read. Of
 `hacontrol` entities only the configured `on_action` / `off_action` can be called; thermostat entities only accept
 the climate actions below.
 
@@ -91,6 +91,10 @@ the climate actions below.
   - `set_temperature` with `temperature`, within the card's `min`/`max` if set (`400` otherwise),
   - `set_preset_mode` with `preset_mode`; when the card has `presets`, only their `preset` values (`403` otherwise),
   - `set_hvac_mode` with `hvac_mode` `off` or the card's `hvac_mode` (default `heat`).
+- **Control a media player**: `{ "service": "homeassistant", "endpoint": "media", "entity_id": "media_player.living_room", "action": "volume_set", "volume_level": 0.4 }`.
+  The entity must be a player or speaker of a `mediaplayer` card. `action` is one of `media_play_pause`,
+  `media_next_track`, `media_previous_track`, `media_seek` (with `seek_position` in seconds), `volume_set` (with
+  `volume_level` 0–1), `join` (with `group_members`, other players or speakers of media player cards) and `unjoin`.
 
 ### `weather`
 - **Parameters**:
@@ -155,6 +159,12 @@ the climate actions below.
   ```
 
 ---
+
+### Media player artwork
+**Endpoint**: `GET /api/ha/artwork?entity_id=media_player.living_room`
+**Description**: Returns the cover art of a player or speaker of a `mediaplayer` card. The server reads the picture
+URL from the entity's state and fetches it with the Home Assistant token (external picture URLs without it). `404`
+when there is no artwork, including in demo mode; `403` for other entities.
 
 ## 2. Configuration API
 **Endpoint**: `GET /api/config`

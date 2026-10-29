@@ -63,6 +63,12 @@ pages:
         #   - { name: Comfort, temperature: 21, icon: Sun }
         #   - { name: Eco, preset: eco, icon: Leaf }
 
+      # Home Assistant media players (swipe between several)
+      # - id: music
+      #   type: mediaplayer
+      #   entities:
+      #     - media_player.living_room
+
       # Several rooms in one card (as rows when one wide, as columns when wider)
       # - id: climate
       #   type: thermostats

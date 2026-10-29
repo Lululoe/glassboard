@@ -1,7 +1,7 @@
 import { findCard, getAllCards, getConfig } from '../config.js';
 import { HttpError } from '../errors.js';
 import { getGridApps } from './appstatus.js';
-import { climateCall, getClimateConfigs } from './homeassistant.js';
+import { climateCall, getClimateConfigs, getMediaEntityIds, mediaCall } from './homeassistant.js';
 
 /**
  * Demo mode answers every `/api` service with simulated data instead of calling real backends,
@@ -300,8 +300,107 @@ function climate(params) {
     return [climateState(body.entity_id)];
 }
 
+/**
+ * Simulated tracks: [title, artist, album, duration in seconds].
+ * @type {Array<[string, string, string, number]>}
+ */
+const TRACKS = [
+    ['Midnight Tides', 'Lumen Harbor', 'Northern Lights', 232],
+    ['Paper Lanterns', 'Saltwater Choir', 'Tidewater', 198],
+    ['Low Orbit Radio', 'Ep. 112: Small Satellites', 'Low Orbit', 2710],
+    ['Glass Gardens', 'Mira Vale', 'Bloom', 214],
+    ['Rain on Tin', 'Sleep Sounds', 'Night', 3600],
+];
+// Pause, seek, volume set, previous, next, play and grouping
+const MEDIA_FEATURES = 1 | 2 | 4 | 16 | 32 | 16384 | 524288;
+const mediaStates = new Map();
+
+function mediaPlayer(entityId) {
+    if (!mediaStates.has(entityId)) {
+        const ids = [...getMediaEntityIds()];
+        const index = Math.max(0, ids.indexOf(entityId));
+        // The first two players play together, the third is paused, the fourth has nothing on
+        const mode = ['playing', 'playing', 'paused', 'idle'][index % 4];
+        mediaStates.set(entityId, {
+            mode,
+            track: index % TRACKS.length,
+            startedAt: Date.now() - (40 + index * 37) * 1000,
+            position: 61 + index * 13,
+            volume: [0.45, 0.3, 0.35, 0.2][index % 4],
+            group: index < 2 && ids.length > 1 ? ids.slice(0, 2) : [entityId],
+        });
+    }
+    return mediaStates.get(entityId);
+}
+
+function mediaPosition(m) {
+    const duration = TRACKS[m.track][3];
+    return m.mode === 'playing' ? ((Date.now() - m.startedAt) / 1000) % duration : m.position;
+}
+
+function mediaState(entityId) {
+    const m = mediaPlayer(entityId);
+    const [title, artist, album, duration] = TRACKS[m.track];
+    const name = entityId.split('.')[1].replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
+    const playing = m.mode !== 'idle';
+    return {
+        entity_id: entityId,
+        state: m.mode,
+        attributes: {
+            friendly_name: name,
+            supported_features: MEDIA_FEATURES,
+            volume_level: m.volume,
+            is_volume_muted: false,
+            group_members: m.group,
+            ...(playing ? {
+                media_title: title,
+                media_artist: artist,
+                media_album_name: album,
+                media_duration: duration,
+                media_position: Math.round(mediaPosition(m)),
+                media_position_updated_at: new Date().toISOString(),
+                app_name: 'Music',
+            } : {}),
+        },
+    };
+}
+
+function mediaAction(params) {
+    const { service, body } = mediaCall(params);
+    const m = mediaPlayer(body.entity_id);
+    const restart = () => { m.startedAt = Date.now(); m.position = 0; };
+    if (service === 'media_play_pause') {
+        if (m.mode === 'playing') {
+            m.position = mediaPosition(m);
+            m.mode = 'paused';
+        } else {
+            m.startedAt = Date.now() - m.position * 1000;
+            m.mode = 'playing';
+        }
+    } else if (service === 'media_next_track' || service === 'media_previous_track') {
+        m.track = (m.track + (service === 'media_next_track' ? 1 : TRACKS.length - 1)) % TRACKS.length;
+        if (m.mode === 'idle') m.mode = 'playing';
+        restart();
+    } else if (service === 'media_seek') {
+        m.position = body.seek_position;
+        m.startedAt = Date.now() - body.seek_position * 1000;
+    } else if (service === 'volume_set') {
+        m.volume = body.volume_level;
+    } else if (service === 'join') {
+        const group = [body.entity_id, ...body.group_members.filter(id => !m.group.includes(id))];
+        const members = [...new Set([...m.group, ...group])];
+        members.forEach(id => { mediaPlayer(id).group = members; });
+    } else if (service === 'unjoin') {
+        const rest = m.group.filter(id => id !== body.entity_id);
+        rest.forEach(id => { mediaPlayer(id).group = rest.length > 1 ? rest : [id]; });
+        m.group = [body.entity_id];
+    }
+    return [mediaState(body.entity_id)];
+}
+
 function entityState(entityId, index) {
     if (thermostatCards().some(card => card.entity_id === entityId)) return climateState(entityId);
+    if (getMediaEntityIds().has(entityId)) return mediaState(entityId);
     if (!haStates.has(entityId)) {
         const entity = findEntity(entityId);
         // Alternate initial states so both on and off tiles show
@@ -323,6 +422,7 @@ function homeassistant(params) {
         return entityState(endpoint.slice('states/'.length), 0);
     }
     if (endpoint === 'climate') return climate(params);
+    if (endpoint === 'media') return mediaAction(params);
     if (endpoint === 'services') {
         const { entity_id: entityId, action } = params;
         const entity = findEntity(entityId);
@@ -382,4 +482,6 @@ export const demoHandlers = Object.fromEntries(Object.entries({
  */
 export function resetDemoState() {
     haStates.clear();
+    climateStates.clear();
+    mediaStates.clear();
 }

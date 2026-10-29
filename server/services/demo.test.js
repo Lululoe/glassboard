@@ -27,6 +27,7 @@ describe('demo mode', () => {
                         },
                     },
                     { id: 'heat', type: 'thermostat', entity_id: 'climate.demo_room' },
+                    { id: 'music', type: 'mediaplayer', entities: ['media_player.den', 'media_player.patio', 'media_player.attic'] },
                 ],
             }],
         });
@@ -111,6 +112,27 @@ describe('demo mode', () => {
 
         await expect(ha({ endpoint: 'climate', entity_id: 'climate.nope', action: 'set_temperature', temperature: 20 }))
             .rejects.toMatchObject({ status: 403 });
+    });
+
+    it('simulates media players, playback and grouping', async () => {
+        const ha = demoHandlers.homeassistant;
+        const read = async () => ha({ endpoint: 'states', entity_ids: ['media_player.den', 'media_player.patio', 'media_player.attic'] });
+
+        const before = await read();
+        expect(before['media_player.den']).toMatchObject({ state: 'playing', attributes: { media_title: 'Midnight Tides' } });
+        expect(before['media_player.den'].attributes.group_members).toEqual(['media_player.den', 'media_player.patio']);
+        expect(before['media_player.attic'].state).toBe('paused');
+
+        await ha({ endpoint: 'media', entity_id: 'media_player.den', action: 'media_play_pause' });
+        await ha({ endpoint: 'media', entity_id: 'media_player.attic', action: 'media_next_track' });
+        await ha({ endpoint: 'media', entity_id: 'media_player.patio', action: 'unjoin' });
+        await ha({ endpoint: 'media', entity_id: 'media_player.den', action: 'join', group_members: ['media_player.attic'] });
+
+        const after = await read();
+        expect(after['media_player.den'].state).toBe('paused');
+        expect(after['media_player.attic']).toMatchObject({ state: 'paused', attributes: { media_title: 'Glass Gardens', media_position: 0 } });
+        expect(after['media_player.patio'].attributes.group_members).toEqual(['media_player.patio']);
+        expect(after['media_player.den'].attributes.group_members).toEqual(['media_player.den', 'media_player.attic']);
     });
 
     it('returns daily and hourly forecasts keyed by entity id', async () => {

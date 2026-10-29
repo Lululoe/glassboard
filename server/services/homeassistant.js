@@ -54,7 +54,106 @@ export function getClimateConfigs() {
 }
 
 /**
- * Collects every entity id referenced by hacontrol and thermostat cards.
+ * Lists the media players a media player card shows, as `{ entity_id, name }`. Accepts
+ * `entities` (ids or objects) or a single `entity_id`.
+ * @param {Object} card - The media player card config.
+ * @returns {Array<{entity_id: string, name?: string}>} The players.
+ */
+export function mediaPlayersOf(card) {
+    const list = Array.isArray(card.entities) ? card.entities : card.entity_id ? [card.entity_id] : [];
+    return list
+        .map(entry => (typeof entry === 'string' ? { entity_id: entry } : entry))
+        .filter(entry => entry?.entity_id);
+}
+
+/**
+ * Collects the media player entities of all media player cards: their players and the
+ * speakers listed for grouping and volume.
+ * @returns {Set<string>} Allowed media player entity ids.
+ */
+export function getMediaEntityIds() {
+    const ids = new Set();
+    getAllCards().forEach(card => {
+        if (card.type !== 'mediaplayer') return;
+        mediaPlayersOf(card).forEach(p => ids.add(p.entity_id));
+        (Array.isArray(card.speakers) ? card.speakers : []).forEach(sp => {
+            const id = typeof sp === 'string' ? sp : sp?.entity_id;
+            if (id) ids.add(id);
+        });
+    });
+    return ids;
+}
+
+/**
+ * Validates a media player action and returns the Home Assistant service and body for it.
+ * Only playback, seeking, volume and grouping of media players on media player cards are
+ * allowed; grouped speakers must be on a media player card too.
+ * @param {Object} params - Request parameters (`entity_id`, `action` and its value).
+ * @returns {{service: string, body: Object}} The media_player service and its body.
+ * @throws {HttpError} 403 for entities not on a media player card, 400 for invalid values.
+ */
+export function mediaCall(params) {
+    const { entity_id: entityId, action } = params;
+    const allowed = getMediaEntityIds();
+    if (!allowed.has(entityId)) throw new HttpError(403, `Entity not authorized: ${entityId}`);
+    const body = { entity_id: entityId };
+
+    switch (action) {
+        case 'media_play_pause':
+        case 'media_next_track':
+        case 'media_previous_track':
+        case 'unjoin':
+            return { service: action, body };
+        case 'media_seek': {
+            const position = Number(params.seek_position);
+            if (!Number.isFinite(position) || position < 0) throw new HttpError(400, 'seek_position must be a positive number');
+            return { service: action, body: { ...body, seek_position: position } };
+        }
+        case 'volume_set': {
+            const level = Number(params.volume_level);
+            if (!Number.isFinite(level) || level < 0 || level > 1) throw new HttpError(400, 'volume_level must be between 0 and 1');
+            return { service: action, body: { ...body, volume_level: level } };
+        }
+        case 'join': {
+            const members = Array.isArray(params.group_members) ? params.group_members : [];
+            if (members.length === 0 || members.some(id => typeof id !== 'string' || id === entityId)) {
+                throw new HttpError(400, 'group_members must list other media players');
+            }
+            const stranger = members.find(id => !allowed.has(id));
+            if (stranger) throw new HttpError(403, `Entity not authorized: ${stranger}`);
+            return { service: action, body: { ...body, group_members: members } };
+        }
+        default:
+            throw new HttpError(400, `Unknown media player action: ${action}`);
+    }
+}
+
+/**
+ * Loads the artwork of a media player through the server, because Home Assistant's
+ * picture URLs need its access token. The picture path comes from the entity's state on
+ * the server, never from the browser.
+ * @param {string} entityId - A media player on a media player card.
+ * @returns {Promise<{contentType: string, body: Buffer}|null>} The image, or null when there is none.
+ */
+export async function fetchArtwork(entityId) {
+    if (!getMediaEntityIds().has(entityId)) throw new HttpError(403, `Entity not authorized: ${entityId}`);
+    const { url, token } = getHaConfig();
+    const state = await haFetch(`/states/${encodeURIComponent(entityId)}`);
+    const picture = state?.attributes?.entity_picture;
+    if (typeof picture !== 'string' || !picture) return null;
+
+    const absolute = /^https?:\/\//.test(picture);
+    const response = await fetch(absolute ? picture : `${url}${picture.startsWith('/') ? '' : '/'}${picture}`, {
+        headers: absolute ? {} : { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) throw await upstreamError('Home Assistant artwork', response);
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    if (!contentType.startsWith('image/')) throw new HttpError(502, 'Artwork is not an image');
+    return { contentType, body: Buffer.from(await response.arrayBuffer()) };
+}
+
+/**
+ * Collects every entity id referenced by hacontrol, thermostat and media player cards.
  * Only these entities may be read through the API.
  * @returns {Set<string>} Allowed entity ids.
  */
@@ -66,6 +165,7 @@ export function getValidEntityIds() {
         }
     });
     getClimateConfigs().forEach(c => entityIds.add(c.entity_id));
+    getMediaEntityIds().forEach(id => entityIds.add(id));
     return entityIds;
 }
 
@@ -147,6 +247,8 @@ function assertEntityAllowed(entityId, allowed) {
  * - `endpoint: 'services'` with `entity_id` and `action` calls the configured service.
  * - `endpoint: 'climate'` with `entity_id`, `action` (`set_temperature`, `set_preset_mode`,
  *   `set_hvac_mode`) and its value controls the climate entity of a thermostat card.
+ * - `endpoint: 'media'` with `entity_id`, `action` and its value controls a media player
+ *   of a media player card (see mediaCall).
  * @param {Object} params - Request parameters.
  * @returns {Promise<Object>} Home Assistant response data.
  */
@@ -188,6 +290,11 @@ export async function handleHaRequest(params) {
     if (endpoint === 'climate') {
         const { service, body } = climateCall(params);
         return haFetch(`/services/climate/${service}`, { method: 'POST', body: JSON.stringify(body) });
+    }
+
+    if (endpoint === 'media') {
+        const { service, body } = mediaCall(params);
+        return haFetch(`/services/media_player/${service}`, { method: 'POST', body: JSON.stringify(body) });
     }
 
     throw new HttpError(400, `Unknown Home Assistant endpoint: ${endpoint}`);

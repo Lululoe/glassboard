@@ -39,8 +39,8 @@ two- and three-wide cards are one wide on a phone. The card is told its narrower
 layout rather than a squeezed wide one. On tablets later cards move up to fill gaps left by wide cards.
 
 Not every card works at every size. In edit mode each card only offers the sizes its type supports; most cards
-support one to three wide, `hacontrol` and `spacer` also support half and quarter, and `thermostat` supports
-quarter, half and one wide. A size set in
+support one to three wide, `hacontrol` and `spacer` also support half and quarter, and `thermostat` and
+`mediaplayer` support quarter, half and one wide. A size set in
 `config.yaml` is always used, even if edit mode would not offer it.
 
 ## Editing the Dashboard
@@ -322,6 +322,47 @@ The heating state comes from the entity's `hvac_action`, so it shows whether the
     - { name: Comfort, temperature: 21, icon: Sun }
     - { name: Eco, preset: eco, icon: Leaf }
     - { name: Night, temperature: 18.5, icon: Moon }
+```
+
+---
+
+## Media Player (`mediaplayer`)
+Now playing and controls for Home Assistant `media_player` entities, with cover art.
+
+| Size | Shows |
+|------|-------|
+| `colSpan: 1` (default) | Cover art filling the card, the player name, a speaker button, and a frosted panel with a progress bar (drag it to seek), title, artist and previous / play / next. |
+| `tileSize: half` | Cover on the left; name, speaker button, title, artist and controls on the right, progress along the bottom. |
+| `tileSize: quarter` | Cover as background, name, title and a play/pause key. |
+
+With several players the one-wide and half cards swipe between them (dots show which one is shown); the quarter
+tile shows the first. Buttons a player does not support (e.g. seeking or skipping) are left out.
+
+The speaker button opens a sheet with a volume slider for each speaker and, for players that support Home
+Assistant grouping (e.g. Sonos), a check to add the speaker to the playing group or remove it. The number of grouped
+speakers shows on the button.
+
+Cover art is loaded through the Glassboard server, which adds the Home Assistant token, so the browser never needs
+access to Home Assistant. Without art (and in demo mode) the card shows a gradient generated from the track.
+
+### Configuration
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `entities` | array | | Players to show: entity ids, or `{ entity_id, name }`. |
+| `entity_id` | string | | A single player, instead of `entities`. |
+| `speakers` | array | the players | Speakers listed in the speaker sheet: entity ids, or `{ entity_id, name }`. |
+
+### Example
+```yaml
+- id: music
+  type: mediaplayer
+  entities:
+    - media_player.living_room
+    - { entity_id: media_player.kitchen_sonos, name: Kitchen }
+  speakers:
+    - media_player.living_room
+    - media_player.kitchen_sonos
+    - media_player.bedroom
 ```
 
 ---

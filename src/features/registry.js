@@ -4,6 +4,8 @@ import GitCard from './Git/GitCard';
 import HAControlCard from './HomeAssistant/HAControlCard';
 import HAControlEditor from './HomeAssistant/HAControlEditor';
 import MediaCard from './Media/MediaCard';
+import MediaPlayerCard from './MediaPlayer/MediaPlayerCard';
+import MediaPlayerEditor from './MediaPlayer/MediaPlayerEditor';
 import ProxmoxCard from './Proxmox/ProxmoxCard';
 import ServerStatsCard from './ServerStats/ServerStatsCard';
 import SpacerCard from './Spacer/SpacerCard';
@@ -25,6 +27,7 @@ export const cardRegistry = {
     git: GitCard,
     hacontrol: HAControlCard,
     media: MediaCard,
+    mediaplayer: MediaPlayerCard,
     proxmox: ProxmoxCard,
     serverstats: ServerStatsCard,
     spacer: SpacerCard,
@@ -89,6 +92,14 @@ export const cardInfo = {
         description: 'Shortcuts to your apps with online status',
         icon: 'lu-LayoutGrid',
         Editor: AppGridEditor,
+    },
+    mediaplayer: {
+        name: 'Media Player',
+        description: 'Now playing, controls and speakers for Home Assistant players',
+        icon: 'lu-Music',
+        sizes: ['quarter', 'half', '1'],
+        defaults: { entities: [] },
+        Editor: MediaPlayerEditor,
     },
     media: {
         name: 'Media Calendar',

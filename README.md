@@ -22,6 +22,7 @@ This project was born out of a desire for a dashboard that didn't just function 
 -   **Live State**: Real-time status updates and attribute displays (e.g., brightness, temperature).
 -   **Single Thermostat**: Target slider, heating state and presets for one climate entity, as a quarter, half or full tile.
 -   **Multiroom Thermostat**: Up to six rooms in one card, as rows or columns, with per-room presets.
+-   **Media Player**: Cover art, playback controls, seeking, and per-speaker volume and grouping for Home Assistant players.
 
 ### 🎬 Media Center
 -   **Unified Media Card**: A powerful, consolidated view for **Sonarr** and **Radarr**.
