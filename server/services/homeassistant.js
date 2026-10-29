@@ -1,10 +1,6 @@
 import { getAllCards, getServiceConfig } from '../config.js';
 import { HttpError, upstreamError } from '../errors.js';
 
-const WEATHER_CACHE_DURATION = 30 * 60 * 1000;
-const FORECAST_TYPES = new Set(['daily', 'hourly', 'twice_daily']);
-const weatherCache = new Map();
-
 /**
  * Resolves Home Assistant connection settings.
  * @returns {{url: string, token: string}} Base URL (without trailing slash) and access token.
@@ -36,7 +32,7 @@ async function haFetch(apiPath, init = {}) {
 }
 
 /**
- * Collects every entity id referenced by hacontrol and weather cards.
+ * Collects every entity id referenced by hacontrol cards.
  * Only these entities may be read through the API.
  * @returns {Set<string>} Allowed entity ids.
  */
@@ -45,9 +41,6 @@ export function getValidEntityIds() {
     getAllCards().forEach(card => {
         if (card.type === 'hacontrol') {
             (card.data?.entities || []).forEach(e => e.entity_id && entityIds.add(e.entity_id));
-        } else if (card.type === 'weather') {
-            const id = card.entity_id || card.data?.entity_id;
-            if (id) entityIds.add(id);
         }
     });
     return entityIds;
@@ -118,35 +111,4 @@ export async function handleHaRequest(params) {
     }
 
     throw new HttpError(400, `Unknown Home Assistant endpoint: ${endpoint}`);
-}
-
-/**
- * Fetches a weather forecast via the `weather.get_forecasts` service, cached for 30 minutes.
- * @param {Object} params
- * @param {string} params.entity_id - Weather entity configured on a weather card.
- * @param {string} [params.type='daily'] - 'daily', 'hourly' or 'twice_daily'.
- * @returns {Promise<Object>} The service response from Home Assistant.
- */
-export async function handleWeatherRequest({ entity_id: entityId, type = 'daily' }) {
-    if (!entityId) throw new HttpError(400, 'entity_id is required');
-    if (!FORECAST_TYPES.has(type)) throw new HttpError(400, `Invalid forecast type: ${type}`);
-    assertEntityAllowed(entityId, getValidEntityIds());
-
-    const cacheKey = `${entityId}:${type}`;
-    const cached = weatherCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < WEATHER_CACHE_DURATION) return cached.data;
-
-    const data = await haFetch('/services/weather/get_forecasts?return_response=true', {
-        method: 'POST',
-        body: JSON.stringify({ entity_id: [entityId], type }),
-    });
-    weatherCache.set(cacheKey, { timestamp: Date.now(), data });
-    return data;
-}
-
-/**
- * Clears the weather forecast cache. Intended for tests.
- */
-export function clearWeatherCache() {
-    weatherCache.clear();
 }

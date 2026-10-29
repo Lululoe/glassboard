@@ -7,7 +7,7 @@ describe('validateConfig', () => {
         expect(validateConfig({
             theme: 'default',
             pages: [
-                { id: 'home', cards: [{ id: 'w', type: 'weather', colSpan: 2, entity_id: 'weather.home' }] },
+                { id: 'home', cards: [{ id: 'w', type: 'weather', colSpan: 2, location: 'Berlin' }] },
                 { id: 'status', type: 'iframe', url: 'https://status.local' },
             ],
         })).toEqual([]);

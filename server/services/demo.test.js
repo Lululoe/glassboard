@@ -95,10 +95,11 @@ describe('demo mode', () => {
     });
 
     it('returns daily and hourly forecasts keyed by entity id', async () => {
-        const daily = await demoHandlers.weather({ entity_id: 'weather.home' });
-        expect(daily['weather.home'].forecast).toHaveLength(7);
-        const hourly = await demoHandlers.weather({ entity_id: 'weather.home', type: 'hourly' });
-        expect(hourly['weather.home'].forecast).toHaveLength(24);
+        const daily = await demoHandlers.weather({ cardId: 'weather' });
+        expect(daily.forecast).toHaveLength(7);
+        expect(daily.units).toBe('metric');
+        const hourly = await demoHandlers.weather({ cardId: 'weather', type: 'hourly' });
+        expect(hourly.forecast).toHaveLength(24);
     });
 
     it('routes /api to the simulated handlers and reports demo mode in /api/config', async () => {

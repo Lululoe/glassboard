@@ -36,7 +36,7 @@ This project was born out of a desire for a dashboard that didn't just function 
 -   **Server Stats**: Real-time resource usage (CPU, RAM, Disk, Network) via Glances integration.
 
 ### ☀️ Dashboard Utilities
--   **Weather**: Daily forecast card integrated with Home Assistant weather entities.
+-   **Weather**: Daily and hourly forecast from the free [Open-Meteo](https://open-meteo.com) API — no API key or Home Assistant needed.
 -   **App Grid**: Quick launcher for your self-hosted services (Plex, TrueNAS, etc.).
 -   **Global Launcher**: A persistent popup launcher in the header for quick access to apps from anywhere.
 
@@ -62,7 +62,7 @@ pages:
       - id: weather
         type: weather
         colSpan: 2
-        entity_id: "weather.home"
+        location: "Berlin" # or latitude/longitude
 
       - id: proxmox
         type: proxmox

@@ -1,13 +1,12 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setConfig } from '../config.js';
-import { clearWeatherCache, handleHaRequest, handleWeatherRequest } from './homeassistant.js';
+import { handleHaRequest } from './homeassistant.js';
 
 const okResponse = (body) => ({ ok: true, status: 200, json: async () => body, text: async () => '' });
 
 describe('Home Assistant service', () => {
     beforeEach(() => {
-        clearWeatherCache();
         setConfig({
             services: { homeassistant: { url: 'http://ha.local/', token: 'tkn' } },
             pages: [{
@@ -21,7 +20,7 @@ describe('Home Assistant service', () => {
                             }],
                         },
                     },
-                    { id: 'wx', type: 'weather', data: { entity_id: 'weather.home' } },
+                    { id: 'sensors', type: 'hacontrol', data: { entities: [{ entity_id: 'sensor.temp' }] } },
                 ],
             }],
         });
@@ -34,8 +33,8 @@ describe('Home Assistant service', () => {
     });
 
     it('fetches several allowed entity states in one request', async () => {
-        const result = await handleHaRequest({ endpoint: 'states', entity_ids: ['light.allowed', 'weather.home'] });
-        expect(Object.keys(result)).toEqual(['light.allowed', 'weather.home']);
+        const result = await handleHaRequest({ endpoint: 'states', entity_ids: ['light.allowed', 'sensor.temp'] });
+        expect(Object.keys(result)).toEqual(['light.allowed', 'sensor.temp']);
         expect(fetch).toHaveBeenCalledWith('http://ha.local/api/states/light.allowed', expect.anything());
         expect(fetch.mock.calls[0][1].headers.Authorization).toBe('Bearer tkn');
     });
@@ -59,14 +58,5 @@ describe('Home Assistant service', () => {
     it('maps upstream failures to 502', async () => {
         fetch.mockResolvedValueOnce({ ok: false, status: 401, text: async () => 'Unauthorized' });
         await expect(handleHaRequest({ endpoint: 'states/light.allowed' })).rejects.toMatchObject({ status: 502 });
-    });
-
-    it('only serves forecasts for configured weather entities and caches them', async () => {
-        await expect(handleWeatherRequest({ entity_id: 'weather.other' })).rejects.toMatchObject({ status: 403 });
-        await expect(handleWeatherRequest({ entity_id: 'weather.home', type: 'weekly' })).rejects.toMatchObject({ status: 400 });
-
-        await handleWeatherRequest({ entity_id: 'weather.home' });
-        await handleWeatherRequest({ entity_id: 'weather.home' });
-        expect(fetch).toHaveBeenCalledTimes(1);
     });
 });

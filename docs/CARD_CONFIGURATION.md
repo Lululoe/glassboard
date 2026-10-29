@@ -210,20 +210,23 @@ Displays active torrent downloads/seeds.
 ---
 
 ## Weather (`weather`)
-Displays daily or hourly weather forecast.
+Displays a daily (7 days) or hourly (24 hours) weather forecast from the free [Open-Meteo](https://open-meteo.com) API. No API key or Home Assistant is required. The forecast refreshes every 30 minutes.
 
 ### Configuration
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `entity_id` | string | required | Home Assistant weather entity ID. The forecast refreshes every 30 minutes. |
-| `icon` | string/object | Custom icon for the card header. |
+| `latitude` / `longitude` | number | — | Coordinates of the forecast location. Takes precedence over `location`. |
+| `location` | string | — | Place name (e.g. `Berlin`), resolved via Open-Meteo geocoding. Required if no coordinates are set. |
+| `units` | string | `metric` | `metric` (°C) or `imperial` (°F). |
+| `icon` | string/object | — | Custom icon for the card header. |
 
 ### Example
 ```yaml
 - id: local_weather
   type: weather
   colSpan: 2
-  entity_id: weather.home
+  location: Berlin # or latitude: 52.52 / longitude: 13.41
+  units: metric
   icon: "lu-Sun" # Optional override
   iconColor: "gold" # Optional override
   iconBackground: "#000" # Optional override

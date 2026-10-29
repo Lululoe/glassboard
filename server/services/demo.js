@@ -277,10 +277,10 @@ function homeassistant(params) {
     throw new HttpError(400, `Unknown Home Assistant endpoint: ${endpoint}`);
 }
 
-const CONDITIONS = ['sunny', 'partlycloudy', 'cloudy', 'rainy', 'partlycloudy', 'sunny', 'pouring'];
+const CONDITIONS = ['Clear', 'Partly cloudy', 'Overcast', 'Rain', 'Partly cloudy', 'Clear', 'Heavy rain'];
 
-function weather({ entity_id: entityId, type = 'daily' }) {
-    if (!entityId) throw new HttpError(400, 'entity_id is required');
+function weather({ cardId, type = 'daily' }) {
+    if (cardId === undefined) throw new HttpError(400, 'cardId is required');
     const forecast = type === 'hourly'
         ? Array.from({ length: 24 }, (_v, h) => {
             const date = new Date();
@@ -289,7 +289,7 @@ function weather({ entity_id: entityId, type = 'daily' }) {
             const hour = date.getHours();
             return {
                 datetime: date.toISOString(),
-                condition: hour < 6 || hour > 20 ? 'clear-night' : CONDITIONS[Math.floor(h / 6) % CONDITIONS.length],
+                condition: hour < 6 || hour > 20 ? 'Clear' : CONDITIONS[Math.floor(h / 6) % CONDITIONS.length],
                 temperature: round(9 + 6 * Math.sin((hour - 9) / 24 * 2 * Math.PI), 0),
                 precipitation: h >= 12 && h < 16 ? 40 : 0,
             };
@@ -299,9 +299,9 @@ function weather({ entity_id: entityId, type = 'daily' }) {
             condition,
             temperature: 14 - (d % 4),
             templow: 6 - (d % 3),
-            precipitation: condition === 'rainy' ? 60 : condition === 'pouring' ? 90 : 0,
+            precipitation: condition === 'Rain' ? 60 : condition === 'Heavy rain' ? 90 : 0,
         }));
-    return { [entityId]: { forecast } };
+    return { forecast, units: 'metric' };
 }
 
 /**

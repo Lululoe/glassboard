@@ -16,7 +16,8 @@ pages:
       - id: weather
         type: weather
         colSpan: 2
-        entity_id: "weather.forecast_home"
+        location: "Berlin" # or set latitude/longitude
+        # units: imperial # default: metric
 
       - id: appgrid
         type: appgrid
