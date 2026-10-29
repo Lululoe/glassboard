@@ -16,6 +16,7 @@ public/wallpapers/*
 services.yaml
 config.yaml
 theme.yaml
+layout.yaml
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

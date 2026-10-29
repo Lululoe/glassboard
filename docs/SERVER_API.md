@@ -166,5 +166,28 @@ keys (`apiKey`, `token`, `secret`, `tokenId`, `password`, `username`) are stripp
 ## 3. Configuration Change Stream
 **Endpoint**: `GET /api/config/events`
 **Description**: [Server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events) stream.
-A `config` event is sent whenever `config.yaml`, `services.yaml` or `theme.yaml` changes; open dashboards reload their
-configuration when they receive it.
+A `config` event is sent whenever `config.yaml`, `services.yaml`, `theme.yaml` or `layout.yaml` changes; open
+dashboards reload their configuration when they receive it.
+
+## 4. Layout API
+Used by edit mode to store the dashboard in `layout.yaml`. Both endpoints answer `403` when `editable: false` is
+set, and the config reloads right away.
+
+### `PUT /api/config/layout`
+Saves the whole dashboard. `pages` maps each grid page key (the page `id`, the page's index for pages without one,
+or `default` for a top-level `cards` list) to its cards in order, with all their properties. Every grid page must
+be included, and every card needs a unique `id` and a `type` (`400` otherwise). Cards from `config.yaml` that are
+missing are stored as removed; cards with unknown ids are stored as new cards. Credential-like keys the browser
+never received are kept from the server's copy of the card.
+
+```json
+{
+  "pages": {
+    "home": [{ "id": "weather", "type": "weather", "colSpan": 2, "location": "Berlin" }],
+    "admin": [{ "id": "gap", "type": "spacer", "tileSize": "half", "hideOn": ["phone"] }]
+  }
+}
+```
+
+### `DELETE /api/config/layout`
+Removes everything saved from the browser, so the dashboard goes back to `config.yaml`.

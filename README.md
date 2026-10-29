@@ -44,6 +44,8 @@ This project was born out of a desire for a dashboard that didn't just function 
 
 Configuration is managed through `config.yaml` (layout), `services.yaml` (secrets), and an optional `theme.yaml` (styles) in the root directory. Changes are picked up without a restart, and open dashboards reload automatically.
 
+Cards can also be moved, resized, edited, added and removed in the browser: long-press a card or click the pencil button in the header. These changes are saved to `layout.yaml`, so `config.yaml` is never rewritten. There is no login yet; set `editable: false` on dashboards others can reach. See [Editing the Dashboard](docs/CARD_CONFIGURATION.md#editing-the-dashboard).
+
 ### Structure (`config.yaml`)
 ```yaml
 # 1. Themes (Optional overrides)
@@ -126,7 +128,7 @@ All documentation is hosted on the [Glassboard GitHub Wiki](https://github.com/L
     ```bash
     cp .env.example .env
     ```
-    Ensure `config.yaml` and `services.yaml` exist. To override the default themes or add `custom.css`, uncomment the matching volumes in `docker-compose.yml`.
+    Ensure `config.yaml` and `services.yaml` exist. To keep layout changes made in the browser, or to override the default themes or add `custom.css`, uncomment the matching volumes in `docker-compose.yml`.
 
 2.  **Run**:
     ```bash

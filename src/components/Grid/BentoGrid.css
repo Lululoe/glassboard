@@ -1,12 +1,22 @@
-.bento-grid-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--gap-grid);
-    padding: 30px calc(30px + env(safe-area-inset-right)) 30px calc(30px + env(safe-area-inset-left));
+/* Outer wrapper: page padding, and the size container the tile size is measured against */
+.bento-grid {
+    container-type: inline-size;
+    width: 100%;
     max-width: 1220px;
     margin: 0 auto;
-    width: 100%;
+    padding: 30px calc(30px + env(safe-area-inset-right)) 30px calc(30px + env(safe-area-inset-left));
     box-sizing: border-box;
+}
+
+/* Rows are as tall as a column is wide, so every one-wide card is square and rows line up
+   across mixed widths. --cols follows the breakpoints below, which useGridColumns mirrors. */
+.bento-grid-container {
+    --cols: 3;
+    --tile: calc((100cqw - (var(--cols) - 1) * var(--gap-grid)) / var(--cols));
+    display: grid;
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    grid-auto-rows: var(--tile);
+    gap: var(--gap-grid);
     align-content: start;
 }
 
@@ -14,13 +24,14 @@
 .grid-item {
     display: flex;
     min-width: 0;
+    min-height: 0;
     position: relative;
     z-index: 0;
     isolation: isolate;
     animation: card-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-delay: calc(var(--i, 0) * 0.06s);
+    -webkit-touch-callout: none;
 }
-
 
 @keyframes card-enter {
     from {
@@ -33,73 +44,295 @@
     }
 }
 
-/* Make cards size-driven by their width using aspect-ratio.
-   Single-column cards are square. Multi-column spans use a wider
-   aspect-ratio on large screens, but collapse to square on narrow screens. */
-.grid-item>.glass-card {
+.grid-item-body {
+    flex: 1;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+}
+
+.grid-item-body > * {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Cards fill their grid area; the grid decides the shape */
+.grid-item-body > .glass-card {
     width: 100%;
-    height: auto;
-    aspect-ratio: 1 / 1;
-    /* default: square */
+    height: 100%;
 }
 
-/* Two-column and three-column cards get wider aspect ratios on large screens */
-.grid-item.col-span-2>.glass-card {
-    aspect-ratio: 2 / 1;
-}
-
-.grid-item.col-span-3>.glass-card {
-    aspect-ratio: 3 / 1;
-}
-
-/* Column Spans */
-.col-span-1 {
+.grid-item.col-span-1 {
     grid-column: span 1;
 }
 
-.col-span-2 {
+.grid-item.col-span-2 {
     grid-column: span 2;
 }
 
-.col-span-3 {
+.grid-item.col-span-3 {
     grid-column: span 3;
 }
 
-/* Responsive Breakpoints */
+/* Half and quarter cards share a square slot split into 2×2 cells. Each card's place in
+   the slot is set inline by BentoGrid. */
+.grid-slot {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: var(--gap-grid);
+    min-width: 0;
+    min-height: 0;
+}
 
-/* Tablet (2 columns) */
+/* ===== Edit mode ===== */
+
+/* Cards wiggle like iOS jiggle mode. `rotate` is used instead of `transform` so it combines
+   with the drag offset and the move animation. The selectors outrank the page entrance
+   animation in App.css. */
+.bento-grid.editing .grid-item:not(.dragging) {
+    animation: grid-wiggle 0.28s ease-in-out infinite alternate;
+    animation-delay: calc(var(--i, 0) * -0.11s);
+}
+
+.bento-grid.editing .grid-item:nth-child(odd):not(.dragging) {
+    animation-direction: alternate-reverse;
+}
+
+.bento-grid.editing .grid-item.tile-quarter:not(.dragging) {
+    animation-name: grid-wiggle-small;
+}
+
+@keyframes grid-wiggle {
+    from { rotate: -0.45deg; }
+    to { rotate: 0.45deg; }
+}
+
+@keyframes grid-wiggle-small {
+    from { rotate: -1deg; }
+    to { rotate: 1deg; }
+}
+
+/* After editing, cards stay put instead of replaying the page entrance animation */
+.bento-grid.settled .grid-item:not(.dragging) {
+    animation: none;
+}
+
+/* The surface covers the card so it can be grabbed; the card itself is inert while editing */
+.grid-edit-surface {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: var(--radius-card);
+    cursor: grab;
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.grid-edit-surface:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.bento-grid.editing .grid-item.dragging {
+    z-index: 20;
+    pointer-events: none;
+    animation: none;
+    rotate: 1.5deg;
+    filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.35));
+}
+
+.bento-grid.is-dragging,
+.bento-grid.is-dragging .grid-edit-surface {
+    cursor: grabbing;
+}
+
+/* Resize handle: a 44pt hit area with a white disc and a corner mark */
+.grid-resize-handle {
+    position: absolute;
+    right: -10px;
+    bottom: -10px;
+    z-index: 3;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    cursor: nwse-resize;
+    touch-action: none;
+}
+
+.grid-resize-handle::before {
+    content: '';
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--bg-tile, #fff);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.grid-resize-handle::after {
+    content: '';
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-right: 2.5px solid #1c1c1e;
+    border-bottom: 2.5px solid #1c1c1e;
+    border-bottom-right-radius: 3px;
+    transform: translate(-1px, -1px);
+}
+
+.grid-resize-handle:focus-visible {
+    outline: none;
+}
+
+.grid-resize-handle:focus-visible::before {
+    box-shadow: var(--focus-ring);
+}
+
+.grid-item.dragging .grid-resize-handle {
+    display: none;
+}
+
+/* Edit button: top left, like the iOS remove badge, with a 44pt hit area */
+.grid-edit-button {
+    position: absolute;
+    left: -10px;
+    top: -10px;
+    z-index: 3;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    color: #1c1c1e;
+    cursor: pointer;
+}
+
+.grid-edit-button::before {
+    content: '';
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--bg-tile, #fff);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.grid-edit-button svg {
+    position: relative;
+}
+
+.grid-edit-button:focus-visible {
+    outline: none;
+}
+
+.grid-edit-button:focus-visible::before {
+    box-shadow: var(--focus-ring);
+}
+
+.grid-item.dragging .grid-edit-button,
+.grid-item.dragging .grid-hidden-badge {
+    display: none;
+}
+
+/* Cards hidden at this screen size: dimmed while editing, with a label saying why */
+.grid-item.hidden-here > .grid-item-body {
+    opacity: 0.35;
+    filter: saturate(0.4);
+}
+
+.grid-hidden-badge {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 3;
+    transform: translate(-50%, -50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* Glow at the screen edge while dragging; it brightens while a card is held there */
+.grid-page-edge {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 48px;
+    z-index: 150;
+    pointer-events: none;
+    opacity: 0.35;
+    transition: opacity var(--duration-standard) var(--ease-standard);
+}
+
+.grid-page-edge.left {
+    left: 0;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.35), transparent);
+}
+
+.grid-page-edge.right {
+    right: 0;
+    background: linear-gradient(270deg, rgba(255, 255, 255, 0.35), transparent);
+}
+
+.grid-page-edge.active {
+    opacity: 1;
+    animation: grid-edge-pulse 0.65s ease-in-out infinite alternate;
+}
+
+@keyframes grid-edge-pulse {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+}
+
+/* Responsive Breakpoints (keep in sync with useGridColumns) */
+
+/* Tablet (2 columns): fill gaps left by wide cards with later one-wide cards */
 @media (max-width: 1024px) {
     .bento-grid-container {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    /* On medium screens, allow a 2-column span to keep its 2:1 shape,
-       but larger spans should reduce to sensible sizes via grid rules. */
-    .grid-item.col-span-3 {
-        grid-column: span 2;
-    }
-
-    .grid-item.col-span-3>.glass-card {
-        aspect-ratio: 2 / 1;
+        --cols: 2;
+        grid-auto-flow: row dense;
     }
 }
 
 /* Mobile (1 column) */
 @media (max-width: 768px) {
-    .bento-grid-container {
-        grid-template-columns: 1fr;
-        gap: 20px;
+    .bento-grid {
+        --gap-grid: 20px;
         padding: 16px calc(16px + env(safe-area-inset-right)) 16px calc(16px + env(safe-area-inset-left));
     }
 
-    /* Force all cards to span 1 column and be square on small screens */
-    .col-span-1,
-    .col-span-2,
-    .col-span-3 {
-        grid-column: span 1 !important;
+    .bento-grid-container {
+        --cols: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /* No wiggle; a dashed outline shows the cards can be moved */
+    .bento-grid.editing .grid-item:not(.dragging) {
+        animation: none;
     }
 
-    .grid-item>.glass-card {
-        aspect-ratio: 1 / 1 !important;
+    .bento-grid.editing .grid-edit-surface {
+        outline: 2px dashed var(--text-tertiary);
+        outline-offset: 4px;
+    }
+
+    .grid-page-edge.active {
+        animation: none;
+    }
+
+    .bento-grid.editing .grid-item.dragging {
+        rotate: none;
     }
 }

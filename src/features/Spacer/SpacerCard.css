@@ -1,0 +1,12 @@
+.spacer-card {
+    width: 100%;
+    height: 100%;
+    border-radius: var(--radius-card);
+}
+
+/* In edit mode the spacer shows where it is, so it can be moved, resized and removed */
+.bento-grid.editing .spacer-card {
+    border: 2px dashed rgba(255, 255, 255, 0.45);
+    background: rgba(255, 255, 255, 0.06);
+    box-sizing: border-box;
+}

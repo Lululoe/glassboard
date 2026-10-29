@@ -9,6 +9,11 @@ themes: []
 # dashboard before setting anything up. Can also be set with GLASSBOARD_DEMO=true.
 # demo: true
 
+# Cards can be moved, resized, edited, added and removed in the browser (long-press a card, or the
+# pencil button in the header). Changes are saved to layout.yaml, not to this file. There is no login
+# yet, so anyone who can open the dashboard can do this. Set to false to turn it off.
+# editable: false
+
 pages:
   - id: home
     name: "Home"

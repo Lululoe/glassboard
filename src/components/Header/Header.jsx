@@ -1,16 +1,26 @@
 import React, { useState } from 'react';
 import './Header.css';
-import { LayoutTemplate, Sun, Moon, LayoutGrid } from 'lucide-react';
+import { LayoutTemplate, Sun, Moon, LayoutGrid, SquarePen, Plus } from 'lucide-react';
 import LauncherPopup from './LauncherPopup';
 import { useTheme } from '../../context/ThemeContext';
 
 /**
  * Application header component displaying the logo, theme toggle, and launcher grid toggle.
+ * While the layout is being edited it shows Reset and Done instead.
  * @param {Object} props
  * @param {Object} props.config - The global application configuration object.
+ * @param {Object} [props.edit] - Edit mode state and actions.
+ * @param {boolean} props.edit.available - Whether the current page can be edited.
+ * @param {boolean} props.edit.active - Whether edit mode is on.
+ * @param {boolean} [props.edit.saving] - Whether a save is in progress.
+ * @param {string|null} [props.edit.status] - Message shown next to the edit controls.
+ * @param {() => void} props.edit.onStart - Turns edit mode on.
+ * @param {() => void} props.edit.onDone - Saves and leaves edit mode.
+ * @param {() => void} props.edit.onReset - Resets the dashboard to config.yaml.
+ * @param {() => void} props.edit.onAdd - Opens the list of cards to add.
  * @returns {JSX.Element} The rendered header.
  */
-const Header = ({ config }) => {
+const Header = ({ config, edit }) => {
     const [isLauncherOpen, setIsLauncherOpen] = useState(false);
     const { mode, toggleMode } = useTheme();
 
@@ -24,7 +34,39 @@ const Header = ({ config }) => {
                 )}
             </div>
 
+            {edit?.active ? (
+                <div className="header-right">
+                    {edit.status && <span className="header-edit-status" role="status">{edit.status}</span>}
+                    <button
+                        type="button"
+                        className="button-reset icon-button"
+                        onClick={edit.onAdd}
+                        disabled={edit.saving}
+                        title="Add card"
+                        aria-label="Add card"
+                    >
+                        <Plus size={22} aria-hidden="true" />
+                    </button>
+                    <button type="button" className="button-reset header-text-button" onClick={edit.onReset} disabled={edit.saving}>
+                        Reset
+                    </button>
+                    <button type="button" className="button-reset header-done-button" onClick={edit.onDone} disabled={edit.saving}>
+                        Done
+                    </button>
+                </div>
+            ) : (
             <div className="header-right">
+                {edit?.available && (
+                    <button
+                        type="button"
+                        className="button-reset icon-button"
+                        onClick={edit.onStart}
+                        title="Edit layout"
+                        aria-label="Edit layout"
+                    >
+                        <SquarePen size={20} aria-hidden="true" />
+                    </button>
+                )}
                 {config?.themeToggle !== false && (
                     <button
                         type="button"
@@ -48,6 +90,7 @@ const Header = ({ config }) => {
                     <LayoutGrid size={20} aria-hidden="true" />
                 </button>
             </div>
+            )}
 
             {isLauncherOpen && (
                 <LauncherPopup

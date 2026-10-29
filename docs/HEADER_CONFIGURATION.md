@@ -37,6 +37,13 @@ in the browser; switching back to the system's mode clears it, so the dashboard 
 
 ---
 
+## Edit Button
+The pencil button turns on edit mode, where cards can be moved, resized, edited, added and removed; the header
+then shows **+** (add a card), **Reset** and **Done**. See [Editing the Dashboard](CARD_CONFIGURATION#editing-the-dashboard).
+The button is hidden on iframe pages and when `editable: false` is set.
+
+---
+
 ## Demo Label
 In demo mode (`demo: true` or `GLASSBOARD_DEMO=true`) the header shows a "Demo" label next to the title, so
 simulated data is never mistaken for real data.

@@ -46,3 +46,40 @@ export function callService(service, params = {}) {
     }
     return inflight.get(body);
 }
+
+/**
+ * Sends a JSON request to a config endpoint and throws an ApiError when it fails.
+ * @param {string} method - HTTP method.
+ * @param {string} url - Endpoint URL.
+ * @param {Object} [body] - JSON body.
+ * @returns {Promise<*>} Parsed response data.
+ */
+async function send(method, url, body) {
+    const res = await fetch(url, {
+        method,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+        cache: 'no-store',
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) throw new ApiError(data?.error || `Request failed (${res.status})`, res.status);
+    return data;
+}
+
+/**
+ * Saves the dashboard as edited in the browser: every grid page's cards, in order, with their
+ * full properties. The server stores what differs from config.yaml in layout.yaml.
+ * @param {Object<string, Array<Object>>} pages - Cards per page key (page id, or index without one).
+ * @returns {Promise<*>} The server response.
+ */
+export function saveLayout(pages) {
+    return send('PUT', '/api/config/layout', { pages });
+}
+
+/**
+ * Removes everything saved from the browser, so the dashboard goes back to config.yaml.
+ * @returns {Promise<*>} The server response.
+ */
+export function resetLayout() {
+    return send('DELETE', '/api/config/layout');
+}

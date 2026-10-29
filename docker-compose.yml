@@ -7,6 +7,9 @@ services:
     volumes:
       - ${CONFIG_FILE:-./config.yaml}:/app/config.yaml
       - ${SERVICES_FILE:-./services.yaml}:/app/services.yaml
+      # Optional: keep layout changes made in edit mode. Create the file first (touch layout.yaml),
+      # otherwise Docker mounts a directory.
+      # - ./layout.yaml:/app/layout.yaml
       # Optional: override the default themes or add custom styles.
       # - ./theme.yaml:/app/theme.yaml
       # - ./custom.css:/app/custom.css

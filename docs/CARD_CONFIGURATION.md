@@ -13,7 +13,90 @@ All cards support these base options:
 | `id` | string | required | Unique identifier for the card (across all pages). |
 | `type` | string | required | The component type of the card. |
 | `colSpan` | number | 1 | Width of the card in grid columns (1-3). |
+| `tileSize` | string | | `half` or `quarter` for a card smaller than one tile (see below). Overrides `colSpan`. |
+| `hideOn` | array | | Screen sizes the card is hidden on: `phone`, `tablet` and/or `desktop`. |
 | `primaryColor` | string | | Sets `--card-primary` for the card (overrides theme/default). |
+
+---
+
+## Card Sizes
+The grid has three columns on wide screens, two on tablets (up to 1024px) and one on phones (up to 768px). Rows
+are as tall as a column is wide, so a one-wide card is always square.
+
+| Size | Config | Shape |
+|------|--------|-------|
+| Quarter | `tileSize: quarter` | A quarter of a tile. Up to four share one tile. |
+| Half | `tileSize: half` | Full tile width, half height. Two share one tile, stacked. |
+| One wide | `colSpan: 1` (default) | One square tile. |
+| Two wide | `colSpan: 2` | Two tiles side by side. |
+| Three wide | `colSpan: 3` | A full row. |
+
+Half and quarter cards that follow each other in the config fill a shared tile in order, each taking the first
+free spot; a card that no longer fits starts a new tile. A full-size card in between also starts a new tile.
+
+On smaller screens cards wider than the grid are narrowed to fit: a three-wide card is two wide on a tablet, and
+two- and three-wide cards are one wide on a phone. The card is told its narrower width, so it shows its one-wide
+layout rather than a squeezed wide one. On tablets later cards move up to fill gaps left by wide cards.
+
+Not every card works at every size. In edit mode each card only offers the sizes its type supports; most cards
+support one to three wide, and `hacontrol` and `spacer` also support half and quarter. A size set in
+`config.yaml` is always used, even if edit mode would not offer it.
+
+## Editing the Dashboard
+Long-press a card, or click the pencil button in the header, to edit the dashboard. The cards wiggle and stop
+reacting to taps:
+
+- **Move**: drag a card to a new place. On touch screens rest your finger for a moment before dragging, so a
+  quick swipe still scrolls the page.
+- **Move to another page**: drag a card to the left or right edge of the screen and hold it there. The edge
+  lights up, and after a moment the previous or next page opens with the card still under your finger.
+- **Resize**: drag the round handle in a card's bottom-right corner, or tap it to step through the sizes.
+- **Edit**: tap the pencil on a card's top-left corner. **Settings** has the card's size, the screen sizes it is
+  shown on, and a form for the card's options if it has one (Weather, App Grid and HA Control do). **YAML**
+  edits every option of the card, exactly as in `config.yaml`. The card can also be removed here.
+- **Add**: the **+** button in the header lists every card type, including **Empty Space** (see below). New cards
+  go to the end of the current page and open in the editor.
+- **Keyboard**: Tab to a card, then use the arrow keys to move it and `+` / `-` to resize it.
+- **Done** saves everything; tapping the background or pressing Escape does the same.
+- **Reset** throws away every change made in the browser, including added cards, and goes back to `config.yaml`.
+
+### Hiding cards on some screens
+Each card can be hidden on phones, tablets or desktops with the switches in its editor, or with `hideOn`:
+
+```yaml
+- id: big_chart
+  type: serverstats
+  colSpan: 3
+  hideOn: [phone]
+```
+
+While editing, hidden cards stay visible but dimmed, labelled "Hidden on phone" (or tablet/desktop), so they can
+still be moved and edited.
+
+### Where changes are saved
+Changes are saved to `layout.yaml` next to `config.yaml`, never to `config.yaml` itself, so your comments and
+formatting stay untouched. Every device sees the saved dashboard. For cards from `config.yaml`, `layout.yaml`
+only stores the page, position, size and visibility, unless the card's options were changed in the browser; then
+it stores the whole card, and later edits to that card in `config.yaml` are ignored until you reset. Cards added
+in the browser live only in `layout.yaml`, and cards removed in the browser are listed under `removed`. Cards added
+to `config.yaml` later appear after the saved ones. Deleting `layout.yaml` (or **Reset**) restores the dashboard
+from `config.yaml`.
+
+Saving needs an `id` on every card. Secrets such as API keys and passwords are never sent to the browser; when a
+card is saved, the server keeps the values it already has.
+
+> **Security**: the dashboard has no login yet. While editing is on, anyone who can open the dashboard can change
+> any card, including Home Assistant entities and actions and the URLs the server connects to (sometimes with
+> credentials from `services.yaml`). Only expose Glassboard on networks you trust, or turn editing off.
+
+Set `editable: false` at the top level of `config.yaml` to turn edit mode off, e.g. for a wall display:
+
+```yaml
+editable: false
+```
+
+With Docker, mount a `layout.yaml` so edits survive a container rebuild (see `docker-compose.yml`). The path can
+also be changed with the `LAYOUT_FILE` environment variable.
 
 ---
 
@@ -121,6 +204,8 @@ Control Home Assistant entities (lights, switches, etc.).
 
 Only the entities listed here can be read through the API, and only their `on_action`/`off_action` can be called. The tile is clickable when both actions are set.
 
+The card shows as many entities as fit its size: one as a quarter tile, two at half height, four per column otherwise.
+
 ### Example
 ```yaml
 - id: lights
@@ -186,6 +271,22 @@ Displays server resource usage (CPU, RAM, Disk, etc.).
   colSpan: 1
   data:
     sensors: ["cpu", "ram", "temp"]
+```
+
+---
+
+## Empty Space (`spacer`)
+An invisible card that only takes up room, to shape the layout: to start a new row, leave a gap next to a wide
+card, or fill the rest of a slot of half and quarter cards. It supports every size and has no options. In edit
+mode it shows as a dashed outline. Spacers added in the browser are hidden on phones by default, where a single
+column has no gaps to shape.
+
+### Example
+```yaml
+- id: gap
+  type: spacer
+  tileSize: half
+  hideOn: [phone]
 ```
 
 ---

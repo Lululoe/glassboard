@@ -86,6 +86,69 @@
     box-shadow: var(--focus-ring);
 }
 
+/* Edit mode controls */
+.header-edit-status {
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--text-secondary);
+    margin-right: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.header-text-button,
+.header-done-button {
+    min-height: 32px;
+    padding: 0 14px;
+    border-radius: 16px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--duration-standard) var(--ease-standard), opacity var(--duration-standard) var(--ease-standard);
+}
+
+.header-text-button {
+    color: var(--color-primary);
+}
+
+.header-done-button {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+@media (pointer: fine) {
+    .header-text-button:hover {
+        background: var(--bg-fill);
+    }
+}
+
+.header-text-button:active,
+.header-done-button:active {
+    opacity: 0.6;
+}
+
+.header-text-button:disabled,
+.header-done-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.header-text-button:focus-visible,
+.header-done-button:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* Small screens: room for the buttons, the status wraps under the title instead */
+@media (max-width: 480px) {
+    .header-edit-status {
+        display: none;
+    }
+}
+
 .avatar-small {
     width: 32px;
     height: 32px;

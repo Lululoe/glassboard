@@ -9,6 +9,10 @@ Create a new directory in `src/features/[FeatureName]`, e.g. `src/features/MyCar
 Cards receive their config entry as `config` and the full dashboard config as `globalConfig`.
 Use `BaseCard` or `TwoToneBase` for the standard look. The grid applies `colSpan` itself.
 
+The grid passes the size the card is shown at: on narrow screens `config.colSpan` is lowered to the number of
+columns, and half and quarter cards get `config.tileSize`. Base the layout on these values rather than on the
+window width, so the card adapts when it is resized in edit mode.
+
 ```jsx
 // src/features/MyCard/MyCard.jsx
 import TwoToneBase from '../../components/Shared/TwoToneBase';
@@ -41,6 +45,44 @@ export const cardRegistry = {
 ```
 
 Each card is wrapped in an error boundary, so a crash shows an error in that card instead of breaking the dashboard.
+
+To make the card available in edit mode's **Add Card** list, describe it in `cardInfo` in the same file:
+
+```js
+import MyCardEditor from './MyCard/MyCardEditor';
+
+export const cardInfo = {
+    // ...
+    mycard: {
+        name: 'My Card',
+        description: 'One line about what it shows',
+        icon: 'lu-Star',
+        sizes: ['quarter', 'half', '1', '2'], // optional, defaults to 1–3 columns
+        defaults: { colSpan: 1, title: 'Hello' }, // optional, properties of a new card
+        Editor: MyCardEditor,                    // optional settings form
+    },
+};
+```
+
+Without `sizes`, edit mode offers one, two and three columns; list `half` and `quarter` only if the card works at
+those sizes.
+
+The optional `Editor` is a settings form shown in the card editor next to the YAML view. It receives the card's
+config and an `onChange` that takes the updated config. Build it from the controls in
+`src/components/Editor/EditorFields.jsx` (`TextField`, `NumberField`, `SegmentedField`, `ToggleField`, `ListField`)
+and update values with `setIn` from `src/components/Editor/setIn.js`, which drops cleared fields:
+
+```jsx
+import { TextField } from '../../components/Editor/EditorFields';
+import { setIn } from '../../components/Editor/setIn';
+
+const MyCardEditor = ({ config, onChange }) => (
+    <TextField label="Title" value={config.title} onChange={(v) => onChange(setIn(config, ['title'], v))} />
+);
+```
+
+Cards without an editor can still be edited as YAML. Size and screen-size visibility are part of every editor
+and do not need to be handled by the card.
 
 ## 4. Load Data (optional)
 If the card needs data from a backend service, fetch it with `usePolling` and `callService`:

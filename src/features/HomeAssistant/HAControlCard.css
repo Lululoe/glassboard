@@ -18,6 +18,23 @@
     grid-template-columns: repeat(6, 1fr);
 }
 
+/* Half tile: two items side by side */
+.ha-control-card.tile-half .ha-control-grid {
+    grid-template-rows: 1fr;
+}
+
+/* Quarter tile: one item fills the card */
+.ha-control-card.tile-quarter .ha-control-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+}
+
+/* Small tiles need less padding to leave room for the item */
+.ha-control-card.tile-half,
+.ha-control-card.tile-quarter {
+    padding: 12px;
+}
+
 .ha-tile {
     /* On tiles are solid white with dark text in both modes, like Apple Home */
     background: var(--bg-tile);

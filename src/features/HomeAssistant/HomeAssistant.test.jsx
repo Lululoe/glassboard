@@ -70,4 +70,20 @@ describe('Home Assistant card', () => {
         expect(await screen.findByText('off')).toBeInTheDocument();
         console.error.mockRestore();
     });
+
+    it('shows as many entities as fit the tile size', async () => {
+        const entities = ['a', 'b', 'c', 'd', 'e'].map(n => ({ entity_id: `light.${n}`, name: `Light ${n}` }));
+        fetch.mockResolvedValue(jsonResponse({}));
+
+        const { rerender, container } = render(<HAControlCard config={{ id: 'l', tileSize: 'quarter', data: { entities } }} />);
+        expect(container.querySelectorAll('.ha-tile')).toHaveLength(1);
+        expect(container.querySelector('.ha-control-card')).toHaveClass('tile-quarter');
+
+        rerender(<HAControlCard config={{ id: 'l', tileSize: 'half', data: { entities } }} />);
+        expect(container.querySelectorAll('.ha-tile')).toHaveLength(2);
+
+        rerender(<HAControlCard config={{ id: 'l', colSpan: 2, data: { entities } }} />);
+        expect(container.querySelectorAll('.ha-tile')).toHaveLength(5);
+        await waitFor(() => expect(fetch).toHaveBeenCalled());
+    });
 });

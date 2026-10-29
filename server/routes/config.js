@@ -1,5 +1,9 @@
 import express from 'express';
-import { getSanitizedConfig, onConfigChange } from '../config.js';
+import { z } from 'zod';
+import { getBaseConfig, getConfig, getSanitizedConfig, loadConfig, onConfigChange, restoreSecrets } from '../config.js';
+import { HttpError } from '../errors.js';
+import { buildLayout, gridPages, resetLayout, writeLayout } from '../layout.js';
+import logger from '../logger.js';
 import { isDemoMode } from '../services/demo.js';
 
 const KEEP_ALIVE_INTERVAL = 30 * 1000;
@@ -31,6 +35,82 @@ router.get('/events', (req, res) => {
         unsubscribe();
         clearInterval(keepAlive);
     });
+});
+
+const layoutCard = z.looseObject({
+    id: z.union([z.string().min(1), z.number()]),
+    type: z.string().min(1),
+    colSpan: z.number().int().min(1).max(3).optional(),
+    tileSize: z.enum(['half', 'quarter']).optional(),
+    hideOn: z.array(z.enum(['phone', 'tablet', 'desktop'])).optional(),
+});
+
+const layoutBody = z.object({
+    pages: z.record(z.string(), z.array(layoutCard).max(500)),
+});
+
+/**
+ * Throws a 403 HttpError when editing is turned off in config.yaml.
+ */
+function assertEditable() {
+    if (getBaseConfig().editable === false) throw new HttpError(403, 'Editing is disabled in config.yaml');
+}
+
+/**
+ * Saves the whole dashboard as edited in the browser: the cards of every grid page, in order,
+ * with their full properties. Every grid page must be included and every card id may appear
+ * only once. Credential-like keys the browser never received are restored from the server's copy.
+ */
+router.put('/layout', (req, res, next) => {
+    try {
+        assertEditable();
+        const parsed = layoutBody.safeParse(req.body);
+        if (!parsed.success) {
+            const issue = parsed.error.issues[0];
+            throw new HttpError(400, `Invalid layout: ${issue.path.join('.')} ${issue.message}`.trim());
+        }
+
+        const basePages = gridPages(getBaseConfig());
+        const sent = parsed.data.pages;
+        const missing = basePages.find(p => !Object.hasOwn(sent, p.key));
+        if (missing) throw new HttpError(400, `Missing page: ${missing.key}`);
+        const unknown = Object.keys(sent).find(key => !basePages.some(p => p.key === key));
+        if (unknown) throw new HttpError(400, `Unknown page: ${unknown}`);
+
+        const seen = new Set();
+        Object.values(sent).flat().forEach(card => {
+            if (seen.has(String(card.id))) throw new HttpError(400, `Duplicate card id "${card.id}"`);
+            seen.add(String(card.id));
+        });
+
+        // Restore secrets from the card as the server currently has it (config.yaml or layout.yaml)
+        const current = new Map(gridPages(getConfig()).flatMap(p => p.cards).map(c => [String(c.id), c]));
+        const pages = Object.fromEntries(Object.entries(sent).map(([key, cards]) => [
+            key,
+            cards.map(card => restoreSecrets(card, current.get(String(card.id)))),
+        ]));
+
+        writeLayout(buildLayout(basePages, pages));
+        logger.info('Saved dashboard layout');
+        loadConfig();
+        res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/** Removes everything saved from the browser, so the dashboard goes back to config.yaml. */
+router.delete('/layout', (req, res, next) => {
+    try {
+        assertEditable();
+        if (resetLayout()) {
+            logger.info('Reset dashboard layout');
+            loadConfig();
+        }
+        res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
 });
 
 export default router;

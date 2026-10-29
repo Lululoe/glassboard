@@ -13,8 +13,9 @@ const HAControlCard = ({ config }) => {
     const { data } = config;
     const entities = data?.entities || [];
 
-    // Limit based on size (colSpan 1 = 4 items, colSpan 2 = 8 items)
-    const maxItems = (config.colSpan || 1) * 4;
+    // Limit based on size: a quarter tile holds 1 item, a half tile 2, and each column 4
+    const tileSize = config.tileSize === 'quarter' || config.tileSize === 'half' ? config.tileSize : null;
+    const maxItems = tileSize === 'quarter' ? 1 : tileSize === 'half' ? 2 : (config.colSpan || 1) * 4;
     const displayEntities = entities.slice(0, maxItems);
 
     const { entityStates, loading, toggleEntity } = useHomeAssistant(displayEntities);
@@ -62,7 +63,7 @@ const HAControlCard = ({ config }) => {
     };
 
     return (
-        <BaseCard className={`ha-control-card col-span-${config.colSpan || 1}`} hoverable={false}>
+        <BaseCard className={`ha-control-card ${tileSize ? `tile-${tileSize}` : `col-span-${config.colSpan || 1}`}`} hoverable={false}>
             <div className="ha-control-grid">
                 {displayEntities.map((entity, idx) => {
                     // Get live state from HA, fallback to config

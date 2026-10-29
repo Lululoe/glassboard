@@ -3,6 +3,7 @@ import path from 'path';
 import yaml from 'js-yaml';
 import logger from './logger.js';
 import { validateConfig } from './configSchema.js';
+import { applyLayout, getLayoutPath, readLayout } from './layout.js';
 
 const configPath = path.resolve(process.cwd(), 'config.yaml');
 const servicesPath = path.resolve(process.cwd(), 'services.yaml');
@@ -12,6 +13,7 @@ const defaultThemePath = path.resolve(process.cwd(), 'theme.example.yaml');
 const SECRET_KEY = /^(api_?key|token|secret|token_?secret|token_?id|password|username)$/i;
 
 let CONFIG = {};
+let BASE_CONFIG = {};
 let version = 0;
 const listeners = new Set();
 
@@ -99,8 +101,9 @@ function mergeThemes(defaults = [], overrides = []) {
 }
 
 /**
- * Loads config.yaml, services.yaml, the theme file and `SERVICES__*` environment
- * variables into the in-memory config, validates it and notifies change listeners.
+ * Loads config.yaml, services.yaml, the theme file, `SERVICES__*` environment variables
+ * and the layout.yaml overlay into the in-memory config, validates it and notifies
+ * change listeners.
  */
 export function loadConfig() {
     if (!fs.existsSync(configPath)) {
@@ -114,6 +117,8 @@ export function loadConfig() {
     let merged = deepMerge(mainConfig, servicesConfig);
     merged.themes = mergeThemes(themeConfig.themes, mainConfig.themes);
     merged = deepMerge(merged, loadEnvConfig());
+    BASE_CONFIG = merged;
+    merged = applyLayout(merged, readLayout());
 
     validateConfig(merged).forEach(problem => logger.warn(`Config: ${problem}`));
 
@@ -139,7 +144,7 @@ export function watchConfig() {
         clearTimeout(reloadTimeout);
         reloadTimeout = setTimeout(loadConfig, 100);
     };
-    [configPath, servicesPath, themePath].forEach(p => fs.watchFile(p, { interval: 1000 }, onChange));
+    [configPath, servicesPath, themePath, getLayoutPath()].forEach(p => fs.watchFile(p, { interval: 1000 }, onChange));
     logger.info('Watching config files for changes');
 }
 
@@ -187,6 +192,35 @@ export function getSanitizedConfig() {
 }
 
 /**
+ * Puts back credential-like keys the browser never received: wherever `original` has a
+ * secret key that `edited` lacks, the original value is copied over. Objects are matched by
+ * key and arrays by position.
+ * @param {*} edited - Value sent by the browser.
+ * @param {*} original - The same value as stored on the server.
+ * @returns {*} The edited value with secrets restored.
+ */
+export function restoreSecrets(edited, original) {
+    if (Array.isArray(edited) && Array.isArray(original)) {
+        return edited.map((v, i) => restoreSecrets(v, original[i]));
+    }
+    if (!isPlainObject(edited) || !isPlainObject(original)) return edited;
+    const result = { ...edited };
+    Object.entries(original).forEach(([key, value]) => {
+        if (SECRET_KEY.test(key) && !Object.hasOwn(edited, key)) result[key] = value;
+        else if (Object.hasOwn(edited, key)) result[key] = restoreSecrets(edited[key], value);
+    });
+    return result;
+}
+
+/**
+ * Returns the configuration before the layout.yaml overlay is applied (server-side use only).
+ * @returns {Object} The config as written in the config files.
+ */
+export function getBaseConfig() {
+    return BASE_CONFIG;
+}
+
+/**
  * Returns the raw configuration object (server-side use only).
  * @returns {Object} Raw config object.
  */
@@ -197,9 +231,11 @@ export function getConfig() {
 /**
  * Replaces the in-memory configuration. Intended for tests.
  * @param {Object} config - The configuration to use.
+ * @param {Object} [base] - The configuration before the layout overlay; defaults to `config`.
  */
-export function setConfig(config) {
+export function setConfig(config, base = config) {
     CONFIG = config;
+    BASE_CONFIG = base;
 }
 
 /**

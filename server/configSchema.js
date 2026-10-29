@@ -6,6 +6,8 @@ const card = z.looseObject({
     id,
     type: z.string().min(1),
     colSpan: z.number().int().min(1).max(3).optional(),
+    tileSize: z.enum(['half', 'quarter']).optional(),
+    hideOn: z.array(z.enum(['phone', 'tablet', 'desktop'])).optional(),
     primaryColor: z.string().optional(),
 });
 
@@ -27,6 +29,7 @@ export const configSchema = z.looseObject({
     theme: z.string().optional(),
     themeToggle: z.boolean().optional(),
     demo: z.boolean().optional(),
+    editable: z.boolean().optional(),
     themes: z.array(z.looseObject({ id: z.string() })).optional(),
     pages: z.array(page).optional(),
     cards: z.array(card).optional(),

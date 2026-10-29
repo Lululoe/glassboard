@@ -1,0 +1,217 @@
+/* Form controls for card editors, in the style of iOS grouped settings */
+.editor-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.editor-label {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 18px;
+    color: var(--text-secondary);
+}
+
+.editor-hint {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--text-secondary);
+}
+
+.editor-input,
+.editor-textarea {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--bg-fill);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 15px;
+    line-height: 20px;
+    box-sizing: border-box;
+    min-width: 0;
+}
+
+.editor-input::placeholder,
+.editor-textarea::placeholder {
+    color: var(--text-tertiary);
+}
+
+.editor-input:focus-visible,
+.editor-textarea:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.editor-segmented {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 9px;
+    background: var(--bg-fill);
+}
+
+.editor-segmented button {
+    flex: 1;
+    min-height: 40px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background var(--duration-standard) var(--ease-standard), color var(--duration-standard) var(--ease-standard);
+}
+
+.editor-segmented button[aria-checked="true"] {
+    background: var(--bg-tile, #fff);
+    color: #1c1c1e;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.editor-segmented button:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* Switch: a visually hidden checkbox drives the drawn track */
+.editor-toggle {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    cursor: pointer;
+}
+
+.editor-toggle .editor-label {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.editor-toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 51px;
+    height: 31px;
+    right: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.editor-switch {
+    position: relative;
+    flex-shrink: 0;
+    width: 51px;
+    height: 31px;
+    border-radius: 16px;
+    background: var(--bg-fill-hover);
+    transition: background var(--duration-standard) var(--ease-standard);
+    pointer-events: none;
+}
+
+.editor-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 27px;
+    height: 27px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    transition: transform var(--duration-standard) var(--ease-standard);
+}
+
+.editor-toggle input:checked + .editor-switch {
+    background: var(--system-green, #30d158);
+}
+
+.editor-toggle input:checked + .editor-switch::after {
+    transform: translateX(20px);
+}
+
+.editor-toggle input:focus-visible + .editor-switch {
+    box-shadow: var(--focus-ring);
+}
+
+.editor-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.editor-list-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.editor-list-inputs {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 6px;
+    min-width: 0;
+}
+
+.editor-icon-button {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    color: var(--system-red-text, #ff453a);
+    cursor: pointer;
+}
+
+.editor-add-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 9px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-primary);
+    cursor: pointer;
+}
+
+@media (pointer: fine) {
+    .editor-icon-button:hover,
+    .editor-add-button:hover {
+        background: var(--bg-fill);
+    }
+}
+
+.editor-icon-button:focus-visible,
+.editor-add-button:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .editor-switch,
+    .editor-switch::after,
+    .editor-segmented button {
+        transition: none;
+    }
+}
+
+/* Two fields side by side, stacking on narrow screens */
+.editor-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+}
