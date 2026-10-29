@@ -6,32 +6,45 @@ on:
       - main
     paths:
       - 'docs/**'
+  # Run by hand, e.g. right after creating the wiki
+  workflow_dispatch:
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    permissions:
+      # Needed to push to the wiki with GITHUB_TOKEN
+      contents: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Sync Wiki
+        env:
+          WIKI_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git
         run: |
           # Configure Git
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
+
+          # GitHub only creates the wiki's repository once its first page has been saved
+          if ! git ls-remote "$WIKI_URL" > /dev/null 2>&1; then
+            echo "::error::The wiki repository does not exist yet. Open https://github.com/${{ github.repository }}/wiki, click 'Create the first page', save it, then run this workflow again."
+            exit 1
+          fi
+
           # Clone Wiki repository
-          git clone "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git" wiki
-          
+          git clone "$WIKI_URL" wiki
+
           # Copy docs contents to wiki directory
           cp -R docs/* wiki/
-          
-          # Commit and Push changes
+
+          # Commit and push to the wiki's own default branch (master on most wikis)
           cd wiki
           git add .
           if git diff-index --quiet HEAD; then
             echo "No changes to sync to the wiki."
           else
             git commit -m "docs: auto-sync from main repository docs/"
-            git push origin master
+            git push origin HEAD
           fi
