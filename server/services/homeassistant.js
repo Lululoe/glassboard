@@ -31,6 +31,28 @@ async function haFetch(apiPath, init = {}) {
     return response.json();
 }
 
+/** Rooms a multiroom thermostat card shows; further rooms are ignored. */
+export const MAX_ROOMS = 6;
+
+/**
+ * Lists the climate entities of thermostat cards with their effective settings. A multiroom
+ * card's room settings override the card's shared `presets`, `hvac_mode`, `min` and `max`.
+ * @returns {Array<Object>} One settings object per climate entity, with `entity_id`.
+ */
+export function getClimateConfigs() {
+    const configs = [];
+    getAllCards().forEach(card => {
+        if (card.type === 'thermostat' && card.entity_id) configs.push(card);
+        if (card.type === 'thermostats' && Array.isArray(card.rooms)) {
+            const { presets, hvac_mode: hvacMode, min, max } = card;
+            card.rooms.slice(0, MAX_ROOMS).forEach(room => {
+                if (room?.entity_id) configs.push({ presets, hvac_mode: hvacMode, min, max, ...room });
+            });
+        }
+    });
+    return configs;
+}
+
 /**
  * Collects every entity id referenced by hacontrol and thermostat cards.
  * Only these entities may be read through the API.
@@ -42,22 +64,22 @@ export function getValidEntityIds() {
         if (card.type === 'hacontrol') {
             (card.data?.entities || []).forEach(e => e.entity_id && entityIds.add(e.entity_id));
         }
-        if (card.type === 'thermostat' && card.entity_id) entityIds.add(card.entity_id);
     });
+    getClimateConfigs().forEach(c => entityIds.add(c.entity_id));
     return entityIds;
 }
 
 /**
- * Finds the thermostat card that controls a climate entity.
+ * Finds the settings that control a climate entity, from a single or multiroom thermostat card.
  * @param {string} entityId - The climate entity id.
- * @returns {Object|undefined} The card config.
+ * @returns {Object|undefined} The effective settings.
  */
 export function findThermostatCard(entityId) {
-    return getAllCards().find(card => card.type === 'thermostat' && card.entity_id === entityId);
+    return getClimateConfigs().find(c => c.entity_id === entityId);
 }
 
 /**
- * Validates a thermostat action against the card that controls the entity and returns the
+ * Validates a thermostat action against the settings that control the entity and returns the
  * Home Assistant service and request body for it. Only the target temperature, a preset
  * and switching between off and the card's on mode are allowed.
  * @param {Object} params - Request parameters (`entity_id`, `action` and its value).

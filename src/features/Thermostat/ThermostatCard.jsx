@@ -1,22 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import BaseCard from '../../components/Shared/BaseCard';
 import Icon from '../../components/Shared/Icon';
-import { useThermostat } from './useThermostat';
+import { formatTemp, useThermostat } from './useThermostat';
+import { StateBadge } from './ThermostatParts';
 import './ThermostatCard.css';
 
 const KEY_COMMIT_DELAY = 600;
-const BADGE_ICONS = { heating: 'lu-Flame', cooling: 'lu-Snowflake', idle: 'lu-CirclePause', off: 'lu-Power' };
-
-/**
- * Formats a temperature for the step size: whole degrees for steps of 1 or more.
- * @param {number|null} value - The temperature.
- * @param {number} step - The entity's target step.
- * @returns {string} The formatted value, or `–` when unknown.
- */
-const formatTemp = (value, step) => {
-    if (value === null || value === undefined) return '–';
-    return step >= 1 ? String(Math.round(value)) : value.toFixed(1);
-};
 
 /**
  * Vertical slider for the target temperature. It previews while dragging and reports the
@@ -47,7 +36,11 @@ const TempSlider = ({ t, preview, onPreview }) => {
 
     const onPointerDown = (e) => {
         if (!t.available || e.button !== 0) return;
-        ref.current.setPointerCapture?.(e.pointerId);
+        try {
+            ref.current.setPointerCapture?.(e.pointerId);
+        } catch {
+            // Synthetic or already released pointers cannot be captured; the drag still works
+        }
         drag.current = { id: e.pointerId, value: fromPointer(e) };
         onPreview(drag.current.value);
     };
@@ -107,19 +100,6 @@ const TempSlider = ({ t, preview, onPreview }) => {
         </div>
     );
 };
-
-/**
- * Heating state as a small badge: icon and word.
- * @param {Object} props
- * @param {Object} props.t - Thermostat state.
- * @returns {JSX.Element} The badge.
- */
-const StateBadge = ({ t }) => (
-    <span className={`thermo-badge ${t.action}`}>
-        <Icon icon={BADGE_ICONS[t.action]} size={13} />
-        {t.actionLabel}
-    </span>
-);
 
 /**
  * Thermostat for one Home Assistant climate entity, in three sizes:

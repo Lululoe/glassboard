@@ -1,0 +1,359 @@
+/* Multiroom thermostat: rows when one wide, a column per room when wider */
+.multi-thermostat .two-tone-content {
+    padding: 6px 16px;
+    overflow: visible;
+}
+
+.multi-thermostat.layout-columns .two-tone-content {
+    padding: 16px 8px;
+}
+
+.mt-rooms {
+    position: relative;
+    height: 100%;
+}
+
+.layout-rows .mt-rooms {
+    display: flex;
+    flex-direction: column;
+}
+
+.layout-columns .mt-rooms {
+    display: grid;
+    grid-template-columns: repeat(var(--rooms, 4), minmax(0, 1fr));
+}
+
+/* ===== Rows ===== */
+.mt-row {
+    flex: 1;
+    min-height: 44px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px 60px 44px;
+    align-items: center;
+    gap: 4px;
+}
+
+.mt-row + .mt-row {
+    border-top: 1px solid var(--color-separator);
+}
+
+.mt-row-meta {
+    min-height: 44px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 3px;
+    padding-right: 6px;
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+    transition: opacity var(--duration-standard) var(--ease-standard);
+}
+
+.mt-row-meta:active {
+    opacity: 0.6;
+}
+
+.mt-row-meta:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.mt-name-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.mt-name {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mt-now {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.mt-state {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 16px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mt-state.heating {
+    color: var(--system-orange-text, #ff9f0a);
+}
+
+.mt-state.cooling {
+    color: var(--system-blue-text, #0a84ff);
+}
+
+.mt-value {
+    text-align: center;
+    font-size: 21px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.mt-row.compact .mt-value {
+    font-size: 19px;
+}
+
+/* ===== Columns ===== */
+.mt-col {
+    position: relative;
+    container-type: inline-size;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px;
+    text-align: center;
+    border-right: 1px solid var(--color-separator);
+}
+
+.mt-col:last-child {
+    border-right: 0;
+}
+
+.mt-col .mt-name {
+    max-width: 100%;
+}
+
+.mt-target {
+    margin-top: 6px;
+    font-size: 34px;
+    font-weight: 600;
+    line-height: 40px;
+    letter-spacing: -0.3px;
+    font-variant-numeric: tabular-nums;
+}
+
+.mt-preset {
+    margin-top: 4px;
+    min-height: 44px;
+    width: min(100%, 136px);
+    padding: 0 10px 0 12px;
+    border-radius: 22px;
+    background: var(--bg-fill);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--duration-standard) var(--ease-standard);
+}
+
+.mt-preset-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mt-preset-chevron {
+    color: var(--text-secondary);
+}
+
+.mt-preset[aria-expanded="true"] {
+    background: var(--bg-tile, #fff);
+    color: #1c1c1e;
+}
+
+@media (pointer: fine) {
+    .mt-preset:not([aria-expanded="true"]):hover {
+        background: var(--bg-fill-hover);
+    }
+}
+
+.mt-preset:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.mt-steps {
+    margin-top: auto;
+    display: flex;
+    gap: 8px;
+}
+
+/* Narrow columns (two wide with five or six rooms) */
+@container (max-width: 132px) {
+    .mt-target {
+        font-size: 27px;
+        line-height: 32px;
+    }
+
+    .mt-preset {
+        padding: 0 8px 0 10px;
+        gap: 4px;
+    }
+
+    .mt-steps {
+        gap: 4px;
+    }
+}
+
+/* ===== Steppers ===== */
+.mt-step {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--bg-fill);
+    cursor: pointer;
+    transition: background var(--duration-standard) var(--ease-standard), transform var(--duration-standard) var(--ease-standard);
+}
+
+.mt-step:active {
+    transform: scale(0.92);
+}
+
+.mt-step:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+@media (pointer: fine) {
+    .mt-step:not(:disabled):hover {
+        background: var(--bg-fill-hover);
+    }
+}
+
+.mt-step:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.unavailable .mt-name,
+.unavailable .mt-target,
+.unavailable .mt-value {
+    opacity: 0.5;
+}
+
+/* ===== Preset menu: over its column, or over all rows when one wide ===== */
+.thermo-menu {
+    position: absolute;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px;
+    border-radius: 14px;
+    /* Nearly opaque, so the room underneath does not show through */
+    background: rgba(44, 44, 46, 0.97);
+    backdrop-filter: blur(30px) saturate(140%);
+    -webkit-backdrop-filter: blur(30px) saturate(140%);
+    box-shadow: var(--shadow-popup), 0 0 0 0.5px var(--border-popup);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    animation: thermo-menu-in 0.18s var(--ease-standard);
+}
+
+.layout-columns .thermo-menu {
+    inset: -8px 2px;
+}
+
+.layout-rows .thermo-menu {
+    inset: 0;
+}
+
+:root[data-theme="light"] .thermo-menu {
+    background: rgba(255, 255, 255, 0.97);
+}
+
+@keyframes thermo-menu-in {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+
+.thermo-menu-title {
+    padding: 4px 10px 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.thermo-menu-item {
+    flex-shrink: 0;
+    min-height: 44px;
+    padding: 0 10px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.thermo-menu-item span:not(.thermo-menu-temp) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.thermo-menu-temp {
+    margin-left: auto;
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.thermo-menu-item[aria-checked="true"] {
+    background: var(--bg-tile, #fff);
+    color: #1c1c1e;
+}
+
+.thermo-menu-item[aria-checked="true"] .thermo-menu-temp {
+    color: rgba(60, 60, 67, 0.85);
+}
+
+@media (pointer: fine) {
+    .thermo-menu-item:not([aria-checked="true"]):hover {
+        background: var(--bg-fill);
+    }
+}
+
+.thermo-menu-item:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .thermo-menu {
+        animation: none;
+    }
+
+    .mt-step,
+    .mt-row-meta {
+        transition: none;
+    }
+}

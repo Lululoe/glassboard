@@ -7,6 +7,8 @@ import MediaCard from './Media/MediaCard';
 import ProxmoxCard from './Proxmox/ProxmoxCard';
 import ServerStatsCard from './ServerStats/ServerStatsCard';
 import SpacerCard from './Spacer/SpacerCard';
+import MultiThermostatCard from './Thermostat/MultiThermostatCard';
+import MultiThermostatEditor from './Thermostat/MultiThermostatEditor';
 import ThermostatCard from './Thermostat/ThermostatCard';
 import ThermostatEditor from './Thermostat/ThermostatEditor';
 import TransmissionCard from './Transmission/TransmissionCard';
@@ -27,6 +29,7 @@ export const cardRegistry = {
     serverstats: ServerStatsCard,
     spacer: SpacerCard,
     thermostat: ThermostatCard,
+    thermostats: MultiThermostatCard,
     transmission: TransmissionCard,
     weather: WeatherCard,
 };
@@ -73,6 +76,13 @@ export const cardInfo = {
         sizes: ['quarter', 'half', '1'],
         defaults: { entity_id: '' },
         Editor: ThermostatEditor,
+    },
+    thermostats: {
+        name: 'Multiroom Thermostat',
+        description: 'Targets, presets and on/off for up to six rooms',
+        icon: 'lu-Heater',
+        defaults: { colSpan: 2, rooms: [] },
+        Editor: MultiThermostatEditor,
     },
     appgrid: {
         name: 'App Grid',

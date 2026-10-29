@@ -326,6 +326,50 @@ The heating state comes from the entity's `hvac_action`, so it shows whether the
 
 ---
 
+## Multiroom Thermostat (`thermostats`)
+Controls up to six Home Assistant `climate` entities in one card, loaded in a single request. The header shows how
+many rooms are heating or cooling.
+
+| Width | Shows |
+|-------|-------|
+| `colSpan: 1` | A row per room: name, state, room temperature and preset, then − target +. Tapping the room opens its presets. From five rooms on the rows are single-line. |
+| `colSpan: 2` / `3` | A column per room: name, state badge, target, room temperature, a preset menu and ± keys. |
+
+On phones the card is narrowed to one wide and shows rows. ± changes the target by the entity's step; on a room
+that is off it turns the room back on at its last target. Each preset menu ends with **Off**.
+
+### Configuration
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `rooms` | array | required | Up to six rooms; further rooms are ignored. |
+| `title` | string | `Climate` | Card title. |
+| `presets` | array | | Presets for every room, instead of each room's Home Assistant preset modes. Same format as the [Single Thermostat](#single-thermostat-thermostat). |
+| `hvac_mode` | string | `heat` | Mode used to turn a room on. |
+| `min` / `max` | number | entity limits | Allowed target range. |
+
+**Room Object**: `entity_id` (required) and `name`, plus `presets`, `hvac_mode`, `min` and `max` to override the
+card's shared values for that room.
+
+### Example
+```yaml
+- id: climate
+  type: thermostats
+  colSpan: 2
+  presets:
+    - { name: Comfort, temperature: 21, icon: Sun }
+    - { name: Eco, preset: eco, icon: Leaf }
+    - { name: Night, temperature: 18.5, icon: Moon }
+  rooms:
+    - entity_id: climate.living_room
+    - entity_id: climate.bedroom
+      presets:
+        - { name: Sleep, temperature: 17, icon: Moon }
+    - entity_id: climate.office
+      name: Study
+```
+
+---
+
 ## Empty Space (`spacer`)
 An invisible card that only takes up room, to shape the layout: to start a new row, leave a gap next to a wide
 card, or fill the rest of a slot of half and quarter cards. It supports every size and has no options. In edit

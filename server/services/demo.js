@@ -1,7 +1,7 @@
 import { findCard, getAllCards, getConfig } from '../config.js';
 import { HttpError } from '../errors.js';
 import { getGridApps } from './appstatus.js';
-import { climateCall } from './homeassistant.js';
+import { climateCall, getClimateConfigs } from './homeassistant.js';
 
 /**
  * Demo mode answers every `/api` service with simulated data instead of calling real backends,
@@ -246,11 +246,14 @@ function findEntity(entityId) {
 }
 
 // Simulated climate entities for thermostat cards: [current, target, hvac mode, preset]
-const CLIMATE_SEEDS = [[19.8, 21, 'heat', 'comfort'], [18.9, 18.5, 'heat', 'sleep'], [18.4, 20, 'heat', null], [21.2, 22, 'off', null]];
+const CLIMATE_SEEDS = [
+    [19.8, 21, 'heat', 'comfort'], [18.9, 18.5, 'heat', 'sleep'], [18.4, 20, 'heat', null],
+    [21.2, 22, 'off', null], [21.6, 21, 'heat', 'comfort'], [16.9, 17, 'heat', 'eco'],
+];
 const climateStates = new Map();
 
 function thermostatCards() {
-    return getAllCards().filter(card => card.type === 'thermostat' && card.entity_id);
+    return getClimateConfigs();
 }
 
 function climateState(entityId) {

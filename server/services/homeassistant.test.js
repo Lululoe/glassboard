@@ -26,6 +26,14 @@ describe('Home Assistant service', () => {
                         id: 'office', type: 'thermostat', entity_id: 'climate.office', hvac_mode: 'heat_cool', min: 15, max: 25,
                         presets: [{ name: 'Eco', preset: 'eco' }, { name: 'Comfort', temperature: 21 }],
                     },
+                    {
+                        id: 'house', type: 'thermostats', max: 24, presets: [{ name: 'Eco', preset: 'eco' }],
+                        rooms: [
+                            { entity_id: 'climate.kitchen' },
+                            { entity_id: 'climate.attic', hvac_mode: 'cool', presets: [{ name: 'Away', preset: 'away' }] },
+                            ...Array.from({ length: 5 }, (_, i) => ({ entity_id: `climate.extra_${i}` })),
+                        ],
+                    },
                 ],
             }],
         });
@@ -96,5 +104,21 @@ describe('Home Assistant service', () => {
         await call({ entity_id: 'climate.office', action: 'set_hvac_mode', hvac_mode: 'heat_cool' });
         await call({ entity_id: 'climate.office', action: 'set_preset_mode', preset_mode: 'eco' });
         expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('allows the rooms of multiroom cards, with room settings over the shared ones', async () => {
+        const call = (params) => handleHaRequest({ endpoint: 'climate', ...params });
+        await handleHaRequest({ endpoint: 'states', entity_ids: ['climate.kitchen', 'climate.extra_3'] });
+
+        // Shared settings: max 24, only the eco preset
+        await call({ entity_id: 'climate.kitchen', action: 'set_preset_mode', preset_mode: 'eco' });
+        await expect(call({ entity_id: 'climate.kitchen', action: 'set_temperature', temperature: 26 })).rejects.toMatchObject({ status: 400 });
+        // The attic overrides presets and the on mode
+        await call({ entity_id: 'climate.attic', action: 'set_preset_mode', preset_mode: 'away' });
+        await call({ entity_id: 'climate.attic', action: 'set_hvac_mode', hvac_mode: 'cool' });
+        await expect(call({ entity_id: 'climate.attic', action: 'set_preset_mode', preset_mode: 'eco' })).rejects.toMatchObject({ status: 403 });
+        // Rooms after the sixth are not shown, so they are not allowed either
+        await expect(handleHaRequest({ endpoint: 'states', entity_ids: ['climate.extra_4'] })).rejects.toMatchObject({ status: 403 });
+        await expect(call({ entity_id: 'climate.extra_4', action: 'set_temperature', temperature: 20 })).rejects.toMatchObject({ status: 403 });
     });
 });

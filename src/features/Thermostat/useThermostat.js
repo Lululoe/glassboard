@@ -4,6 +4,23 @@ import { usePolling } from '../../hooks/usePolling';
 
 const CONFIRM_DELAY = 500;
 
+/** Rooms the multiroom card shows; keep in sync with MAX_ROOMS in server/services/homeassistant.js. */
+export const MAX_ROOMS = 6;
+
+/** Icons for the heating state badge, by look. */
+export const BADGE_ICONS = { heating: 'lu-Flame', cooling: 'lu-Snowflake', idle: 'lu-CirclePause', off: 'lu-Power' };
+
+/**
+ * Formats a temperature for the step size: whole degrees for steps of 1 or more.
+ * @param {number|null} value - The temperature.
+ * @param {number} step - The entity's target step.
+ * @returns {string} The formatted value, or `–` when unknown.
+ */
+export const formatTemp = (value, step) => {
+    if (value === null || value === undefined) return '–';
+    return step >= 1 ? String(Math.round(value)) : value.toFixed(1);
+};
+
 /** Icons for common Home Assistant preset modes (Lucide names). */
 const PRESET_ICONS = {
     comfort: 'Sun',
@@ -74,22 +91,19 @@ export function resolvePresets(config, attributes) {
 }
 
 /**
- * Reads a Home Assistant climate entity for the thermostat card and controls it. Changes
- * show right away (optimistically) and are replaced by the next state from the server; a
- * failed action drops the optimistic value again.
- * @param {Object} config - The card config (`entity_id`, `name`, `presets`, `min`, `max`, `hvac_mode`).
- * @param {number} [interval=5000] - Polling interval in ms.
+ * Controls one Home Assistant climate entity whose state is loaded elsewhere. Changes show
+ * right away (optimistically) and are replaced by the next state from the server; a failed
+ * action drops the optimistic value again.
+ * @param {Object} config - Settings for this entity (`entity_id`, `name`, `presets`, `min`, `max`, `hvac_mode`).
+ * @param {Object|undefined|null} raw - The entity's current Home Assistant state.
+ * @param {number} updatedAt - When `raw` was loaded (ms), to tell which optimistic values are newer.
+ * @param {() => void} refresh - Reloads the state after an action.
  * @returns {Object} The thermostat state and actions.
  */
-export function useThermostat(config, interval = 5000) {
+export function useClimateControl(config, raw, updatedAt, refresh) {
     const id = config.entity_id;
-    const { data, loading, error, updatedAt, refresh } = usePolling(
-        () => callService('homeassistant', { endpoint: 'states', entity_ids: [id] }),
-        { interval, enabled: Boolean(id), key: id || '' },
-    );
     const [pending, setPending] = useState(/** @type {{on?: boolean, target?: number, preset?: string|null, at: number}|null} */ (null));
 
-    const raw = data?.[id];
     const attributes = raw?.attributes || {};
     const available = Boolean(raw) && raw.state !== 'unavailable' && raw.state !== 'unknown';
     const fresh = pending && pending.at > updatedAt ? pending : null;
@@ -111,9 +125,12 @@ export function useThermostat(config, interval = 5000) {
     const action = ACTIONS[actionKey] || ACTIONS.idle;
 
     const presets = resolvePresets(config, attributes);
+    // A temperature preset is active when the target matches, unless Home Assistant is in one
+    // of the shown preset modes (then that preset is the active one)
+    const shownModes = new Set(presets.filter(p => p.preset).map(p => p.preset));
     const activePreset = !on ? null : presets.find(p => (p.preset
         ? p.preset === presetMode
-        : p.temperature === target && (!presetMode || presetMode === 'none')))?.key ?? null;
+        : p.temperature === target && !shownModes.has(presetMode)))?.key ?? null;
 
     const send = useCallback(
         (action, extra) => callService('homeassistant', { endpoint: 'climate', entity_id: id, action, ...extra }),
@@ -150,11 +167,23 @@ export function useThermostat(config, interval = 5000) {
 
     const setOn = (value) => run({ on: value }, [['set_hvac_mode', { hvac_mode: value ? onMode : 'off' }]]);
 
+    /**
+     * Changes the target by a number of steps from the shown value, turning the thermostat
+     * back on (at its last target) if it is off.
+     * @param {number} delta - Steps, e.g. 1 or -1.
+     */
+    const stepTarget = (delta) => {
+        if (!on) {
+            setOn(true);
+            return;
+        }
+        const base = target ?? current ?? min;
+        setTarget(Math.min(max, Math.max(min, Math.round((base + delta * step) / step) * step)));
+    };
+
     return {
         name: config.name || attributes.friendly_name || id,
         available,
-        loading,
-        error,
         on,
         current,
         target,
@@ -166,7 +195,23 @@ export function useThermostat(config, interval = 5000) {
         presets,
         activePreset,
         setTarget,
+        stepTarget,
         applyPreset,
         setOn,
     };
+}
+
+/**
+ * Reads a Home Assistant climate entity for the single thermostat card and controls it.
+ * @param {Object} config - The card config (`entity_id`, `name`, `presets`, `min`, `max`, `hvac_mode`).
+ * @param {number} [interval=5000] - Polling interval in ms.
+ * @returns {Object} The thermostat state and actions, plus `loading` and `error`.
+ */
+export function useThermostat(config, interval = 5000) {
+    const id = config.entity_id;
+    const { data, loading, error, updatedAt, refresh } = usePolling(
+        () => callService('homeassistant', { endpoint: 'states', entity_ids: [id] }),
+        { interval, enabled: Boolean(id), key: id || '' },
+    );
+    return { ...useClimateControl(config, data?.[id], updatedAt, refresh), loading, error };
 }
