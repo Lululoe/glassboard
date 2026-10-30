@@ -10,6 +10,8 @@ const DOMAIN_ACTIONS = {
     cover: ['cover.open_cover', 'cover.close_cover'],
     lock: ['lock.lock', 'lock.unlock'],
     media_player: ['media_player.turn_on', 'media_player.turn_off'],
+    // Groups have no turn_on service of their own; the generic one switches every member
+    group: ['homeassistant.turn_on', 'homeassistant.turn_off'],
 };
 
 /**
@@ -55,7 +57,7 @@ const HAControlEditor = ({ config, onChange }) => (
             return { ...next, ...after };
         }}
         addLabel="Add entity"
-        hint="Lights, switches, fans, covers and locks get on/off actions automatically. Other actions, colors and attributes can be set in YAML."
+        hint="Lights, switches, fans, covers, locks and groups get on/off actions automatically. Other actions, colors and attributes can be set in YAML."
     />
 );
 

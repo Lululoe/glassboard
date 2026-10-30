@@ -79,6 +79,23 @@ describe('CardEditor', () => {
     });
 });
 
+describe('HA control editor', () => {
+    it('fills in generic actions for group entities', () => {
+        const onSave = vi.fn();
+        render(<CardEditor card={{ id: 'h', type: 'hacontrol', data: { entities: [] } }} onSave={onSave} onCancel={() => {}} onRemove={() => {}} />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Add entity' }));
+        fireEvent.change(screen.getByLabelText('Entity id 1'), { target: { value: 'group.living_room_lights' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+        expect(onSave.mock.calls[0][0].data.entities[0]).toEqual({
+            entity_id: 'group.living_room_lights',
+            on_action: { service: 'homeassistant.turn_on' },
+            off_action: { service: 'homeassistant.turn_off' },
+        });
+    });
+});
+
 describe('AddCardDialog', () => {
     it('lists card types and reports the pick', () => {
         const onPick = vi.fn();
