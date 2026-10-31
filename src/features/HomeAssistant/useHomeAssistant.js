@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { callService } from '../../lib/api';
 import { usePolling } from '../../hooks/usePolling';
+import { rememberColor } from './controls/lastColors';
 
 const CONFIRM_DELAY = 500;
 // Domains the control endpoint can switch when the card configures no actions
@@ -18,16 +19,21 @@ export const isControllable = (entity) => CONTROL_DOMAINS.includes(String(entity
  * optimistic updates. An optimistic state is shown until newer data arrives from the
  * server, and is dropped if the action fails.
  * @param {Array<Object>} entities - Entity configs (entity_id, on_action, off_action, on_state, off_state).
- * @param {number} [interval=5000] - Polling interval in ms.
+ * @param {number} [interval=2000] - Polling interval in ms.
  * @returns {{entityStates: Object<string, Object>, loading: boolean, error: string|null, toggleEntity: (entity: Object, isOn: boolean) => Promise<void>, refresh: () => void}}
  */
-export const useHomeAssistant = (entities, interval = 5000) => {
+export const useHomeAssistant = (entities, interval = 2000) => {
     const ids = entities.map(e => e.entity_id).filter(Boolean);
     const { data, loading, error, updatedAt, refresh } = usePolling(
         () => callService('homeassistant', { endpoint: 'states', entity_ids: ids }),
         { interval, enabled: ids.length > 0, key: ids.join(',') }
     );
     const [overrides, setOverrides] = useState(/** @type {Object<string, {state: string, at: number}>} */ ({}));
+
+    // The control dialog shows these colors while a light is off
+    useEffect(() => {
+        Object.entries(data || {}).forEach(([id, state]) => rememberColor(id, state));
+    }, [data]);
 
     const entityStates = useMemo(() => {
         const states = { ...data };

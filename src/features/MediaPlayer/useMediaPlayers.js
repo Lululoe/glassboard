@@ -98,10 +98,10 @@ export function livePosition(player, now) {
  * menu, in one request, and controls them. Changes show right away and are replaced by the
  * next state from the server; a failed action drops them again.
  * @param {Object} config - Card config (`entities` or `entity_id`, and `speakers`).
- * @param {number} [interval=3000] - Polling interval in ms.
+ * @param {number} [interval=2000] - Polling interval in ms.
  * @returns {Object} Players, speakers, load state and actions.
  */
-export function useMediaPlayers(config, interval = 3000) {
+export function useMediaPlayers(config, interval = 2000) {
     const players = normalizeEntries(Array.isArray(config.entities) ? config.entities : config.entity_id ? [config.entity_id] : []);
     const speakers = config.speakers ? normalizeEntries(config.speakers) : players;
     const ids = [...new Set([...players, ...speakers].map(e => e.entity_id))];

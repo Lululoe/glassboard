@@ -204,10 +204,10 @@ export function useClimateControl(config, raw, updatedAt, refresh) {
 /**
  * Reads a Home Assistant climate entity for the single thermostat card and controls it.
  * @param {Object} config - The card config (`entity_id`, `name`, `presets`, `min`, `max`, `hvac_mode`).
- * @param {number} [interval=5000] - Polling interval in ms.
+ * @param {number} [interval=3000] - Polling interval in ms.
  * @returns {Object} The thermostat state and actions, plus `loading` and `error`.
  */
-export function useThermostat(config, interval = 5000) {
+export function useThermostat(config, interval = 3000) {
     const id = config.entity_id;
     const { data, loading, error, updatedAt, refresh } = usePolling(
         () => callService('homeassistant', { endpoint: 'states', entity_ids: [id] }),

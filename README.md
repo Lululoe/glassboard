@@ -102,6 +102,10 @@ services:
       token: "..."
 ```
 
+Glassboard keeps one websocket connection to Home Assistant open and gets every state change of the entities on
+your cards as it happens, so cards answer from a live copy instead of asking Home Assistant on each poll. While the
+connection is down (e.g. Home Assistant restarting), it falls back to the REST API and reconnects on its own.
+
 ## Security
 This project uses a **Backend-for-Frontend (BFF)** architecture.
 -   **No Secrets in Client**: API keys and tokens are stored server-side and never sent to the browser.

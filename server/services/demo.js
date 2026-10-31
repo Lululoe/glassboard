@@ -416,6 +416,13 @@ const GROUP_MEMBERS = [
     ['sideboard_lamp', 'Sideboard Lamp', 'color', true, 70, { ct: 2700 }],
 ];
 const COLOR_MODES = { color: ['color_temp', 'hs'], ct: ['color_temp'], dim: ['brightness'], onoff: ['onoff'] };
+// Favorite colors as Home Assistant stores them, for lights whose name ends like this
+const DEMO_FAVORITES = {
+    govee_light: [
+        { color_temp_kelvin: 2700 }, { color_temp_kelvin: 5000 }, { hs_color: [24, 85] },
+        { rgb_color: [255, 0, 80] }, { xy_color: [0.17, 0.7] }, { hs_color: [240, 90] },
+    ],
+};
 const lightStore = new Map();
 const groupStore = new Map();
 
@@ -446,10 +453,12 @@ function ensureGroup(groupId) {
 function lightState(entityId) {
     const l = lightStore.get(entityId);
     const attributes = { friendly_name: l.name, supported_color_modes: COLOR_MODES[l.caps] };
+    // Like Home Assistant: the white range is always there, brightness and color only while on
+    if (l.caps === 'ct' || l.caps === 'color') Object.assign(attributes, { min_color_temp_kelvin: 2000, max_color_temp_kelvin: 6500 });
     if (l.on) {
         if (l.caps !== 'onoff') attributes.brightness = l.brightness;
         attributes.color_mode = l.caps === 'onoff' ? 'onoff' : l.caps === 'dim' ? 'brightness' : l.caps === 'ct' ? 'color_temp' : l.mode;
-        if (l.caps === 'ct' || l.caps === 'color') Object.assign(attributes, { color_temp_kelvin: l.ct, min_color_temp_kelvin: 2000, max_color_temp_kelvin: 6500 });
+        if (l.caps === 'ct' || l.caps === 'color') attributes.color_temp_kelvin = l.ct;
         if (l.caps === 'color') attributes.hs_color = l.hs;
     }
     return { entity_id: entityId, state: l.on ? 'on' : 'off', attributes };
@@ -475,7 +484,11 @@ function details({ entity_id: entityId }) {
     if (!getControlEntityIds().has(entityId)) throw new HttpError(403, `Entity not authorized: ${entityId}`);
     const entity = entityState(entityId, 0);
     const members = entityId.startsWith('group.') ? ensureGroup(entityId) : [];
-    return { entity, members: Object.fromEntries(members.map(id => [id, lightState(id)])) };
+    const favorites = Object.fromEntries([entityId, ...members].flatMap(id => {
+        const colors = Object.entries(DEMO_FAVORITES).find(([suffix]) => id.endsWith(`_${suffix}`))?.[1];
+        return colors ? [[id, colors]] : [];
+    }));
+    return { entity, members: Object.fromEntries(members.map(id => [id, lightState(id)])), favorites };
 }
 
 function control(params) {

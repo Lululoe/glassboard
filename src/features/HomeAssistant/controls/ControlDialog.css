@@ -322,11 +322,13 @@ html:has(dialog.ctl-overlay[open]) {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    transition: opacity var(--duration-standard) var(--ease-standard);
+    transition: opacity var(--duration-standard) var(--ease-standard), filter var(--duration-standard) var(--ease-standard);
 }
 
+/* Off: grey, but still usable (moving a slider turns the light on) */
 .ctl-slider.dim {
     opacity: 0.45;
+    filter: grayscale(1);
 }
 
 .ctl-slider-cap {

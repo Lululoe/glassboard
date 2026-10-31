@@ -2,8 +2,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { callService } from '../../../lib/api';
 import { usePolling } from '../../../hooks/usePolling';
 import { isDimmable, toLight } from './lightModel';
+import { rememberColor } from './lastColors';
 
-const POLL_INTERVAL = 2000;
+// Cheap: the server answers from its live copy of Home Assistant's states
+const POLL_INTERVAL = 1000;
 const SEND_INTERVAL = 300;
 const REFRESH_DELAY = 700;
 // An optimistic value outlives polls that were already on their way when it was set
@@ -30,6 +32,13 @@ export function useEntityControls(entity, enabled, onChange) {
     const changed = useRef(onChange);
     useLayoutEffect(() => { changed.current = onChange; });
 
+    // Keep the last brightness and colors, which Home Assistant leaves out while a light is off
+    useEffect(() => {
+        if (!data) return;
+        rememberColor(id, data.entity);
+        Object.entries(data.members || {}).forEach(([mid, state]) => rememberColor(mid, state));
+    }, [data, id]);
+
     useEffect(() => () => {
         clearTimeout(refreshTimer.current);
         queue.current.forEach(q => clearTimeout(q.timer));
@@ -37,8 +46,9 @@ export function useEntityControls(entity, enabled, onChange) {
 
     const fresh = (eid) => (overrides[eid] && overrides[eid].until > updatedAt ? overrides[eid] : undefined);
     const memberIds = Object.keys(data?.members || {});
-    const members = memberIds.map(mid => toLight(mid, data.members[mid], fresh(mid)));
-    const main = toLight(id, data?.entity, fresh(id), entity.name);
+    const favorites = data?.favorites || {};
+    const members = memberIds.map(mid => toLight(mid, data.members[mid], fresh(mid), undefined, favorites[mid]));
+    const main = toLight(id, data?.entity, fresh(id), entity.name, favorites[id]);
     const isGroup = memberIds.length > 0;
     if (isGroup) main.on = members.some(m => m.on);
 

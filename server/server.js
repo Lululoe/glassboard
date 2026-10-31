@@ -1,6 +1,8 @@
 import logger from './logger.js';
 import { loadConfig, watchConfig } from './config.js';
 import { createApp } from './app.js';
+import { startLiveStates } from './services/homeassistant.js';
+import { isDemoMode } from './services/demo.js';
 
 const PORT = Number(process.env.PORT) || 3001;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -12,6 +14,7 @@ const HOST = process.env.HOST || '0.0.0.0';
 async function start() {
     loadConfig();
     watchConfig();
+    startLiveStates({ isActive: () => !isDemoMode() });
 
     const app = await createApp();
     app.listen(PORT, HOST, () => {

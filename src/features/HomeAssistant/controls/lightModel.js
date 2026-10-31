@@ -1,3 +1,5 @@
+import { lastColorOf } from './lastColors';
+
 /**
  * What the control dialogs know about lights: their abilities, colors and presets.
  * Works on Home Assistant states, so it can be used for any light, switch or group.
@@ -16,6 +18,68 @@ export const PRESETS = [
 ];
 
 const COLOR_MODES = ['hs', 'xy', 'rgb', 'rgbw', 'rgbww'];
+
+const HUE_NAMES = [[15, 'Red'], [45, 'Orange'], [70, 'Yellow'], [160, 'Green'], [195, 'Cyan'], [250, 'Blue'], [290, 'Purple'], [335, 'Pink'], [360, 'Red']];
+
+/**
+ * Converts RGB to hue (0-360) and saturation (0-100), the way Home Assistant does.
+ * @param {number[]} rgb - Red, green and blue, 0-255.
+ * @returns {{h: number, s: number}} Hue and saturation.
+ */
+export function rgbToHs([r, g, b]) {
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const d = max - min;
+    let h = 0;
+    if (d) {
+        if (max === r) h = ((g - b) / d) % 6;
+        else if (max === g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+    }
+    return { h: Math.round((h * 60 + 360) % 360), s: max ? Math.round((d / max) * 100) : 0 };
+}
+
+/**
+ * Converts CIE xy to RGB (sRGB, full brightness).
+ * @param {number[]} xy - x and y.
+ * @returns {number[]} Red, green and blue, 0-255.
+ */
+function xyToRgb([x, y]) {
+    const Y = 1;
+    const X = y ? (Y / y) * x : 0;
+    const Z = y ? (Y / y) * (1 - x - y) : 0;
+    const linear = [
+        X * 1.656492 - Y * 0.354851 - Z * 0.255038,
+        -X * 0.707196 + Y * 1.655397 + Z * 0.036152,
+        X * 0.051713 - Y * 0.121364 + Z * 1.01153,
+    ].map(v => Math.max(0, v));
+    const peak = Math.max(...linear, 1e-9);
+    return linear.map(v => {
+        const n = v / peak;
+        return 255 * (n <= 0.0031308 ? 12.92 * n : 1.055 * n ** (1 / 2.4) - 0.055);
+    });
+}
+
+/** A short name for a hue, e.g. `Orange`. */
+const hueName = (h) => HUE_NAMES.find(([limit]) => h < limit)?.[1] || 'Red';
+
+/**
+ * Turns Home Assistant favorite colors (from a light's settings in Home Assistant) into presets.
+ * @param {Array<Object>} favorites - Each `{ hs_color }`, `{ rgb_color }`, `{ rgbw_color }`,
+ *   `{ rgbww_color }`, `{ xy_color }` or `{ color_temp_kelvin }`.
+ * @returns {Array<{name: string, ct?: number, h?: number, s?: number}>} The presets.
+ */
+export function presetsFromFavorites(favorites) {
+    return favorites.flatMap(f => {
+        if (f.color_temp_kelvin) return [{ name: `${Math.round(f.color_temp_kelvin)} K`, ct: Math.round(f.color_temp_kelvin) }];
+        let hs;
+        if (f.hs_color) hs = { h: Math.round(f.hs_color[0]), s: Math.round(f.hs_color[1]) };
+        else if (f.rgb_color || f.rgbw_color || f.rgbww_color) hs = rgbToHs((f.rgb_color || f.rgbw_color || f.rgbww_color).slice(0, 3));
+        else if (f.xy_color) hs = rgbToHs(xyToRgb(f.xy_color));
+        if (!hs) return [];
+        return [{ name: hs.s < 12 ? 'White' : hueName(hs.h), ...hs }];
+    });
+}
 
 /**
  * Reads what an entity can do from its state.
@@ -38,32 +102,38 @@ export function capabilityOf(state, entityId) {
 
 /**
  * Turns a Home Assistant state into the light the dialogs show. Values Home Assistant leaves
- * out while a light is off (brightness, color) keep sensible defaults.
+ * out while a light is off (brightness, color) are the last ones seen, or sensible defaults.
  * @param {string} entityId - The entity id.
  * @param {Object|null|undefined} state - The entity's state.
  * @param {Object} [override] - Optimistic changes not yet confirmed by Home Assistant.
  * @param {string} [name] - Name from the card config.
+ * @param {Array<Object>} [favorites] - Favorite colors set in Home Assistant, if any.
  * @returns {Object} The light.
  */
-export function toLight(entityId, state, override = {}, name) {
+export function toLight(entityId, state, override = {}, name, favorites) {
     const a = state?.attributes || {};
+    const last = lastColorOf(entityId);
     const caps = capabilityOf(state, entityId);
     const ctMin = Number(a.min_color_temp_kelvin) || 2000;
     const ctMax = Number(a.max_color_temp_kelvin) || 6500;
-    const [h = 30, s = 50] = Array.isArray(a.hs_color) ? a.hs_color : [];
+    const [h = last.h ?? 30, s = last.s ?? 50] = Array.isArray(a.hs_color) ? a.hs_color : [];
+    let mode = last.mode || 'ct';
+    if (a.color_mode === 'color_temp') mode = 'ct';
+    else if (COLOR_MODES.includes(a.color_mode)) mode = 'hs';
     const base = {
         id: entityId,
         name: name || a.friendly_name || entityId,
         available: Boolean(state) && state.state !== 'unavailable' && state.state !== 'unknown',
         caps,
         on: state?.state === 'on',
-        bri: Number.isFinite(a.brightness) ? Math.max(1, Math.round(a.brightness / 2.55)) : 100,
-        mode: a.color_mode === 'color_temp' || caps === 'ct' ? 'ct' : COLOR_MODES.includes(a.color_mode) ? 'hs' : 'ct',
+        bri: Number.isFinite(a.brightness) ? Math.max(1, Math.round(a.brightness / 2.55)) : last.bri ?? 100,
+        mode: caps === 'ct' ? 'ct' : mode,
         h,
         s,
-        ct: Number(a.color_temp_kelvin) || 3000,
+        ct: Number(a.color_temp_kelvin) || last.ct || 3000,
         ctMin,
         ctMax,
+        favorites: Array.isArray(favorites) ? presetsFromFavorites(favorites) : null,
     };
     return { ...base, ...override };
 }
@@ -111,10 +181,14 @@ export const iconCss = (light) => {
     return light.caps === 'color' && light.mode === 'hs' ? `hsl(${Math.round(light.h)} ${Math.round(Math.max(light.s, 55))}% 52%)` : 'var(--system-yellow)';
 };
 
-/** Presets a light can show: all for color lights, white ones for white lights, none otherwise. */
+/**
+ * Presets a light can show: its favorite colors from Home Assistant when it has some, otherwise
+ * the default presets; all for color lights, white ones for white lights, none otherwise.
+ */
 export const presetsFor = (light) => {
-    if (light.caps === 'color') return PRESETS;
-    if (light.caps === 'ct') return PRESETS.filter(p => p.ct);
+    const presets = light.favorites || PRESETS;
+    if (light.caps === 'color') return presets;
+    if (light.caps === 'ct') return presets.filter(p => p.ct);
     return [];
 };
 

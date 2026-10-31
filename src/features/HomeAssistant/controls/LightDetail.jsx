@@ -42,8 +42,9 @@ const LightDetail = ({ light, actions, inGroup = false, groupName, onBack, backR
                         <>
                             <div className="ctl-section-label">Presets</div>
                             <div className="ctl-presets">
-                                {presets.map(p => (
-                                    <div className="ctl-preset" key={p.name}>
+                                {presets.map((p, i) => (
+                                    // Favorite colors can share a name
+                                    <div className="ctl-preset" key={`${i}-${p.name}`}>
                                         <button
                                             type="button"
                                             className="button-reset ctl-swatch"
@@ -70,6 +71,7 @@ const LightDetail = ({ light, actions, inGroup = false, groupName, onBack, backR
                                     max={360}
                                     value={light.h}
                                     valueText={white ? '–' : `${Math.round(light.h)}°`}
+                                    dim={!light.on}
                                     onChange={(h, final) => actions.setColor(light, { h }, final)}
                                 />
                                 <HSlider
@@ -78,6 +80,7 @@ const LightDetail = ({ light, actions, inGroup = false, groupName, onBack, backR
                                     max={100}
                                     value={light.s}
                                     valueText={white ? '–' : `${Math.round(light.s)}%`}
+                                    dim={!light.on}
                                     background={`linear-gradient(90deg, #fff, hsl(${Math.round(light.h)} 100% 50%))`}
                                     onChange={(s, final) => actions.setColor(light, { s }, final)}
                                 />
@@ -95,6 +98,7 @@ const LightDetail = ({ light, actions, inGroup = false, groupName, onBack, backR
                                 step={50}
                                 value={light.ct}
                                 valueText={white ? `${light.ct} K` : '–'}
+                                dim={!light.on}
                                 onChange={(ct, final) => actions.setColor(light, { ct }, final)}
                             />
                         </>

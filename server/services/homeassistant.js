@@ -1,5 +1,6 @@
 import { getAllCards, getServiceConfig } from '../config.js';
 import { HttpError, upstreamError } from '../errors.js';
+import { createHaSocket } from './haSocket.js';
 
 /**
  * Resolves Home Assistant connection settings.
@@ -29,6 +30,103 @@ async function haFetch(apiPath, init = {}) {
     });
     if (!response.ok) throw await upstreamError('Home Assistant', response);
     return response.json();
+}
+
+/** @type {ReturnType<typeof createHaSocket>|null} */
+let live = null;
+
+/**
+ * Reads states over one websocket connection that Home Assistant keeps up to date, instead of
+ * one REST request per entity and poll. Until the connection is up (and when it drops), states
+ * are fetched over REST. Also enables what only the websocket API offers, like favorite colors.
+ * @param {Object} [options]
+ * @param {() => boolean} [options.isActive] - Whether to connect at all (false in demo mode).
+ * @param {typeof WebSocket} [options.WebSocketImpl] - WebSocket class (for tests).
+ */
+export function startLiveStates({ isActive = () => true, WebSocketImpl } = {}) {
+    stopLiveStates();
+    live = createHaSocket({
+        WebSocketImpl,
+        getConfig: () => {
+            if (!isActive()) return null;
+            try {
+                return getHaConfig();
+            } catch {
+                return null;
+            }
+        },
+        // Members of groups on hacontrol cards can be shown and changed in the control dialog
+        expand: (ids, attributesOf) => {
+            const all = new Set(ids);
+            getControlEntityIds().forEach(id => groupMembers({ attributes: attributesOf(id) }).forEach(m => all.add(m)));
+            return all;
+        },
+    });
+    live.onEvent('entity_registry_updated', (event) => favoriteCache.delete(event?.data?.entity_id));
+    live.watch(getValidEntityIds());
+}
+
+/** Closes the live connection; states are fetched over REST again. */
+export function stopLiveStates() {
+    live?.close();
+    live = null;
+    favoriteCache.clear();
+}
+
+/**
+ * Returns an entity's state: from the live connection when it has it, over REST otherwise.
+ * @param {string} entityId - The entity id.
+ * @returns {Promise<Object|null>} The state (null when Home Assistant doesn't know the entity
+ *   and the live connection says so).
+ */
+async function getState(entityId) {
+    const cached = live?.getState(entityId);
+    if (cached?.known) return cached.state;
+    return haFetch(`/states/${encodeURIComponent(entityId)}`);
+}
+
+const FAVORITES_TTL = 5 * 60 * 1000;
+const COLOR_KEYS = ['hs_color', 'rgb_color', 'rgbw_color', 'rgbww_color', 'xy_color', 'color_temp_kelvin'];
+const favoriteCache = new Map();
+
+/**
+ * Keeps the well-formed favorite colors, each `{ hs_color }`, `{ rgb_color }`, `{ xy_color }`,
+ * `{ color_temp_kelvin }` etc.
+ * @param {*} colors - `options.light.favorite_colors` from the entity registry.
+ * @returns {Array<Object>|null} The colors, or null when none are set.
+ */
+export function sanitizeFavorites(colors) {
+    if (!Array.isArray(colors)) return null;
+    return colors.flatMap((/** @type {*} */ color) => {
+        const key = COLOR_KEYS.find(k => color && typeof color === 'object' && k in color);
+        if (!key) return [];
+        const value = color[key];
+        const valid = key === 'color_temp_kelvin' ? Number.isFinite(value) : Array.isArray(value) && value.every(Number.isFinite);
+        return valid ? [/** @type {Object} */ ({ [key]: value })] : [];
+    });
+}
+
+/**
+ * Reads the favorite colors of a light, which Home Assistant's own light dialog shows and lets
+ * you edit. They live in the entity registry, which only the websocket API exposes.
+ * @param {string} entityId - A light.
+ * @returns {Promise<Array<Object>|null>} The colors, or null when the light has none set or
+ *   they can't be read (no live connection, or a token without access to the registry).
+ */
+async function favoriteColors(entityId) {
+    if (!live || !entityId.startsWith('light.')) return null;
+    const hit = favoriteCache.get(entityId);
+    if (hit && Date.now() - hit.at < FAVORITES_TTL) return hit.colors;
+    let colors = null;
+    try {
+        const entry = await live.command({ type: 'config/entity_registry/get', entity_id: entityId });
+        colors = sanitizeFavorites(entry?.options?.light?.favorite_colors);
+    } catch {
+        // Not connected yet, or not allowed: the dialog shows its own presets
+        if (!live.status().connected) return null;
+    }
+    favoriteCache.set(entityId, { at: Date.now(), colors });
+    return colors;
 }
 
 /** Rooms a multiroom thermostat card shows; further rooms are ignored. */
@@ -138,7 +236,7 @@ export function mediaCall(params) {
 export async function fetchArtwork(entityId) {
     if (!getMediaEntityIds().has(entityId)) throw new HttpError(403, `Entity not authorized: ${entityId}`);
     const { url, token } = getHaConfig();
-    const state = await haFetch(`/states/${encodeURIComponent(entityId)}`);
+    const state = await getState(entityId);
     const picture = state?.attributes?.entity_picture;
     if (typeof picture !== 'string' || !picture) return null;
 
@@ -256,7 +354,7 @@ async function allowedControlIds() {
     const key = [...configured].sort().join(',');
     if (memberCache.key === key && Date.now() - memberCache.at < MEMBER_CACHE_MS) return memberCache.ids;
     const ids = new Set(configured);
-    const states = await Promise.all([...configured].map(id => haFetch(`/states/${encodeURIComponent(id)}`).catch(() => null)));
+    const states = await Promise.all([...configured].map(id => getState(id).catch(() => null)));
     states.forEach(state => groupMembers(state).forEach(id => ids.add(id)));
     memberCache = { at: Date.now(), ids, key };
     return ids;
@@ -311,16 +409,21 @@ export function controlCalls(params, allowed) {
 }
 
 /**
- * Loads what a control dialog shows: the entity's state and, for groups, its members' states.
+ * Loads what a control dialog shows: the entity's state, for groups its members' states, and
+ * the favorite colors of the lights among them that have some set.
  * @param {string} entityId - An entity of an hacontrol card.
- * @returns {Promise<{entity: Object, members: Object<string, Object|null>}>} The states.
+ * @returns {Promise<{entity: Object, members: Object<string, Object|null>, favorites: Object<string, Array<Object>>}>}
+ *   The states and favorite colors.
  */
 export async function entityDetails(entityId) {
     if (!getControlEntityIds().has(entityId)) throw new HttpError(403, `Entity not authorized: ${entityId}`);
-    const entity = await haFetch(`/states/${encodeURIComponent(entityId)}`);
+    const entity = await getState(entityId);
     const ids = groupMembers(entity);
-    const states = await Promise.all(ids.map(id => haFetch(`/states/${encodeURIComponent(id)}`).catch(() => null)));
-    return { entity, members: Object.fromEntries(ids.map((id, i) => [id, states[i]])) };
+    const states = await Promise.all(ids.map(id => getState(id).catch(() => null)));
+    const lights = [entityId, ...ids];
+    const colors = await Promise.all(lights.map(favoriteColors));
+    const favorites = Object.fromEntries(lights.flatMap((id, i) => (colors[i] ? [[id, colors[i]]] : [])));
+    return { entity, members: Object.fromEntries(ids.map((id, i) => [id, states[i]])), favorites };
 }
 
 /**
@@ -370,20 +473,23 @@ export async function handleHaRequest(params) {
     const { endpoint } = params;
     if (!endpoint) throw new HttpError(400, 'Home Assistant service requires endpoint parameter');
     getHaConfig();
+    // Config changes can add entities, so the live connection's list is updated with each request
+    live?.watch(getValidEntityIds());
 
     if (endpoint === 'states') {
         const ids = Array.isArray(params.entity_ids) ? params.entity_ids : [];
         const allowed = getValidEntityIds();
         ids.forEach(id => assertEntityAllowed(id, allowed));
-        const states = await Promise.all(ids.map(id =>
-            haFetch(`/states/${encodeURIComponent(id)}`).catch(() => null)));
+        const states = await Promise.all(ids.map(id => getState(id).catch(() => null)));
         return Object.fromEntries(ids.map((id, i) => [id, states[i]]));
     }
 
     if (endpoint.startsWith('states/')) {
         const entityId = endpoint.slice('states/'.length);
         assertEntityAllowed(entityId, getValidEntityIds());
-        return haFetch(`/states/${encodeURIComponent(entityId)}`);
+        const state = await getState(entityId);
+        if (!state) throw new HttpError(404, `Entity not found: ${entityId}`);
+        return state;
     }
 
     if (endpoint === 'services') {

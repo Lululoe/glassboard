@@ -211,12 +211,17 @@ Tapping the tile of a light, group (`group.*` or a light group), switch, `input_
 dialog; tapping its icon switches it on or off (with `on_action`/`off_action` when set). What the dialog shows depends
 on what the entity can do, as Home Assistant reports it:
 
-- **Color lights**: color presets, hue and saturation, white temperature, brightness and power.
+- **Color lights**: presets, hue and saturation, white temperature, brightness and power.
 - **White lights**: white presets, temperature, brightness and power.
 - **Dimmable lights**: brightness and power.
 - **Lights that only switch, switches and fans**: one large power button.
 - **Groups**: a list of their members with a switch and a brightness slider for all of them; each member opens
   its own controls. Members can be switched, dimmed and colored even if they are not on a card.
+
+The presets are the light's **favorite colors** from Home Assistant (open the light in Home Assistant and edit the
+colors under its controls), so they stay the same in both places. Lights without favorites of their own show
+Glassboard's defaults: Warm, Neutral, Daylight, Sunset, Rose, Lavender, Ocean and Forest, as do all lights when the
+token can't read Home Assistant's entity settings.
 
 On phones the dialog is a sheet at the bottom of the screen, with the main controls at its bottom edge.
 

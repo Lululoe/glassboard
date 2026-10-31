@@ -76,6 +76,8 @@ for missing parameters. Home Assistant actions change the simulated state in mem
   ```
 
 ### `homeassistant`
+States are answered from a live copy that the server keeps over Home Assistant's websocket API, or fetched over
+REST while that connection is down, so polling is cheap.
 Only entities that appear on an `hacontrol` card, as the `entity_id` of a `thermostat` card, in the first six
 `rooms` of a `thermostats` card or as a player or speaker of a `mediaplayer` card can be read. Of
 `hacontrol` entities only the configured `on_action` / `off_action` and the control dialog actions below can be called; thermostat entities only accept
@@ -96,8 +98,11 @@ the climate actions below.
   `media_next_track`, `media_previous_track`, `media_seek` (with `seek_position` in seconds), `volume_set` (with
   `volume_level` 0–1), `join` (with `group_members`, other players or speakers of media player cards) and `unjoin`.
 - **Load a control dialog**: `{ "service": "homeassistant", "endpoint": "details", "entity_id": "group.living_room" }`
-  returns `{ "entity": { ...state }, "members": { "light.lamp": { ...state } } }`. The entity must be on an
-  `hacontrol` card; `members` lists the states of a group's `entity_id` attribute (empty for single entities).
+  returns `{ "entity": { ...state }, "members": { "light.lamp": { ...state } }, "favorites": { "light.lamp": [{ "hs_color": [24, 85] }, { "color_temp_kelvin": 2700 }] } }`.
+  The entity must be on an `hacontrol` card; `members` lists the states of a group's `entity_id` attribute (empty for
+  single entities). `favorites` has the favorite colors set in Home Assistant for the lights among them, each with one of
+  `hs_color`, `rgb_color`, `rgbw_color`, `rgbww_color`, `xy_color` or `color_temp_kelvin`; lights without favorites
+  are left out.
 - **Control from a dialog**: `{ "service": "homeassistant", "endpoint": "control", "entity_ids": ["light.lamp"], "action": "turn_on", "brightness_pct": 60 }`.
   Every entity must be on an `hacontrol` card or a member of a group on one (members are read from Home Assistant,
   `403` otherwise); 1–50 entities. `action` is `turn_on` or `turn_off`. Lights are called with `light.turn_on` /
