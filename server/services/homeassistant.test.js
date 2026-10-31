@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setConfig } from '../config.js';
-import { fetchArtwork, handleHaRequest } from './homeassistant.js';
+import { controlCalls, fetchArtwork, handleHaRequest, resetControlCache } from './homeassistant.js';
 
 const okResponse = (body) => ({ ok: true, status: 200, json: async () => body, text: async () => '' });
 
@@ -179,5 +179,63 @@ describe('Home Assistant service', () => {
         await expect(fetchArtwork('media_player.kitchen')).rejects.toMatchObject({ status: 502 });
         // External picture URLs are fetched without the Home Assistant token
         expect(fetch.mock.calls.at(-1)[1].headers).toEqual({});
+    });
+});
+
+describe('Home Assistant control dialogs', () => {
+    const states = {
+        'group.living': { state: 'on', attributes: { entity_id: ['light.lamp', 'switch.fan'] } },
+        'light.lamp': { state: 'on', attributes: { brightness: 255 } },
+        'switch.fan': { state: 'off', attributes: {} },
+    };
+
+    beforeEach(() => {
+        resetControlCache();
+        setConfig({
+            services: { homeassistant: { url: 'http://ha.local', token: 'tkn' } },
+            pages: [{ cards: [{ id: 'l', type: 'hacontrol', data: { entities: [{ entity_id: 'group.living' }, { entity_id: 'light.desk' }] } }] }],
+        });
+        vi.stubGlobal('fetch', vi.fn(async (url) => {
+            const id = decodeURIComponent(String(url).split('/states/')[1] || '');
+            return okResponse(states[id] || []);
+        }));
+    });
+
+    it('loads an entity with the states of its group members', async () => {
+        const details = await handleHaRequest({ endpoint: 'details', entity_id: 'group.living' });
+        expect(details.entity).toEqual(states['group.living']);
+        expect(details.members).toEqual({ 'light.lamp': states['light.lamp'], 'switch.fan': states['switch.fan'] });
+        await expect(handleHaRequest({ endpoint: 'details', entity_id: 'light.lamp' })).rejects.toMatchObject({ status: 403 });
+    });
+
+    it('controls configured entities and members of configured groups', async () => {
+        await handleHaRequest({ endpoint: 'control', entity_ids: ['light.lamp', 'switch.fan'], action: 'turn_off' });
+        const posts = fetch.mock.calls.filter(([, init]) => init?.method === 'POST');
+        expect(posts.map(([url, init]) => [url, JSON.parse(init.body)])).toEqual([
+            ['http://ha.local/api/services/light/turn_off', { entity_id: ['light.lamp'] }],
+            ['http://ha.local/api/services/homeassistant/turn_off', { entity_id: ['switch.fan'] }],
+        ]);
+        await expect(handleHaRequest({ endpoint: 'control', entity_ids: ['light.kitchen'], action: 'turn_on' }))
+            .rejects.toMatchObject({ status: 403 });
+    });
+
+    it('validates brightness and colors', () => {
+        const allowed = new Set(['light.a']);
+        expect(controlCalls({ entity_id: 'light.a', action: 'turn_on', brightness_pct: 40, hs_color: [24, 85] }, allowed))
+            .toEqual([{ domain: 'light', service: 'turn_on', body: { entity_id: ['light.a'], brightness_pct: 40, hs_color: [24, 85] } }]);
+        expect(controlCalls({ entity_ids: ['light.a'], action: 'turn_on', color_temp_kelvin: 2700.4 }, allowed)[0].body.color_temp_kelvin).toBe(2700);
+        const bad = [
+            { action: 'turn_on' },
+            { action: 'toggle' },
+            { action: 'turn_on', brightness_pct: 0 },
+            { action: 'turn_on', brightness_pct: 50.5 },
+            { action: 'turn_on', color_temp_kelvin: 500 },
+            { action: 'turn_on', hs_color: [400, 10] },
+            { action: 'turn_on', hs_color: [10, 10], color_temp_kelvin: 3000 },
+        ];
+        bad.forEach((params, i) => {
+            const withId = i === 0 ? params : { entity_id: 'light.a', ...params };
+            expect(() => controlCalls(withId, allowed)).toThrow(expect.objectContaining({ status: 400 }));
+        });
     });
 });

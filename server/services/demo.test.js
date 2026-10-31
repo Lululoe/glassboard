@@ -153,4 +153,27 @@ describe('demo mode', () => {
         const config = await request(app).get('/api/config');
         expect(config.body.demo).toBe(true);
     });
+
+    it('simulates lights and groups for the control dialogs', async () => {
+        setConfig({
+            demo: true,
+            pages: [{ cards: [{ id: 'l', type: 'hacontrol', data: { entities: [{ entity_id: 'group.den_lights' }] } }] }],
+        });
+        const ha = demoHandlers.homeassistant;
+        const { members } = await ha({ endpoint: 'details', entity_id: 'group.den_lights' });
+        const ids = Object.keys(members);
+        expect(ids.length).toBeGreaterThan(1);
+        expect(ids.every(id => id.startsWith('light.den_'))).toBe(true);
+
+        const color = ids.find(id => members[id].attributes.supported_color_modes.includes('hs'));
+        await ha({ endpoint: 'control', entity_ids: [color], action: 'turn_on', brightness_pct: 30, hs_color: [200, 70] });
+        const after = await ha({ endpoint: 'details', entity_id: 'group.den_lights' });
+        expect(after.members[color]).toMatchObject({ state: 'on', attributes: { brightness: 77, hs_color: [200, 70], color_mode: 'hs' } });
+
+        await ha({ endpoint: 'control', entity_ids: ids, action: 'turn_off' });
+        const off = await ha({ endpoint: 'details', entity_id: 'group.den_lights' });
+        expect(off.entity.state).toBe('off');
+        await expect(ha({ endpoint: 'control', entity_ids: ['light.elsewhere'], action: 'turn_on' })).rejects.toMatchObject({ status: 403 });
+    });
 });
+

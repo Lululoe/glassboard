@@ -78,7 +78,7 @@ for missing parameters. Home Assistant actions change the simulated state in mem
 ### `homeassistant`
 Only entities that appear on an `hacontrol` card, as the `entity_id` of a `thermostat` card, in the first six
 `rooms` of a `thermostats` card or as a player or speaker of a `mediaplayer` card can be read. Of
-`hacontrol` entities only the configured `on_action` / `off_action` can be called; thermostat entities only accept
+`hacontrol` entities only the configured `on_action` / `off_action` and the control dialog actions below can be called; thermostat entities only accept
 the climate actions below.
 
 - **Get several states**: `{ "service": "homeassistant", "endpoint": "states", "entity_ids": ["light.office", "switch.fan"] }`
@@ -95,6 +95,14 @@ the climate actions below.
   The entity must be a player or speaker of a `mediaplayer` card. `action` is one of `media_play_pause`,
   `media_next_track`, `media_previous_track`, `media_seek` (with `seek_position` in seconds), `volume_set` (with
   `volume_level` 0–1), `join` (with `group_members`, other players or speakers of media player cards) and `unjoin`.
+- **Load a control dialog**: `{ "service": "homeassistant", "endpoint": "details", "entity_id": "group.living_room" }`
+  returns `{ "entity": { ...state }, "members": { "light.lamp": { ...state } } }`. The entity must be on an
+  `hacontrol` card; `members` lists the states of a group's `entity_id` attribute (empty for single entities).
+- **Control from a dialog**: `{ "service": "homeassistant", "endpoint": "control", "entity_ids": ["light.lamp"], "action": "turn_on", "brightness_pct": 60 }`.
+  Every entity must be on an `hacontrol` card or a member of a group on one (members are read from Home Assistant,
+  `403` otherwise); 1–50 entities. `action` is `turn_on` or `turn_off`. Lights are called with `light.turn_on` /
+  `light.turn_off` and, for `turn_on`, optional `brightness_pct` (1–100), `color_temp_kelvin` (1000–12000) or
+  `hs_color` (`[hue 0–360, saturation 0–100]`); other entities with `homeassistant.turn_on` / `turn_off`.
 
 ### `weather`
 - **Parameters**:

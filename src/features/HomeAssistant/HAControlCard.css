@@ -128,3 +128,59 @@ button.ha-tile:focus-visible {
 .ha-tile.off .ha-tile-state {
     color: var(--text-secondary);
 }
+
+/* Tiles with a control dialog: the whole tile opens it, the icon switches the entity */
+.ha-tile.has-dialog {
+    cursor: pointer;
+}
+
+.ha-tile-open {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+}
+
+.ha-tile-open:focus-visible,
+button.ha-icon-circle:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.ha-tile.has-dialog:has(.ha-tile-open:active) {
+    transform: scale(0.97);
+}
+
+.ha-tile.has-dialog .ha-tile-content {
+    pointer-events: none;
+}
+
+button.ha-icon-circle {
+    position: relative;
+    z-index: 1;
+    cursor: pointer;
+    transition: transform var(--duration-standard) var(--ease-standard), background var(--duration-standard) var(--ease-standard);
+}
+
+/* A larger target than the circle itself */
+button.ha-icon-circle::before {
+    content: "";
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+}
+
+button.ha-icon-circle:active {
+    transform: scale(0.9);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ha-tile.has-dialog:has(.ha-tile-open:active) {
+        transform: none;
+        opacity: 0.7;
+    }
+
+    button.ha-icon-circle:active {
+        transform: none;
+        opacity: 0.7;
+    }
+}

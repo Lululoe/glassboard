@@ -3,6 +3,15 @@ import { callService } from '../../lib/api';
 import { usePolling } from '../../hooks/usePolling';
 
 const CONFIRM_DELAY = 500;
+// Domains the control endpoint can switch when the card configures no actions
+const CONTROL_DOMAINS = ['light', 'group', 'switch', 'input_boolean', 'fan'];
+
+/**
+ * Whether an entity can be switched and opened in a control dialog.
+ * @param {Object} entity - Entity config.
+ * @returns {boolean} True for lights, groups, switches, input booleans and fans.
+ */
+export const isControllable = (entity) => CONTROL_DOMAINS.includes(String(entity.entity_id).split('.')[0]);
 
 /**
  * Polls the states of Home Assistant entities in a single request and toggles them with
@@ -10,7 +19,7 @@ const CONFIRM_DELAY = 500;
  * server, and is dropped if the action fails.
  * @param {Array<Object>} entities - Entity configs (entity_id, on_action, off_action, on_state, off_state).
  * @param {number} [interval=5000] - Polling interval in ms.
- * @returns {{entityStates: Object<string, Object>, loading: boolean, error: string|null, toggleEntity: (entity: Object, isOn: boolean) => Promise<void>}}
+ * @returns {{entityStates: Object<string, Object>, loading: boolean, error: string|null, toggleEntity: (entity: Object, isOn: boolean) => Promise<void>, refresh: () => void}}
  */
 export const useHomeAssistant = (entities, interval = 5000) => {
     const ids = entities.map(e => e.entity_id).filter(Boolean);
@@ -30,14 +39,18 @@ export const useHomeAssistant = (entities, interval = 5000) => {
 
     const toggleEntity = useCallback(async (entity, isOn) => {
         const action = isOn ? entity.off_action : entity.on_action;
-        if (!action?.service) return;
+        if (!action?.service && !isControllable(entity)) return;
 
         const id = String(entity.entity_id);
         const optimisticState = isOn ? (entity.off_state || 'off') : (entity.on_state || 'on');
         setOverrides(prev => ({ ...prev, [id]: { state: optimisticState, at: Date.now() } }));
 
         try {
-            await callService('homeassistant', { endpoint: 'services', entity_id: id, action: action.service });
+            if (action?.service) {
+                await callService('homeassistant', { endpoint: 'services', entity_id: id, action: action.service });
+            } else {
+                await callService('homeassistant', { endpoint: 'control', entity_ids: [id], action: isOn ? 'turn_off' : 'turn_on' });
+            }
             setTimeout(refresh, CONFIRM_DELAY);
         } catch (err) {
             console.error(`Failed to toggle ${id}:`, err);
@@ -48,5 +61,5 @@ export const useHomeAssistant = (entities, interval = 5000) => {
         }
     }, [refresh]);
 
-    return { entityStates, loading, error, toggleEntity };
+    return { entityStates, loading, error, toggleEntity, refresh };
 };

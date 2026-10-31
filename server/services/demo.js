@@ -1,7 +1,9 @@
 import { findCard, getAllCards, getConfig } from '../config.js';
 import { HttpError } from '../errors.js';
 import { getGridApps } from './appstatus.js';
-import { climateCall, getClimateConfigs, getMediaEntityIds, mediaCall } from './homeassistant.js';
+import {
+    climateCall, controlCalls, getClimateConfigs, getControlEntityIds, getMediaEntityIds, mediaCall,
+} from './homeassistant.js';
 
 /**
  * Demo mode answers every `/api` service with simulated data instead of calling real backends,
@@ -398,9 +400,113 @@ function mediaAction(params) {
     return [mediaState(body.entity_id)];
 }
 
+/**
+ * Members of simulated light groups: [id suffix, name, capability, on, brightness %, color].
+ * Capabilities: color (hs + white), ct (white tones), dim (brightness), onoff.
+ * @type {Array<[string, string, string, boolean, number, Object]>}
+ */
+const GROUP_MEMBERS = [
+    ['ambilight', 'Ambilight', 'color', true, 60, { hs: [205, 70] }],
+    ['backlight', 'Backlight', 'dim', true, 40, {}],
+    ['govee_light', 'Govee Light', 'color', true, 80, { hs: [24, 85] }],
+    ['hue_go', 'Hue Go', 'color', false, 70, { hs: [280, 55] }],
+    ['lowboard', 'Lowboard', 'ct', true, 50, { ct: 2700 }],
+    ['pendant_light', 'Pendant Light', 'ct', true, 100, { ct: 3000 }],
+    ['shelf', 'Shelf', 'onoff', false, 100, {}],
+    ['sideboard_lamp', 'Sideboard Lamp', 'color', true, 70, { ct: 2700 }],
+];
+const COLOR_MODES = { color: ['color_temp', 'hs'], ct: ['color_temp'], dim: ['brightness'], onoff: ['onoff'] };
+const lightStore = new Map();
+const groupStore = new Map();
+
+function titleOf(entityId) {
+    return entityId.split('.')[1].replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
+}
+
+function addLight(entityId, name, caps, on, pct, color) {
+    lightStore.set(entityId, {
+        name, caps, on, brightness: Math.round(pct * 2.55),
+        mode: color.hs ? 'hs' : 'color_temp', hs: color.hs || [30, 50], ct: color.ct || 3000,
+    });
+}
+
+function ensureGroup(groupId) {
+    if (!groupStore.has(groupId)) {
+        const base = groupId.split('.')[1].replace(/_lights?$/, '');
+        const members = GROUP_MEMBERS.map(([suffix, name, caps, on, pct, color]) => {
+            const id = `light.${base}_${suffix}`;
+            if (!lightStore.has(id)) addLight(id, name, caps, on, pct, color);
+            return id;
+        });
+        groupStore.set(groupId, members);
+    }
+    return groupStore.get(groupId);
+}
+
+function lightState(entityId) {
+    const l = lightStore.get(entityId);
+    const attributes = { friendly_name: l.name, supported_color_modes: COLOR_MODES[l.caps] };
+    if (l.on) {
+        if (l.caps !== 'onoff') attributes.brightness = l.brightness;
+        attributes.color_mode = l.caps === 'onoff' ? 'onoff' : l.caps === 'dim' ? 'brightness' : l.caps === 'ct' ? 'color_temp' : l.mode;
+        if (l.caps === 'ct' || l.caps === 'color') Object.assign(attributes, { color_temp_kelvin: l.ct, min_color_temp_kelvin: 2000, max_color_temp_kelvin: 6500 });
+        if (l.caps === 'color') attributes.hs_color = l.hs;
+    }
+    return { entity_id: entityId, state: l.on ? 'on' : 'off', attributes };
+}
+
+function groupState(groupId) {
+    const members = ensureGroup(groupId);
+    return {
+        entity_id: groupId,
+        state: members.some(id => lightStore.get(id).on) ? 'on' : 'off',
+        attributes: { friendly_name: titleOf(groupId), entity_id: members },
+    };
+}
+
+/** Switches a simulated entity: lights and groups in the light store, anything else in haStates. */
+function setDemoOn(entityId, on, entity) {
+    if (entityId.startsWith('group.')) ensureGroup(entityId).forEach(id => { lightStore.get(id).on = on; });
+    else if (lightStore.has(entityId)) lightStore.get(entityId).on = on;
+    else haStates.set(entityId, on ? (entity?.on_state || 'on') : (entity?.off_state || 'off'));
+}
+
+function details({ entity_id: entityId }) {
+    if (!getControlEntityIds().has(entityId)) throw new HttpError(403, `Entity not authorized: ${entityId}`);
+    const entity = entityState(entityId, 0);
+    const members = entityId.startsWith('group.') ? ensureGroup(entityId) : [];
+    return { entity, members: Object.fromEntries(members.map(id => [id, lightState(id)])) };
+}
+
+function control(params) {
+    const allowed = new Set(getControlEntityIds());
+    [...allowed].filter(id => id.startsWith('group.')).forEach(id => ensureGroup(id).forEach(m => allowed.add(m)));
+    controlCalls(params, allowed).forEach(({ domain, service, body }) => {
+        body.entity_id.forEach(id => {
+            const on = service === 'turn_on';
+            if (domain !== 'light' || !lightStore.has(id)) {
+                setDemoOn(id, on);
+                return;
+            }
+            const l = lightStore.get(id);
+            l.on = on;
+            if (!on) return;
+            if (body.brightness_pct && l.caps !== 'onoff') l.brightness = Math.round(body.brightness_pct * 2.55);
+            if (body.color_temp_kelvin && (l.caps === 'ct' || l.caps === 'color')) { l.ct = body.color_temp_kelvin; l.mode = 'color_temp'; }
+            if (body.hs_color && l.caps === 'color') { l.hs = body.hs_color; l.mode = 'hs'; }
+        });
+    });
+    return [];
+}
+
 function entityState(entityId, index) {
     if (thermostatCards().some(card => card.entity_id === entityId)) return climateState(entityId);
     if (getMediaEntityIds().has(entityId)) return mediaState(entityId);
+    if (entityId.startsWith('group.')) return groupState(entityId);
+    if (entityId.startsWith('light.')) {
+        if (!lightStore.has(entityId)) addLight(entityId, titleOf(entityId), 'color', index % 3 !== 1, 80, { ct: 3000 });
+        return lightState(entityId);
+    }
     if (!haStates.has(entityId)) {
         const entity = findEntity(entityId);
         // Alternate initial states so both on and off tiles show
@@ -423,12 +529,14 @@ function homeassistant(params) {
     }
     if (endpoint === 'climate') return climate(params);
     if (endpoint === 'media') return mediaAction(params);
+    if (endpoint === 'details') return details(params);
+    if (endpoint === 'control') return control(params);
     if (endpoint === 'services') {
         const { entity_id: entityId, action } = params;
         const entity = findEntity(entityId);
         if (!entity) throw new HttpError(403, 'Action not authorized for this entity');
-        if (action === entity.on_action?.service) haStates.set(entityId, entity.on_state || 'on');
-        else if (action === entity.off_action?.service) haStates.set(entityId, entity.off_state || 'off');
+        if (action === entity.on_action?.service) setDemoOn(entityId, true, entity);
+        else if (action === entity.off_action?.service) setDemoOn(entityId, false, entity);
         else throw new HttpError(403, 'Action not authorized for this entity');
         return [entityState(entityId, 0)];
     }
@@ -484,4 +592,6 @@ export function resetDemoState() {
     haStates.clear();
     climateStates.clear();
     mediaStates.clear();
+    lightStore.clear();
+    groupStore.clear();
 }

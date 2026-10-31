@@ -202,8 +202,23 @@ Control Home Assistant entities (lights, switches, etc.).
 | `color` | string | Highlight color when active. |
 | `on_action` | object | `{ service: 'domain.service' }` to call when turning on. |
 | `off_action` | object | `{ service: 'domain.service' }` to call when turning off. |
+| `dialog` | boolean | Set to `false` to switch the entity from its tile instead of opening the control dialog. |
 
-Only the entities listed here can be read through the API, and only their `on_action`/`off_action` can be called. The tile is clickable when both actions are set.
+Only the entities listed here can be read through the API, and only their `on_action`/`off_action` can be called. For other entities the tile is clickable when both actions are set.
+
+### Control dialog
+Tapping the tile of a light, group (`group.*` or a light group), switch, `input_boolean` or fan opens its control
+dialog; tapping its icon switches it on or off (with `on_action`/`off_action` when set). What the dialog shows depends
+on what the entity can do, as Home Assistant reports it:
+
+- **Color lights**: color presets, hue and saturation, white temperature, brightness and power.
+- **White lights**: white presets, temperature, brightness and power.
+- **Dimmable lights**: brightness and power.
+- **Lights that only switch, switches and fans**: one large power button.
+- **Groups**: a list of their members with a switch and a brightness slider for all of them; each member opens
+  its own controls. Members can be switched, dimmed and colored even if they are not on a card.
+
+On phones the dialog is a sheet at the bottom of the screen, with the main controls at its bottom edge.
 
 The card shows as many entities as fit its size: one as a quarter tile, two at half height, four per column otherwise.
 
@@ -218,6 +233,8 @@ The card shows as many entities as fit its size: one as a quarter tile, two at h
         icon: "lamp"
         attributes: ["brightness"]
         color: "#f1c40f"
+      - entity_id: group.living_room_lights
+        name: "Living Room"
 ```
 
 ---

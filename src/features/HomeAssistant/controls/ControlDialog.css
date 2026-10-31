@@ -1,0 +1,596 @@
+/* Control dialogs for Home Assistant entities: a flat panel over a dimmed, blurred page.
+   Large screens get a centered panel (two panes for groups), phones a bottom sheet. */
+dialog.ctl-overlay {
+    --ctl-bg: #1c1c1e;
+    --ctl-track-low: #2c2c2e;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 24px;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+:root[data-theme="light"] dialog.ctl-overlay {
+    --ctl-bg: #f2f2f7;
+    --ctl-track-low: #d1d1d6;
+}
+
+dialog.ctl-overlay:not([open]) {
+    display: none;
+}
+
+dialog.ctl-overlay::backdrop {
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: ctl-fade-in 0.2s ease;
+}
+
+html:has(dialog.ctl-overlay[open]) {
+    overflow: hidden;
+}
+
+@keyframes ctl-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+.ctl-panel {
+    position: relative;
+    width: min(880px, 100%);
+    height: min(600px, calc(100dvh - 48px));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 22px;
+    background: var(--ctl-bg);
+    border: 0.5px solid var(--border-popup);
+    box-shadow: var(--shadow-popup);
+    animation: ctl-panel-in 0.28s var(--ease-standard);
+}
+
+.ctl-panel.single {
+    width: min(480px, 100%);
+    height: auto;
+    max-height: min(720px, calc(100dvh - 48px));
+}
+
+@keyframes ctl-panel-in {
+    from {
+        opacity: 0;
+        transform: scale(0.94) translateY(12px);
+    }
+}
+
+.ctl-grabber {
+    display: none;
+}
+
+/* Header */
+.ctl-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 12px 12px 16px;
+    min-height: 64px;
+    flex-shrink: 0;
+    border-bottom: 0.5px solid var(--color-separator);
+}
+
+.ctl-titles {
+    flex: 1;
+    min-width: 0;
+}
+
+.ctl-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 22px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ctl-sub {
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ctl-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    background: var(--bg-fill);
+    color: var(--text-secondary);
+    transition: background var(--duration-standard) var(--ease-standard), color var(--duration-standard) var(--ease-standard);
+}
+
+.ctl-icon.on {
+    background: var(--system-yellow);
+    color: #fff;
+}
+
+.ctl-close {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--bg-fill);
+    flex-shrink: 0;
+}
+
+.ctl-close:active,
+.ctl-back:active {
+    opacity: 0.6;
+}
+
+.ctl-back {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: none;
+    place-items: center;
+    color: var(--system-blue);
+    flex-shrink: 0;
+    margin-left: -10px;
+}
+
+.ctl-close:focus-visible,
+.ctl-back:focus-visible,
+.ctl-item:focus-visible,
+.ctl-swatch:focus-visible,
+.ctl-power:focus-visible,
+.ctl-switch-hit:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.ctl-message {
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 15px;
+}
+
+/* Panes: the group's light list and the selected light */
+.ctl-panes {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+}
+
+.ctl-panel.single .ctl-panes {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.ctl-list-pane {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-right: 0.5px solid var(--color-separator);
+}
+
+.ctl-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 8px 10px;
+    overscroll-behavior: contain;
+}
+
+.ctl-item {
+    width: 100%;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 10px;
+    border-radius: 12px;
+    text-align: left;
+}
+
+.ctl-item[aria-current="true"] {
+    background: var(--bg-fill-hover);
+}
+
+@media (pointer: fine) {
+    .ctl-item:not([aria-current="true"]):hover {
+        background: var(--bg-fill);
+    }
+}
+
+.ctl-item .ctl-icon {
+    width: 36px;
+    height: 36px;
+}
+
+.ctl-item-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.ctl-item-name {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ctl-item-state {
+    display: block;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.ctl-chevron {
+    color: var(--text-tertiary);
+    display: none;
+    flex-shrink: 0;
+}
+
+/* Light detail: color controls scroll above, the main controls stay at the bottom */
+.ctl-detail {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+}
+
+.ctl-detail-title {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 20px 0;
+}
+
+.ctl-detail-title > div {
+    min-width: 0;
+}
+
+.ctl-detail-title .ctl-title {
+    font-size: 19px;
+    line-height: 24px;
+}
+
+.ctl-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 4px 20px 14px;
+    overscroll-behavior: contain;
+}
+
+.ctl-spacer {
+    flex: 1;
+}
+
+.ctl-primary {
+    flex-shrink: 0;
+    padding: 12px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    border-top: 0.5px solid var(--color-separator);
+}
+
+.ctl-list-pane .ctl-primary {
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+.ctl-section-label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin: 16px 0 10px;
+}
+
+.ctl-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* One slider style for everything: caption row, gradient track, white handle */
+.ctl-slider {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: opacity var(--duration-standard) var(--ease-standard);
+}
+
+.ctl-slider.dim {
+    opacity: 0.45;
+}
+
+.ctl-slider-cap {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    /* Fixed, so a slider is always 68px tall and the bottom sections line up */
+    line-height: 18px;
+    color: var(--text-secondary);
+}
+
+.ctl-slider-value {
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.ctl-track {
+    position: relative;
+    height: 44px;
+    border-radius: 12px;
+    touch-action: none;
+    cursor: ew-resize;
+    background: linear-gradient(90deg, var(--ctl-track-low), #fff);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.ctl-track:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.ctl-thumb {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    width: 8px;
+    margin-left: -4px;
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.35);
+    pointer-events: none;
+}
+
+.ctl-track.hue {
+    background: linear-gradient(90deg, hsl(0 100% 55%), hsl(60 100% 55%), hsl(120 100% 45%), hsl(180 100% 45%), hsl(240 100% 60%), hsl(300 100% 55%), hsl(360 100% 55%));
+}
+
+.ctl-track.ct {
+    background: linear-gradient(90deg, #ff8a2b, #ffc58a, #fff1e0, #f3f6ff, #c9dcff);
+}
+
+/* Presets */
+.ctl-presets {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+    gap: 12px 6px;
+}
+
+.ctl-preset {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+}
+
+.ctl-swatch {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    position: relative;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.ctl-swatch[aria-pressed="true"]::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2.5px var(--text-primary);
+}
+
+.ctl-preset-name {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* Power: a wide toggle at the bottom; big for entities that only switch */
+.ctl-power {
+    min-height: 52px;
+    border-radius: 14px;
+    background: var(--bg-fill);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 16px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background var(--duration-standard) var(--ease-standard), transform var(--duration-standard) var(--ease-standard);
+}
+
+.ctl-power[aria-pressed="true"] {
+    background: var(--bg-tile, #fff);
+    color: #1c1c1e;
+}
+
+.ctl-power[aria-pressed="true"] svg {
+    color: #e0a800;
+}
+
+.ctl-power.big {
+    /* Brightness slider + gap + power button, matching the dimmable layout's height */
+    min-height: 134px;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    font-size: 18px;
+}
+
+.ctl-power:active {
+    transform: scale(0.98);
+}
+
+.ctl-power:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+/* Group switch */
+.ctl-master {
+    /* As tall as the power button, so both panes' bottom sections line up */
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.ctl-master-name {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.ctl-switch-hit {
+    min-width: 51px;
+    min-height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+}
+
+.ctl-switch {
+    position: relative;
+    width: 51px;
+    height: 31px;
+    border-radius: 16px;
+    background: var(--bg-fill-hover);
+    transition: background var(--duration-standard) var(--ease-standard);
+}
+
+.ctl-switch::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 27px;
+    height: 27px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+    transition: transform var(--duration-standard) var(--ease-standard);
+}
+
+.ctl-switch-hit[aria-checked="true"] .ctl-switch {
+    background: var(--system-green);
+}
+
+.ctl-switch-hit[aria-checked="true"] .ctl-switch::after {
+    transform: translateX(20px);
+}
+
+/* Phones: a bottom sheet that never fills the screen; groups drill into a light */
+@media (max-width: 760px) {
+    dialog.ctl-overlay {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .ctl-panel,
+    .ctl-panel.single {
+        width: 100%;
+        height: auto;
+        max-height: 82dvh;
+        border-radius: 22px 22px 0 0;
+        border-width: 0.5px 0 0;
+        animation-name: ctl-sheet-in;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .ctl-grabber {
+        display: block;
+        width: 36px;
+        height: 5px;
+        border-radius: 3px;
+        background: var(--text-tertiary);
+        margin: 8px auto 0;
+        flex-shrink: 0;
+    }
+
+    .ctl-head {
+        min-height: 56px;
+        padding-top: 6px;
+    }
+
+    .ctl-panes {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .ctl-panes > * {
+        min-height: 0;
+    }
+
+    .ctl-list-pane {
+        border-right: 0;
+    }
+
+    .ctl-panes.show-detail .ctl-list-pane,
+    .ctl-panes:not(.show-detail) .ctl-detail.in-group {
+        display: none;
+    }
+
+    .ctl-chevron {
+        display: block;
+    }
+
+    .ctl-item[aria-current="true"] {
+        background: none;
+    }
+
+    .ctl-back {
+        display: grid;
+    }
+
+    .ctl-detail-title {
+        padding-top: 10px;
+    }
+}
+
+@keyframes ctl-sheet-in {
+    from {
+        transform: translateY(100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    dialog.ctl-overlay::backdrop,
+    .ctl-panel {
+        animation: none;
+    }
+
+    .ctl-power:active {
+        transform: none;
+        opacity: 0.7;
+    }
+}

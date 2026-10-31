@@ -220,6 +220,110 @@ export function climateCall(params) {
 }
 
 /**
+ * Lists the entities of hacontrol cards, whose control dialogs may read and change them.
+ * @returns {Set<string>} Entity ids.
+ */
+export function getControlEntityIds() {
+    const ids = new Set();
+    getAllCards().forEach(card => {
+        if (card.type === 'hacontrol') (card.data?.entities || []).forEach(e => e.entity_id && ids.add(e.entity_id));
+    });
+    return ids;
+}
+
+/**
+ * Returns the members of a group entity (`group.*`, or a light/switch group with an
+ * `entity_id` attribute), or an empty list for single entities.
+ * @param {Object|null|undefined} state - The entity's Home Assistant state.
+ * @returns {string[]} Member entity ids.
+ */
+export function groupMembers(state) {
+    const members = state?.attributes?.entity_id;
+    return Array.isArray(members) ? members.filter(id => typeof id === 'string') : [];
+}
+
+const MEMBER_CACHE_MS = 15000;
+let memberCache = { at: 0, ids: /** @type {Set<string>} */ (new Set()), key: '' };
+
+/**
+ * Entities a control dialog may change: the hacontrol entities and the members of the groups
+ * among them. Group members are read from Home Assistant, never taken from the browser, and
+ * cached for a few seconds.
+ * @returns {Promise<Set<string>>} Allowed entity ids.
+ */
+async function allowedControlIds() {
+    const configured = getControlEntityIds();
+    const key = [...configured].sort().join(',');
+    if (memberCache.key === key && Date.now() - memberCache.at < MEMBER_CACHE_MS) return memberCache.ids;
+    const ids = new Set(configured);
+    const states = await Promise.all([...configured].map(id => haFetch(`/states/${encodeURIComponent(id)}`).catch(() => null)));
+    states.forEach(state => groupMembers(state).forEach(id => ids.add(id)));
+    memberCache = { at: Date.now(), ids, key };
+    return ids;
+}
+
+/**
+ * Validates a control dialog action and turns it into Home Assistant service calls. Lights get
+ * `light.turn_on` / `light.turn_off` with brightness, white temperature or color; everything
+ * else is switched with `homeassistant.turn_on` / `turn_off`.
+ * @param {Object} params - `entity_ids` (or `entity_id`), `action` (`turn_on`/`turn_off`) and,
+ *   for turn_on, optional `brightness_pct`, `color_temp_kelvin` or `hs_color`.
+ * @param {Set<string>} allowed - Entities that may be controlled.
+ * @returns {Array<{domain: string, service: string, body: Object}>} The calls to make.
+ * @throws {HttpError} 403 for entities that are not allowed, 400 for invalid values.
+ */
+export function controlCalls(params, allowed) {
+    const ids = Array.isArray(params.entity_ids) ? params.entity_ids : params.entity_id ? [params.entity_id] : [];
+    if (ids.length === 0 || ids.length > 50 || ids.some(id => typeof id !== 'string')) {
+        throw new HttpError(400, 'entity_ids must list 1 to 50 entities');
+    }
+    const stranger = ids.find(id => !allowed.has(id));
+    if (stranger) throw new HttpError(403, `Entity not authorized: ${stranger}`);
+    const { action } = params;
+    if (action !== 'turn_on' && action !== 'turn_off') throw new HttpError(400, `Unknown control action: ${action}`);
+
+    const light = {};
+    if (action === 'turn_on') {
+        if (params.brightness_pct !== undefined) {
+            const pct = Number(params.brightness_pct);
+            if (!Number.isInteger(pct) || pct < 1 || pct > 100) throw new HttpError(400, 'brightness_pct must be 1-100');
+            light.brightness_pct = pct;
+        }
+        if (params.color_temp_kelvin !== undefined) {
+            const kelvin = Number(params.color_temp_kelvin);
+            if (!Number.isFinite(kelvin) || kelvin < 1000 || kelvin > 12000) throw new HttpError(400, 'color_temp_kelvin must be 1000-12000');
+            light.color_temp_kelvin = Math.round(kelvin);
+        }
+        if (params.hs_color !== undefined) {
+            const [h, sat] = Array.isArray(params.hs_color) ? params.hs_color.map(Number) : [];
+            if (!(h >= 0 && h <= 360 && sat >= 0 && sat <= 100)) throw new HttpError(400, 'hs_color must be [0-360, 0-100]');
+            if (light.color_temp_kelvin) throw new HttpError(400, 'Use either color_temp_kelvin or hs_color');
+            light.hs_color = [h, sat];
+        }
+    }
+
+    const lights = ids.filter(id => id.startsWith('light.'));
+    const others = ids.filter(id => !id.startsWith('light.'));
+    const calls = [];
+    if (lights.length) calls.push({ domain: 'light', service: action, body: { entity_id: lights, ...light } });
+    if (others.length) calls.push({ domain: 'homeassistant', service: action, body: { entity_id: others } });
+    return calls;
+}
+
+/**
+ * Loads what a control dialog shows: the entity's state and, for groups, its members' states.
+ * @param {string} entityId - An entity of an hacontrol card.
+ * @returns {Promise<{entity: Object, members: Object<string, Object|null>}>} The states.
+ */
+export async function entityDetails(entityId) {
+    if (!getControlEntityIds().has(entityId)) throw new HttpError(403, `Entity not authorized: ${entityId}`);
+    const entity = await haFetch(`/states/${encodeURIComponent(entityId)}`);
+    const ids = groupMembers(entity);
+    const states = await Promise.all(ids.map(id => haFetch(`/states/${encodeURIComponent(id)}`).catch(() => null)));
+    return { entity, members: Object.fromEntries(ids.map((id, i) => [id, states[i]])) };
+}
+
+/**
  * Checks whether an action is configured as the on_action or off_action of an entity.
  * @param {string} entityId - The entity id.
  * @param {string} action - The Home Assistant service, e.g. 'light.turn_on'.
@@ -241,6 +345,13 @@ function assertEntityAllowed(entityId, allowed) {
 }
 
 /**
+ * Clears the cached group members. Intended for tests.
+ */
+export function resetControlCache() {
+    memberCache = { at: 0, ids: new Set(), key: '' };
+}
+
+/**
  * Handles Home Assistant requests.
  * - `endpoint: 'states'` with `entity_ids: string[]` returns `{ [entity_id]: state | null }`.
  * - `endpoint: 'states/<entity_id>'` returns a single state.
@@ -249,6 +360,9 @@ function assertEntityAllowed(entityId, allowed) {
  *   `set_hvac_mode`) and its value controls the climate entity of a thermostat card.
  * - `endpoint: 'media'` with `entity_id`, `action` and its value controls a media player
  *   of a media player card (see mediaCall).
+ * - `endpoint: 'details'` with `entity_id` returns an hacontrol entity and its group members.
+ * - `endpoint: 'control'` switches, dims or colors hacontrol entities and group members
+ *   (see controlCalls).
  * @param {Object} params - Request parameters.
  * @returns {Promise<Object>} Home Assistant response data.
  */
@@ -290,6 +404,17 @@ export async function handleHaRequest(params) {
     if (endpoint === 'climate') {
         const { service, body } = climateCall(params);
         return haFetch(`/services/climate/${service}`, { method: 'POST', body: JSON.stringify(body) });
+    }
+
+    if (endpoint === 'details') return entityDetails(String(params.entity_id || ''));
+
+    if (endpoint === 'control') {
+        const calls = controlCalls(params, await allowedControlIds());
+        const results = [];
+        for (const { domain, service, body } of calls) {
+            results.push(await haFetch(`/services/${domain}/${service}`, { method: 'POST', body: JSON.stringify(body) }));
+        }
+        return results.flat();
     }
 
     if (endpoint === 'media') {
