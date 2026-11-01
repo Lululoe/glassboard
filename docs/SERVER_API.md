@@ -101,6 +101,12 @@ the climate actions below.
   The entity must be a player or speaker of a `mediaplayer` card. `action` is one of `media_play_pause`,
   `media_next_track`, `media_previous_track`, `media_seek` (with `seek_position` in seconds), `volume_set` (with
   `volume_level` 0–1), `join` (with `group_members`, other players or speakers of media player cards) and `unjoin`.
+- **Load a graph card**: `{ "service": "homeassistant", "endpoint": "graph", "card_id": "temperatures", "range": "24h" }`
+  returns `{ "chart": "line", "range": "24h", "minutes": 10, "times": [...], "end": 1793530000000, "series": [{ "entity_id", "name", "unit", "color", "kind", "current", "values": [...] }] }`:
+  one value per period (starting at `times`, `minutes` long, the last ending at `end`) for each sensor of the card,
+  `null` where there is no data. `range` must be one of the card's ranges (the week comparison ignores it and returns
+  14 days). `kind` is `mean` (an average) or `change` (what a meter used). Values come from Home Assistant's long-term
+  statistics where it keeps them and from the state history otherwise; answers are cached for 30 seconds.
 - **Load a control dialog**: `{ "service": "homeassistant", "endpoint": "details", "entity_id": "group.living_room" }`
   returns `{ "entity": { ...state }, "members": { "light.lamp": { ...state } }, "favorites": { "light.lamp": [{ "hs_color": [24, 85] }, { "color_temp_kelvin": 2700 }] } }`.
   The entity must be on an `hacontrol` card; `members` lists the states of a group's `entity_id` attribute (empty for

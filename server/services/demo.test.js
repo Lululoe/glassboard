@@ -175,5 +175,25 @@ describe('demo mode', () => {
         expect(off.entity.state).toBe('off');
         await expect(ha({ endpoint: 'control', entity_ids: ['light.elsewhere'], action: 'turn_on' })).rejects.toMatchObject({ status: 403 });
     });
+
+    it('simulates history for graph cards', async () => {
+        setConfig({
+            demo: true,
+            pages: [{
+                cards: [
+                    { id: 'g', type: 'graph', chart: 'bar', ranges: ['24h', '7d'], entities: ['sensor.solar_energy', 'sensor.living_room_temperature'] },
+                    { id: 'w', type: 'graph', chart: 'week', entities: ['sensor.gas_consumption'] },
+                ],
+            }],
+        });
+        const bars = await demoHandlers.homeassistant({ endpoint: 'graph', card_id: 'g', range: '7d' });
+        expect(bars.times).toHaveLength(7);
+        expect(bars.series.map(s => [s.unit, s.kind])).toEqual([['kWh', 'change'], ['°C', 'mean']]);
+        expect(bars.series.every(s => s.values.length === 7 && s.values.every(Number.isFinite))).toBe(true);
+        const week = await demoHandlers.homeassistant({ endpoint: 'graph', card_id: 'w' });
+        expect(week).toMatchObject({ chart: 'week', series: [{ unit: 'm³' }] });
+        expect(week.times).toHaveLength(14);
+        await expect(demoHandlers.homeassistant({ endpoint: 'graph', card_id: 'g', range: '30d' })).rejects.toMatchObject({ status: 400 });
+    });
 });
 

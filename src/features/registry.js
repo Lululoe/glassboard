@@ -1,6 +1,8 @@
 import AppGridCard from './AppGrid/AppGridCard';
 import AppGridEditor from './AppGrid/AppGridEditor';
 import GitCard from './Git/GitCard';
+import GraphCard from './Graph/GraphCard';
+import GraphEditor from './Graph/GraphEditor';
 import HAControlCard from './HomeAssistant/HAControlCard';
 import HAControlEditor from './HomeAssistant/HAControlEditor';
 import MediaCard from './Media/MediaCard';
@@ -25,6 +27,7 @@ import WeatherEditor from './Weather/WeatherEditor';
 export const cardRegistry = {
     appgrid: AppGridCard,
     git: GitCard,
+    graph: GraphCard,
     hacontrol: HAControlCard,
     media: MediaCard,
     mediaplayer: MediaPlayerCard,
@@ -86,6 +89,13 @@ export const cardInfo = {
         icon: 'lu-Heater',
         defaults: { colSpan: 2, rooms: [] },
         Editor: MultiThermostatEditor,
+    },
+    graph: {
+        name: 'Graph',
+        description: 'History of Home Assistant sensors as lines, bars or this week vs last',
+        icon: 'lu-ChartLine',
+        defaults: { entities: [] },
+        Editor: GraphEditor,
     },
     appgrid: {
         name: 'App Grid',

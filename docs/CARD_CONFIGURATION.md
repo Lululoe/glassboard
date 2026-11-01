@@ -182,6 +182,72 @@ Displays Pull Requests from GitHub, GitLab, or Gitea.
 
 ---
 
+## Graph (`graph`)
+The history of one or more Home Assistant sensors: as lines, as bars, or as this week against last week. One to three
+wide.
+
+### Configuration
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `entities` | array | required | Up to eight sensors: entity ids, or objects `{ entity_id, name, color }`. |
+| `title` | string | `Graph` | Card title. |
+| `chart` | string | `line` | `line`, `bar` or `week`. The card has no switch between them. |
+| `ranges` | array/boolean | `[24h, 7d, 30d]` | Time ranges in the header, in hours (`h`), days (`d`) or weeks (`w`); the first is shown when the card loads. `false` hides the selector. |
+| `range` | string | `24h` | The time range with `ranges: false`. |
+| `stack` | boolean | auto | Whether bars stack. By default energy, gas and water meters with the same unit stack. |
+| `breakdown` | boolean | `true` | Week chart: show the list that breaks the selected day down by sensor (two and three wide, stacked). |
+| `icon` | string/object | chart icon | Header icon. |
+
+**Sensor colors**: `blue`, `orange`, `green`, `purple`, `teal`, `pink`, `yellow`, `red`, `indigo`, or any CSS color.
+Without one, sensors take these colors in order.
+
+### Charts
+- **Lines** (`line`): sensors with the same unit share an axis; with two units the first gets the left axis and the
+  second the right. Hover or press and slide (arrow keys on a keyboard) to read every sensor at that time. Up to two
+  days come from the state history in detail; longer ranges from Home Assistant's long-term statistics.
+- **Bars** (`bar`): per hour up to two days, per day beyond. Meters (`state_class: total_increasing` or `total`) show
+  what they used in each period, other sensors their average. Stacked bars add up to a total, which the tooltip
+  shows too.
+- **Week** (`week`): each day of the last week next to the same day the week before, with today last. Sensors with the
+  same unit stack: hover or tap a part to see its sensor and value, and two-wide cards break the selected day down in
+  a list (`breakdown: false` hides it). Sensors with different units get a switch above the chart instead.
+
+One wide, chips under the header hide or show sensors; two and three wide, a list beside the chart does, and shows each
+sensor's current value (lines) or total over the range (bars). Sensors need to be recorded by Home Assistant; long-term
+statistics need a `state_class`, and without them the card works out the values from the state history.
+
+### Examples
+```yaml
+- id: temperatures
+  type: graph
+  title: Temperatures
+  ranges: [6h, 24h, 7d]
+  entities:
+    - entity_id: sensor.living_room_temperature
+      name: Living Room
+    - entity_id: sensor.outside_temperature
+      name: Outside
+      color: teal
+
+- id: electricity
+  type: graph
+  title: Electricity
+  chart: week
+  colSpan: 2
+  entities:
+    - { entity_id: sensor.heat_pump_energy, name: Heat pump }
+    - { entity_id: sensor.kitchen_energy, name: Kitchen }
+
+- id: living_room_climate
+  type: graph
+  title: Living Room
+  ranges: false
+  range: 24h
+  entities: [sensor.living_room_temperature, sensor.living_room_humidity]
+```
+
+---
+
 ## HA Control (`hacontrol`)
 Control Home Assistant entities (lights, switches, etc.).
 

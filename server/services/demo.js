@@ -1,6 +1,7 @@
 import { findCard, getAllCards, getConfig } from '../config.js';
 import { HttpError } from '../errors.js';
 import { getGridApps } from './appstatus.js';
+import { graphSettings, hoursOf, makeBuckets, slotsFor } from './haGraph.js';
 import {
     climateCall, controlCalls, fallbackIcon, getClimateConfigs, getControlEntityIds, getMediaEntityIds, mediaCall,
 } from './homeassistant.js';
@@ -426,6 +427,74 @@ const DEMO_FAVORITES = {
 const lightStore = new Map();
 const groupStore = new Map();
 
+/**
+ * What a simulated sensor measures, guessed from its entity id.
+ * @type {Array<[RegExp, {unit: string, kind: string, daily?: number, sun?: boolean, base?: number, amp?: number}]>}
+ */
+const SENSOR_KINDS = [
+    [/solar|pv/, { unit: 'kWh', kind: 'change', daily: 12, sun: true }],
+    [/gas/, { unit: 'm³', kind: 'change', daily: 3 }],
+    [/water/, { unit: 'L', kind: 'change', daily: 300 }],
+    [/energy|kwh|consumption/, { unit: 'kWh', kind: 'change', daily: 4 }],
+    [/power|watt/, { unit: 'W', kind: 'mean', base: 350, amp: 250 }],
+    [/humid/, { unit: '%', kind: 'mean', base: 50, amp: -6 }],
+    [/co2/, { unit: 'ppm', kind: 'mean', base: 700, amp: 250 }],
+    [/outside|outdoor/, { unit: '°C', kind: 'mean', base: 8, amp: 4 }],
+    [/temp/, { unit: '°C', kind: 'mean', base: 20.5, amp: .8 }],
+];
+
+/** A stable number per entity, so each sensor gets its own level and noise. */
+const seedOf = (id) => [...id].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 9973, 7);
+
+/**
+ * Simulated history for a graph card: daily rhythms with some noise, per hour or day for
+ * meters, as averages for measurements.
+ */
+function demoGraph(params) {
+    const card = findCard(params.card_id);
+    if (!card || card.type !== 'graph') throw new HttpError(403, `Not a graph card: ${params.card_id}`);
+    const settings = graphSettings(card);
+    const range = settings.chart === 'week' ? '14d' : (params.range || settings.ranges[0]);
+    if (settings.chart !== 'week' && !settings.ranges.includes(range)) throw new HttpError(400, `Range not offered by this card: ${range}`);
+    const now = Date.now();
+    const { count, minutes } = slotsFor(settings.chart, settings.chart === 'week' ? 336 : hoursOf(range));
+    const buckets = makeBuckets(count, minutes, now);
+    const series = settings.entities.map((e) => {
+        const id = e.entity_id;
+        const kind = (SENSOR_KINDS.find(([re]) => re.test(id)) || [null, { unit: '', kind: 'mean', base: 50, amp: 10 }])[1];
+        const seed = seedOf(id);
+        const level = .7 + (seed % 60) / 100;
+        const noise = (t) => Math.sin(t / 3.1e6 + seed) * .5 + Math.sin(t / 7.7e5 + seed * 2) * .3;
+        const hourOf = (t) => new Date(t).getHours() + new Date(t).getMinutes() / 60;
+        const sun = (h) => Math.max(0, Math.sin(Math.PI * (h - 7) / 10));
+        const values = buckets.map(({ start, end }) => {
+            const mid = (start + end) / 2;
+            const h = hourOf(mid);
+            if (kind.kind === 'change') {
+                const share = (end - start) / 86400000;
+                // Meters use more in the morning and evening; solar follows the sun
+                const shape = kind.sun ? (minutes >= 1440 ? 1 : sun(h) * 2.4) : (minutes >= 1440 ? 1 : .4 + 1.3 * Math.exp(-(((h - 19) / 2.5) ** 2)) + .8 * Math.exp(-(((h - 7.5) / 1.5) ** 2)));
+                const weather = minutes >= 1440 ? .75 + .35 * Math.sin(start / 1.7e8 + seed) : 1;
+                return Math.max(0, kind.daily * level * share * shape * weather * (1 + noise(mid) * .25));
+            }
+            const day = Math.sin(Math.PI * (h - 9) / 12);
+            // Rooms differ by a degree or two; other measurements scale with the sensor
+            const base = kind.unit === '°C' ? kind.base + (seed % 7 - 3) * .6 : kind.base * level;
+            return base + kind.amp * day + noise(mid) * Math.abs(kind.amp) * .4;
+        });
+        return {
+            entity_id: id,
+            name: e.name || titleOf(id),
+            unit: kind.unit,
+            color: typeof e.color === 'string' ? e.color : null,
+            kind: settings.chart === 'line' ? 'mean' : kind.kind,
+            current: kind.kind === 'change' ? +(kind.daily * level * 3.2).toFixed(1) : +values.at(-1).toFixed(1),
+            values: values.map(v => +v.toFixed(3)),
+        };
+    });
+    return { chart: settings.chart, range, minutes, times: buckets.map(b => b.start), end: now, series };
+}
+
 function titleOf(entityId) {
     return entityId.split('.')[1].replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
 }
@@ -543,6 +612,7 @@ function homeassistant(params) {
     if (endpoint.startsWith('states/')) {
         return entityState(endpoint.slice('states/'.length), 0);
     }
+    if (endpoint === 'graph') return demoGraph(params);
     if (endpoint === 'climate') return climate(params);
     if (endpoint === 'media') return mediaAction(params);
     if (endpoint === 'details') return details(params);

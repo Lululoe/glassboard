@@ -1,6 +1,7 @@
 import { getAllCards, getServiceConfig } from '../config.js';
 import { HttpError, upstreamError } from '../errors.js';
 import { createHaSocket } from './haSocket.js';
+import { getGraphEntityIds, graphData } from './haGraph.js';
 
 /**
  * Resolves Home Assistant connection settings.
@@ -32,8 +33,27 @@ async function haFetch(apiPath, init = {}) {
     return response.json();
 }
 
+/** Calls the Home Assistant REST API (see haFetch); for other Home Assistant modules. */
+export const haRequest = (apiPath, init) => haFetch(apiPath, init);
+
 /** @type {ReturnType<typeof createHaSocket>|null} */
 let live = null;
+
+/**
+ * Runs a websocket command on the live connection.
+ * @param {Object} msg - The command.
+ * @returns {Promise<*>} Its result, or null without a live connection.
+ */
+export async function liveCommand(msg) {
+    return live ? live.command(msg) : null;
+}
+
+/**
+ * An entity's state, from the live connection when it has it (see getState).
+ * @param {string} entityId - The entity id.
+ * @returns {Promise<Object|null>} The state.
+ */
+export const getEntityState = (entityId) => getState(entityId);
 
 /**
  * Reads states over one websocket connection that Home Assistant keeps up to date, instead of
@@ -361,7 +381,7 @@ export async function fetchArtwork(entityId) {
 }
 
 /**
- * Collects every entity id referenced by hacontrol, thermostat and media player cards.
+ * Collects every entity id referenced by hacontrol, thermostat, media player and graph cards.
  * Only these entities may be read through the API.
  * @returns {Set<string>} Allowed entity ids.
  */
@@ -374,6 +394,7 @@ export function getValidEntityIds() {
     });
     getClimateConfigs().forEach(c => entityIds.add(c.entity_id));
     getMediaEntityIds().forEach(id => entityIds.add(id));
+    getGraphEntityIds().forEach(id => entityIds.add(id));
     return entityIds;
 }
 
@@ -577,6 +598,7 @@ export function resetControlCache() {
  * - `endpoint: 'details'` with `entity_id` returns an hacontrol entity and its group members.
  * - `endpoint: 'control'` switches, dims or colors hacontrol entities and group members
  *   (see controlCalls).
+ * - `endpoint: 'graph'` with `card_id` and `range` returns a graph card's data (see graphData).
  * @param {Object} params - Request parameters.
  * @returns {Promise<Object>} Home Assistant response data.
  */
@@ -635,6 +657,8 @@ export async function handleHaRequest(params) {
         }
         return results.flat();
     }
+
+    if (endpoint === 'graph') return graphData(params);
 
     if (endpoint === 'media') {
         const { service, body } = mediaCall(params);

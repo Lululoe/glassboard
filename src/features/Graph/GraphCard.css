@@ -1,0 +1,625 @@
+/* Graph card: lines, bars or this week against last week, for one or more sensors */
+.graph-card {
+    --graph-yellow: var(--system-yellow);
+}
+
+:root[data-theme="light"] .graph-card {
+    /* The system yellow is hard to read on white */
+    --graph-yellow: #c99700;
+}
+
+.graph-card .two-tone-content {
+    padding: 14px 20px 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.graph-card .two-tone-header-actions {
+    align-self: center;
+}
+
+.graph-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Time range: equal, centered buttons, compact so they fit next to the title one wide */
+.graph-seg {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    padding: 2px;
+    border-radius: 9px;
+    background: var(--bg-fill);
+    gap: 2px;
+}
+
+.graph-seg button {
+    display: grid;
+    place-items: center;
+    text-align: center;
+    min-height: 34px;
+    min-width: 44px;
+    padding: 0 8px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    transition: background var(--duration-standard) var(--ease-standard), color var(--duration-standard) var(--ease-standard);
+}
+
+.graph-seg button[aria-pressed="true"] {
+    background: var(--bg-tile, #fff);
+    color: #1c1c1e;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.graph-seg button:focus-visible,
+.graph-chip:focus-visible,
+.graph-series-row:focus-visible,
+.graph-week-col:focus-visible,
+.graph-chart:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* Narrow cards: smaller buttons in the header, or a full-width row above the chart */
+.graph-card.compact .two-tone-header-actions .graph-seg button {
+    min-width: 38px;
+    padding: 0 4px;
+}
+
+.graph-body > .graph-seg {
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+
+.graph-body > .graph-seg button {
+    min-height: 36px;
+}
+
+.graph-sensor-switch {
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.graph-sensor-switch button {
+    display: block;
+    min-height: 36px;
+    line-height: 36px;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.graph-range-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: 0 6px;
+    white-space: nowrap;
+}
+
+.graph-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--c);
+}
+
+.graph-caption {
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--text-secondary);
+}
+
+.graph-up {
+    color: var(--system-orange-text, var(--system-orange));
+}
+
+.graph-down {
+    color: var(--system-green-text, var(--system-green));
+}
+
+/* ===== Lines and bars ===== */
+.graph-chart {
+    --graph-left: 0px;
+    --graph-right: 50px;
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    touch-action: pan-y;
+    cursor: crosshair;
+    border-radius: 6px;
+}
+
+.graph-plot {
+    position: absolute;
+    left: var(--graph-left);
+    top: 8px;
+    overflow: visible;
+}
+
+.graph-grid {
+    stroke: var(--color-separator);
+    stroke-width: 1;
+    stroke-dasharray: 2 3;
+}
+
+.graph-line {
+    fill: none;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+    transition: opacity 0.15s, stroke-width 0.15s;
+}
+
+.graph-plot path,
+.graph-plot g {
+    transition: opacity 0.15s;
+}
+
+.graph-faded {
+    opacity: 0.2;
+}
+
+.graph-dim {
+    opacity: 0.45;
+}
+
+.graph-ylab {
+    position: absolute;
+    width: 46px;
+    white-space: nowrap;
+    font-size: 11px;
+    color: var(--text-secondary);
+    transform: translateY(-50%);
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+}
+
+.graph-ylab.right {
+    right: 0;
+    text-align: right;
+}
+
+.graph-ylab.left {
+    left: 0;
+    text-align: left;
+}
+
+.graph-chart.dual .graph-ylab {
+    width: 38px;
+}
+
+.graph-xlabs {
+    position: absolute;
+    left: var(--graph-left);
+    right: var(--graph-right);
+    bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.graph-cross {
+    position: absolute;
+    top: 8px;
+    bottom: 22px;
+    width: 1px;
+    background: var(--text-tertiary);
+    pointer-events: none;
+}
+
+.graph-cross-dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    margin: -5px 0 0 -5px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px var(--bg-tile, #fff);
+    pointer-events: none;
+}
+
+.graph-tip,
+.graph-part-tip {
+    position: absolute;
+    padding: 7px 10px;
+    border-radius: 9px;
+    background: var(--bg-tile, #fff);
+    color: #1c1c1e;
+    font-size: 12px;
+    line-height: 17px;
+    white-space: nowrap;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    z-index: 3;
+    min-width: 120px;
+}
+
+.graph-tip {
+    top: 4px;
+    transform: translateX(-50%);
+}
+
+.graph-part-tip {
+    transform: translate(-50%, calc(-100% - 8px));
+}
+
+.graph-tip-when {
+    color: rgba(60, 60, 67, 0.75);
+}
+
+.graph-tip-when:first-child {
+    margin-bottom: 3px;
+}
+
+.graph-tip-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.graph-tip-row.strong {
+    font-weight: 600;
+}
+
+.graph-tip-row b {
+    margin-left: auto;
+    padding-left: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.graph-tip-row.total {
+    border-top: 1px solid rgba(60, 60, 67, 0.18);
+    margin-top: 3px;
+    padding-top: 3px;
+}
+
+/* Legend chips (one wide): tap to hide or show a sensor */
+.graph-chips {
+    display: flex;
+    gap: 6px;
+    margin: 0 -20px 10px;
+    padding: 0 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-shrink: 0;
+}
+
+.graph-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.graph-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 0 11px 0 9px;
+    border-radius: 16px;
+    background: var(--bg-fill);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: opacity var(--duration-standard) var(--ease-standard);
+}
+
+.graph-chip[aria-pressed="false"],
+.graph-series-row[aria-pressed="false"] {
+    opacity: 0.45;
+}
+
+.graph-chip[aria-pressed="false"] .graph-dot,
+.graph-series-row[aria-pressed="false"] .graph-dot {
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--c);
+}
+
+/* Two and three wide: a sensor list beside the chart */
+.graph-wide {
+    display: flex;
+    gap: 22px;
+    flex: 1;
+    min-height: 0;
+}
+
+.graph-area {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.graph-series {
+    width: 176px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-right: 14px;
+    margin-left: -8px;
+    border-right: 1px solid var(--color-separator);
+    overflow-y: auto;
+}
+
+.graph-series-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    padding: 0 8px 4px;
+}
+
+.graph-series-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 8px;
+    border-radius: 10px;
+    min-height: 48px;
+    transition: opacity var(--duration-standard) var(--ease-standard), background var(--duration-standard) var(--ease-standard);
+}
+
+@media (pointer: fine) {
+    .graph-series-row:hover {
+        background: var(--bg-fill);
+    }
+}
+
+.graph-series-row .graph-dot {
+    width: 10px;
+    height: 10px;
+}
+
+.graph-series-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.graph-series-name {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.graph-series-value {
+    display: block;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 22px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ===== This week against last week ===== */
+.graph-week {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: 22px;
+}
+
+.graph-week-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.graph-hero {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.graph-hero-value {
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 38px;
+    font-variant-numeric: tabular-nums;
+}
+
+.graph-week-bars {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+    position: relative;
+}
+
+.graph-week-slot {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+}
+
+.graph-week-split {
+    width: 1px;
+    background: var(--color-separator);
+    margin: 0 4px 34px -4px;
+    flex-shrink: 0;
+}
+
+.graph-week-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.graph-week-track {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.graph-week-stack {
+    width: min(28px, 80%);
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 2px;
+    opacity: 0.45;
+    transition: opacity var(--duration-standard) var(--ease-standard);
+}
+
+.graph-week-stack i {
+    display: block;
+    min-height: 0;
+    background: var(--c);
+    transition: opacity 0.15s;
+}
+
+.graph-week-stack i:last-child {
+    border-radius: 4px 4px 0 0;
+}
+
+.last-week .graph-week-stack {
+    opacity: 1;
+}
+
+.last-week .graph-week-stack i {
+    background: var(--text-tertiary);
+}
+
+.graph-week-col[aria-pressed="true"] .graph-week-stack,
+.graph-week-stack.has-part {
+    opacity: 1;
+}
+
+.last-week[aria-pressed="true"] .graph-week-stack i,
+.last-week .graph-week-stack.has-part i {
+    background: color-mix(in srgb, var(--c) 55%, transparent);
+}
+
+/* Pointing at a part: it stays, the rest of its column fades */
+.graph-week-stack.has-part i:not(.active) {
+    opacity: 0.4;
+}
+
+.graph-week-day {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    height: 28px;
+    min-width: 28px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+}
+
+.graph-week-col[aria-pressed="true"] .graph-week-day {
+    background: var(--text-primary);
+    color: var(--ink-inverse, #000);
+}
+
+.graph-week-average {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px dashed var(--text-tertiary);
+    pointer-events: none;
+}
+
+/* Breakdown of the selected day (stacked, two wide and wider) */
+.graph-breakdown {
+    width: 196px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    padding-left: 20px;
+    border-left: 1px solid var(--color-separator);
+    overflow-y: auto;
+}
+
+.graph-breakdown-head {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+
+.graph-breakdown-row {
+    display: grid;
+    grid-template-columns: 10px 1fr auto;
+    column-gap: 9px;
+    align-items: center;
+    padding: 7px 4px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.graph-breakdown-row + .graph-breakdown-row {
+    border-top: 1px solid var(--color-separator);
+}
+
+.graph-breakdown-row.active {
+    background: var(--bg-fill);
+}
+
+.graph-breakdown-row .graph-dot {
+    width: 10px;
+    height: 10px;
+}
+
+.graph-breakdown-name {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.graph-breakdown-value {
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+}
+
+.graph-breakdown-sub {
+    grid-column: 2 / 4;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.graph-share {
+    grid-column: 2 / 4;
+    height: 4px;
+    margin-top: 4px;
+    border-radius: 2px;
+    background: var(--bg-fill);
+    overflow: hidden;
+}
+
+.graph-share i {
+    display: block;
+    height: 100%;
+    border-radius: 2px;
+    background: var(--c);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .graph-card *,
+    .graph-card *::before {
+        transition: none !important;
+    }
+}
