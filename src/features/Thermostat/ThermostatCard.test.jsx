@@ -105,7 +105,9 @@ describe('Thermostat card', () => {
 
     it('sets the target from the keyboard after a short pause', async () => {
         render(<ThermostatCard config={{ id: 't', entity_id: 'climate.living' }} />);
-        const slider = await screen.findByRole('slider');
+        // The slider renders (disabled) before the state arrives, so wait for the loaded target
+        await screen.findByText('21.0°');
+        const slider = screen.getByRole('slider');
         vi.useFakeTimers();
 
         fireEvent.keyDown(slider, { key: 'ArrowUp' });
@@ -119,7 +121,9 @@ describe('Thermostat card', () => {
 
     it('previews while dragging the slider and sends the target once on release', async () => {
         render(<ThermostatCard config={{ id: 't', entity_id: 'climate.living' }} />);
-        const slider = await screen.findByRole('slider');
+        // The slider renders (disabled) before the state arrives, so wait for the loaded target
+        await screen.findByText('21.0°');
+        const slider = screen.getByRole('slider');
         // 7–30° over 230px: every 10px is 1°
         slider.getBoundingClientRect = () => ({ top: 0, bottom: 230, left: 0, right: 92, height: 230, width: 92 });
 
