@@ -134,6 +134,8 @@ export function toLight(entityId, state, override = {}, name, favorites) {
         ctMin,
         ctMax,
         favorites: Array.isArray(favorites) ? presetsFromFavorites(favorites) : null,
+        // The icon Home Assistant shows, when the server sent one
+        icon: typeof state?.icon === 'string' ? state.icon : null,
     };
     return { ...base, ...override };
 }

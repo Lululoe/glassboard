@@ -103,7 +103,7 @@ const ControlDialog = ({ entity, icon, onClose, onChange }) => {
                                     onClick={() => select(m.id)}
                                 >
                                     <span className={`ctl-icon${m.on ? ' on' : ''}`} style={{ background: iconCss(m) }} aria-hidden="true">
-                                        <Icon icon={m.id.startsWith('light.') ? 'lu-Lightbulb' : 'lu-Power'} size={18} />
+                                        <Icon icon={m.icon || (m.id.startsWith('light.') ? 'lu-Lightbulb' : 'lu-Power')} size={18} />
                                     </span>
                                     <span className="ctl-item-meta">
                                         <span className="ctl-item-name">{m.name}</span>

@@ -75,4 +75,17 @@ describe('API app', () => {
         expect(res.status).toBe(200);
         expect(res.headers['cache-control']).toBe('no-store');
     });
+
+    it('serves Material Design Icons as cacheable SVG', async () => {
+        const res = await request(app).get('/api/icons/mdi/lightbulb-off.svg');
+        expect(res.status).toBe(200);
+        expect(res.headers['content-type']).toContain('image/svg+xml');
+        expect(res.headers['cache-control']).toBe('public, max-age=604800');
+        // supertest treats SVG as binary
+        expect(String(res.body)).toMatch(/^<svg xmlns="http:\/\/www.w3.org\/2000\/svg" viewBox="0 0 24 24"><path d="M[^"]+"\/><\/svg>$/);
+
+        expect((await request(app).get('/api/icons/mdi/not-an-icon-at-all.svg')).status).toBe(404);
+        expect((await request(app).get('/api/icons/mdi/Light_bulb.svg')).status).toBe(404);
+    });
 });
+

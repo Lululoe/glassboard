@@ -39,7 +39,7 @@ describe('Home Assistant card', () => {
 
         expect(await screen.findByText('on')).toBeInTheDocument();
         expect(requestBodies()[0]).toEqual({
-            service: 'homeassistant', endpoint: 'states', entity_ids: ['light.living_room'],
+            service: 'homeassistant', endpoint: 'states', entity_ids: ['light.living_room'], icons: true,
         });
     });
 
@@ -85,6 +85,20 @@ describe('Home Assistant card', () => {
         rerender(<HAControlCard config={{ id: 'l', colSpan: 2, data: { entities } }} />);
         expect(container.querySelectorAll('.ha-tile')).toHaveLength(5);
         await waitFor(() => expect(fetch).toHaveBeenCalled());
+    });
+
+    it("shows Home Assistant's icon unless the card sets one", async () => {
+        fetch.mockResolvedValue(jsonResponse({
+            'light.a': { state: 'on', attributes: {}, icon: 'mdi:ceiling-light' },
+            'light.b': { state: 'off', attributes: {}, icon: 'mdi:lightbulb-off' },
+        }));
+        const entities = [{ entity_id: 'light.a', name: 'A' }, { entity_id: 'light.b', name: 'B', icon: 'lamp' }];
+        render(<HAControlCard config={{ id: 'i', data: { entities } }} />);
+
+        expect(await screen.findByRole('img', { name: 'ceiling-light' })).toBeInTheDocument();
+        // The configured icon wins
+        expect(screen.queryByRole('img', { name: 'lightbulb-off' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'B: Off' }).querySelector('svg.lucide')).toBeInTheDocument();
     });
 
     it('keeps toggling the whole tile for entities without a dialog', async () => {

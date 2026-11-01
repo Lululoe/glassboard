@@ -40,7 +40,7 @@ const HAControlEditor = ({ config, onChange }) => (
         columns={[
             { key: 'entity_id', label: 'Entity id', placeholder: 'light.kitchen' },
             { key: 'name', label: 'Name' },
-            { key: 'icon', label: 'Icon', placeholder: 'lamp' },
+            { key: 'icon', label: 'Icon', placeholder: 'From Home Assistant, e.g. mdi:lamp' },
         ]}
         onItemChange={(item, key, value) => {
             const next = setIn(item, [key], value);

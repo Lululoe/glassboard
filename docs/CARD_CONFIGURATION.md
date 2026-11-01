@@ -195,7 +195,7 @@ Control Home Assistant entities (lights, switches, etc.).
 |-------|------|-------------|
 | `entity_id` | string | HA Entity ID (e.g. `light.living_room`). |
 | `name` | string | Display name. |
-| `icon` | string/object | Icon name (Lucide or simple names like `lamp`) or object `{ source, value }`. |
+| `icon` | string/object | Icon: Lucide (`lu-Lamp` or simple names like `lamp`), Material Design (`mdi:ceiling-light`), or an object `{ source, value }`. Defaults to the icon Home Assistant shows for the entity, which follows its state (e.g. `mdi:lightbulb-off` when off). |
 | `on_state` | string | State value considered "on". If unset, anything except `off`, `unavailable` and `unknown` counts as on. |
 | `off_state` | string | State value considered "off" (used when `on_state` is not set). |
 | `attributes` | array | List of attributes to show in secondary text. |

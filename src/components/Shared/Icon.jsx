@@ -55,9 +55,10 @@ const renderImageOrMask = (url, alt, isPng, size, color, className, style) => {
 };
 
 /**
- * A versatile icon component that renders Lucide React icons, Selfh.st icons, local icons, or standard URLs.
+ * A versatile icon component that renders Lucide React icons, Material Design Icons (the icons
+ * Home Assistant uses), Selfh.st icons, local icons, or standard URLs.
  * @param {Object} props
- * @param {string|Object} props.icon - Icon identifier string (e.g. 'lu-Home') or configuration object.
+ * @param {string|Object} props.icon - Icon identifier string (e.g. 'lu-Home', 'mdi:lightbulb') or configuration object.
  * @param {number|string} [props.size=24] - Dimension in pixels.
  * @param {string} [props.color] - Override color for the icon.
  * @param {string} [props.className] - Additional CSS classes.
@@ -74,6 +75,9 @@ const Icon = ({ icon, size = 24, color, className = '', style = {}, strokeWidth 
     if (typeof icon === 'string') {
         if (icon.startsWith('lu-')) {
             iconConfig = { source: 'lucide', value: icon.replace('lu-', '') };
+        } else if (icon.startsWith('mdi:') || icon.startsWith('mdi-')) {
+            // `mdi:lightbulb` as in Home Assistant, or `mdi-lightbulb` like the other prefixes
+            iconConfig = { source: 'mdi', value: icon.slice(4) };
         } else if (icon.startsWith('sh-')) {
             iconConfig = { source: 'sh', value: icon.replace('sh-', '') };
         } else if (icon.startsWith('local-')) {
@@ -107,6 +111,16 @@ const Icon = ({ icon, size = 24, color, className = '', style = {}, strokeWidth 
                 style={style}
             />
         );
+    }
+
+    // Handle Material Design Icons: served by the Glassboard server, colored like text by default
+    if (source === 'mdi') {
+        const name = String(value || '').replace(/^mdi:/, '');
+        if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(name)) {
+            console.warn(`Material Design icon "${value}" is not a valid name.`);
+            return null;
+        }
+        return renderImageOrMask(`/api/icons/mdi/${name}.svg`, name, false, size, finalColor || 'currentColor', className, style);
     }
 
     // Handle Selfh.st Icons

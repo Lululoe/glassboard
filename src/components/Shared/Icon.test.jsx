@@ -86,4 +86,27 @@ describe('Icon Component', () => {
         const img = screen.getByRole('img');
         expect(img).toHaveAttribute('src', 'https://cdn.jsdelivr.net/gh/selfhst/icons@main/svg/github.svg');
     });
+
+    it('renders Material Design Icons from the server in the text color', () => {
+        const { rerender } = render(<Icon icon="mdi:lightbulb-off" size={20} />);
+        let style = screen.getByRole('img', { name: 'lightbulb-off' }).getAttribute('style');
+        expect(style).toContain('/api/icons/mdi/lightbulb-off.svg');
+        expect(style).toContain('background-color: currentcolor');
+
+        rerender(<Icon icon={{ source: 'mdi', value: 'fan', color: 'red' }} size={20} />);
+        style = screen.getByRole('img', { name: 'fan' }).getAttribute('style');
+        expect(style).toContain('/api/icons/mdi/fan.svg');
+        expect(style).toContain('background-color: red');
+
+        rerender(<Icon icon="mdi-thermostat" size={20} />);
+        expect(screen.getByRole('img', { name: 'thermostat' })).toBeInTheDocument();
+    });
+
+    it('ignores invalid Material Design icon names', () => {
+        vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const { container } = render(<Icon icon="mdi:../secret" />);
+        expect(container).toBeEmptyDOMElement();
+        console.warn.mockRestore();
+    });
 });
+

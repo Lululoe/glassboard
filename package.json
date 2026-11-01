@@ -13,6 +13,7 @@
     "typecheck": "tsc -p jsconfig.json"
   },
   "dependencies": {
+    "@mdi/js": "7.4.47",
     "@tsparticles/engine": "^3.9.1",
     "@tsparticles/react": "^3.0.0",
     "express": "^4.18.2",

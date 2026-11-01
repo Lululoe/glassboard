@@ -62,7 +62,7 @@ export function startLiveStates({ isActive = () => true, WebSocketImpl } = {}) {
             return all;
         },
     });
-    live.onEvent('entity_registry_updated', (event) => favoriteCache.delete(event?.data?.entity_id));
+    live.onEvent('entity_registry_updated', (event) => registryCache.delete(event?.data?.entity_id));
     live.watch(getValidEntityIds());
 }
 
@@ -70,7 +70,8 @@ export function startLiveStates({ isActive = () => true, WebSocketImpl } = {}) {
 export function stopLiveStates() {
     live?.close();
     live = null;
-    favoriteCache.clear();
+    registryCache.clear();
+    iconResources.clear();
 }
 
 /**
@@ -85,9 +86,128 @@ async function getState(entityId) {
     return haFetch(`/states/${encodeURIComponent(entityId)}`);
 }
 
-const FAVORITES_TTL = 5 * 60 * 1000;
+const REGISTRY_TTL = 5 * 60 * 1000;
+const ICONS_TTL = 60 * 60 * 1000;
 const COLOR_KEYS = ['hs_color', 'rgb_color', 'rgbw_color', 'rgbww_color', 'xy_color', 'color_temp_kelvin'];
-const favoriteCache = new Map();
+/** Entity registry entries (null when unreadable), refreshed when Home Assistant reports a change. */
+const registryCache = new Map();
+/** Icon tables from Home Assistant: `entity_component` and `entity:<integration>`. */
+const iconResources = new Map();
+
+/**
+ * Reads an entity's registry entry: its own icon, integration, translation key and options
+ * like favorite colors. Only the websocket API exposes the registry.
+ * @param {string} entityId - The entity.
+ * @returns {Promise<Object|null>} The entry, or null when it can't be read (no live connection,
+ *   an entity without a registry entry, or a token without access).
+ */
+async function registryEntry(entityId) {
+    if (!live) return null;
+    const hit = registryCache.get(entityId);
+    if (hit && Date.now() - hit.at < REGISTRY_TTL) return hit.entry;
+    let entry = null;
+    try {
+        entry = await live.command({ type: 'config/entity_registry/get', entity_id: entityId });
+    } catch {
+        // Not connected yet: try again next time instead of caching the miss
+        if (!live.status().connected) return null;
+    }
+    registryCache.set(entityId, { at: Date.now(), entry });
+    return entry;
+}
+
+/**
+ * Loads one of Home Assistant's icon tables, which its own frontend uses to pick entity icons.
+ * @param {string} key - `entity_component`, or `entity:<integration>` for an integration's icons.
+ * @returns {Promise<Object|null>} The `resources`, or null when they can't be read.
+ */
+async function iconTable(key) {
+    if (!live) return null;
+    const hit = iconResources.get(key);
+    if (hit && Date.now() - hit.at < ICONS_TTL) return hit.promise;
+    const [category, integration] = key.split(':');
+    const promise = live.command({ type: 'frontend/get_icons', category, ...(integration ? { integration } : {}) })
+        .then(result => result?.resources || null)
+        .catch(() => {
+            iconResources.delete(key);
+            return null;
+        });
+    iconResources.set(key, { at: Date.now(), promise });
+    return promise;
+}
+
+/**
+ * Picks the icon for a state from an icon table entry (`{ default, state: { off: ... } }`).
+ * @param {Object|undefined} entry - The table entry.
+ * @param {string} state - The entity's state.
+ * @returns {string|null} The icon.
+ */
+const iconForState = (entry, state) => (typeof entry?.state?.[state] === 'string' ? entry.state[state] : null)
+    || (typeof entry?.default === 'string' ? entry.default : null);
+
+const FALLBACK_ICONS = {
+    light: ['mdi:lightbulb', 'mdi:lightbulb-off'],
+    switch: ['mdi:toggle-switch-variant', 'mdi:toggle-switch-variant-off'],
+    input_boolean: ['mdi:check-circle-outline', 'mdi:close-circle-outline'],
+    fan: ['mdi:fan', 'mdi:fan-off'],
+    climate: ['mdi:thermostat', 'mdi:thermostat'],
+    media_player: ['mdi:cast', 'mdi:cast-off'],
+};
+
+/**
+ * Icon for entities Home Assistant has no icon table entry for (groups), or when the tables
+ * can't be read. Groups of lights get a light group icon.
+ * @param {Object|null} state - The entity's state.
+ * @param {string} entityId - The entity id.
+ * @returns {string|null} The icon, or null to let the card choose.
+ */
+export function fallbackIcon(state, entityId) {
+    const domain = entityId.split('.')[0];
+    const off = state?.state === 'off';
+    if (domain === 'group') {
+        const members = groupMembers(state);
+        if (members.length && members.every(id => id.startsWith('light.'))) return off ? 'mdi:lightbulb-group-off' : 'mdi:lightbulb-group';
+        return 'mdi:google-circles-communities';
+    }
+    const icons = FALLBACK_ICONS[domain];
+    return icons ? icons[off ? 1 : 0] : null;
+}
+
+/**
+ * The icon Home Assistant shows for an entity, in the same order as its frontend: an icon set
+ * on the entity, the entity's icon attribute, its integration's icon, its domain's icon for
+ * the device class and state, and finally a fallback.
+ * @param {string} entityId - The entity id.
+ * @param {Object|null} state - Its state.
+ * @returns {Promise<string|null>} An icon like `mdi:lightbulb-off`, or null when unknown.
+ */
+export async function entityIcon(entityId, state) {
+    if (!state) return null;
+    const entry = await registryEntry(entityId);
+    if (typeof entry?.icon === 'string' && entry.icon) return entry.icon;
+    if (typeof state.attributes?.icon === 'string' && state.attributes.icon) return state.attributes.icon;
+    const domain = entityId.split('.')[0];
+    if (entry?.platform && entry.translation_key) {
+        const table = await iconTable(`entity:${entry.platform}`);
+        const icon = iconForState(table?.[entry.platform]?.[domain]?.[entry.translation_key], state.state);
+        if (icon) return icon;
+    }
+    if (typeof entry?.original_icon === 'string' && entry.original_icon) return entry.original_icon;
+    const components = await iconTable('entity_component');
+    const deviceClass = state.attributes?.device_class || entry?.device_class || entry?.original_device_class;
+    const icon = iconForState(components?.[domain]?.[deviceClass] || components?.[domain]?._, state.state);
+    return icon || fallbackIcon(state, entityId);
+}
+
+/**
+ * Adds `icon` (see entityIcon) to a state.
+ * @param {string} entityId - The entity id.
+ * @param {Object|null} state - Its state.
+ * @returns {Promise<Object|null>} The state with its icon.
+ */
+async function withIcon(entityId, state) {
+    return state ? { ...state, icon: await entityIcon(entityId, state) } : state;
+}
 
 /**
  * Keeps the well-formed favorite colors, each `{ hs_color }`, `{ rgb_color }`, `{ xy_color }`,
@@ -114,19 +234,9 @@ export function sanitizeFavorites(colors) {
  *   they can't be read (no live connection, or a token without access to the registry).
  */
 async function favoriteColors(entityId) {
-    if (!live || !entityId.startsWith('light.')) return null;
-    const hit = favoriteCache.get(entityId);
-    if (hit && Date.now() - hit.at < FAVORITES_TTL) return hit.colors;
-    let colors = null;
-    try {
-        const entry = await live.command({ type: 'config/entity_registry/get', entity_id: entityId });
-        colors = sanitizeFavorites(entry?.options?.light?.favorite_colors);
-    } catch {
-        // Not connected yet, or not allowed: the dialog shows its own presets
-        if (!live.status().connected) return null;
-    }
-    favoriteCache.set(entityId, { at: Date.now(), colors });
-    return colors;
+    if (!entityId.startsWith('light.')) return null;
+    const entry = await registryEntry(entityId);
+    return sanitizeFavorites(entry?.options?.light?.favorite_colors);
 }
 
 /** Rooms a multiroom thermostat card shows; further rooms are ignored. */
@@ -409,17 +519,17 @@ export function controlCalls(params, allowed) {
 }
 
 /**
- * Loads what a control dialog shows: the entity's state, for groups its members' states, and
- * the favorite colors of the lights among them that have some set.
+ * Loads what a control dialog shows: the entity's state, for groups its members' states (each
+ * with its `icon`), and the favorite colors of the lights among them that have some set.
  * @param {string} entityId - An entity of an hacontrol card.
  * @returns {Promise<{entity: Object, members: Object<string, Object|null>, favorites: Object<string, Array<Object>>}>}
  *   The states and favorite colors.
  */
 export async function entityDetails(entityId) {
     if (!getControlEntityIds().has(entityId)) throw new HttpError(403, `Entity not authorized: ${entityId}`);
-    const entity = await getState(entityId);
+    const entity = await withIcon(entityId, await getState(entityId));
     const ids = groupMembers(entity);
-    const states = await Promise.all(ids.map(id => getState(id).catch(() => null)));
+    const states = await Promise.all(ids.map(id => getState(id).then(state => withIcon(id, state)).catch(() => null)));
     const lights = [entityId, ...ids];
     const colors = await Promise.all(lights.map(favoriteColors));
     const favorites = Object.fromEntries(lights.flatMap((id, i) => (colors[i] ? [[id, colors[i]]] : [])));
@@ -456,7 +566,8 @@ export function resetControlCache() {
 
 /**
  * Handles Home Assistant requests.
- * - `endpoint: 'states'` with `entity_ids: string[]` returns `{ [entity_id]: state | null }`.
+ * - `endpoint: 'states'` with `entity_ids: string[]` returns `{ [entity_id]: state | null }`;
+ *   with `icons: true` each state also has the `icon` Home Assistant shows for it.
  * - `endpoint: 'states/<entity_id>'` returns a single state.
  * - `endpoint: 'services'` with `entity_id` and `action` calls the configured service.
  * - `endpoint: 'climate'` with `entity_id`, `action` (`set_temperature`, `set_preset_mode`,
@@ -480,7 +591,9 @@ export async function handleHaRequest(params) {
         const ids = Array.isArray(params.entity_ids) ? params.entity_ids : [];
         const allowed = getValidEntityIds();
         ids.forEach(id => assertEntityAllowed(id, allowed));
-        const states = await Promise.all(ids.map(id => getState(id).catch(() => null)));
+        const states = await Promise.all(ids.map(id => getState(id)
+            .then(state => (params.icons ? withIcon(id, state) : state))
+            .catch(() => null)));
         return Object.fromEntries(ids.map((id, i) => [id, states[i]]));
     }
 

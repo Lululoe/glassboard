@@ -25,7 +25,8 @@ export const isControllable = (entity) => CONTROL_DOMAINS.includes(String(entity
 export const useHomeAssistant = (entities, interval = 2000) => {
     const ids = entities.map(e => e.entity_id).filter(Boolean);
     const { data, loading, error, updatedAt, refresh } = usePolling(
-        () => callService('homeassistant', { endpoint: 'states', entity_ids: ids }),
+        // With the icon Home Assistant shows for each entity, used unless the card sets one
+        () => callService('homeassistant', { endpoint: 'states', entity_ids: ids, icons: true }),
         { interval, enabled: ids.length > 0, key: ids.join(',') }
     );
     const [overrides, setOverrides] = useState(/** @type {Object<string, {state: string, at: number}>} */ ({}));

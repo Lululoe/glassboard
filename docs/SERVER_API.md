@@ -85,6 +85,10 @@ the climate actions below.
 
 - **Get several states**: `{ "service": "homeassistant", "endpoint": "states", "entity_ids": ["light.office", "switch.fan"] }`
   returns `{ "light.office": { ...state }, "switch.fan": null }` (`null` when a single state could not be fetched).
+  With `"icons": true`, each state also has an `icon` (e.g. `"mdi:lightbulb-off"`): the icon Home Assistant shows for
+  the entity, picked like its frontend does (an icon set on the entity, its `icon` attribute, its integration's icon,
+  its domain's icon for the device class and state). Without the live connection, only the attribute and a fallback
+  per domain are used.
 - **Get one state**: `{ "service": "homeassistant", "endpoint": "states/light.office" }`
 - **Call an action**: `{ "service": "homeassistant", "endpoint": "services", "entity_id": "light.office", "action": "light.turn_on" }`
 - **Control a thermostat**: `{ "service": "homeassistant", "endpoint": "climate", "entity_id": "climate.living", "action": "set_temperature", "temperature": 21.5 }`.
@@ -100,7 +104,7 @@ the climate actions below.
 - **Load a control dialog**: `{ "service": "homeassistant", "endpoint": "details", "entity_id": "group.living_room" }`
   returns `{ "entity": { ...state }, "members": { "light.lamp": { ...state } }, "favorites": { "light.lamp": [{ "hs_color": [24, 85] }, { "color_temp_kelvin": 2700 }] } }`.
   The entity must be on an `hacontrol` card; `members` lists the states of a group's `entity_id` attribute (empty for
-  single entities). `favorites` has the favorite colors set in Home Assistant for the lights among them, each with one of
+  single entities). The entity and member states include their `icon`, as with `"icons": true` above. `favorites` has the favorite colors set in Home Assistant for the lights among them, each with one of
   `hs_color`, `rgb_color`, `rgbw_color`, `rgbww_color`, `xy_color` or `color_temp_kelvin`; lights without favorites
   are left out.
 - **Control from a dialog**: `{ "service": "homeassistant", "endpoint": "control", "entity_ids": ["light.lamp"], "action": "turn_on", "brightness_pct": 60 }`.
@@ -172,6 +176,10 @@ the climate actions below.
   ```
 
 ---
+
+### Material Design Icons
+`GET /api/icons/mdi/<name>.svg` returns a Material Design Icon (the icons Home Assistant uses) as SVG, e.g.
+`/api/icons/mdi/lightbulb-off.svg`; `404` for unknown names. Responses may be cached for a week.
 
 ### Media player artwork
 **Endpoint**: `GET /api/ha/artwork?entity_id=media_player.living_room`

@@ -2,7 +2,7 @@ import { findCard, getAllCards, getConfig } from '../config.js';
 import { HttpError } from '../errors.js';
 import { getGridApps } from './appstatus.js';
 import {
-    climateCall, controlCalls, getClimateConfigs, getControlEntityIds, getMediaEntityIds, mediaCall,
+    climateCall, controlCalls, fallbackIcon, getClimateConfigs, getControlEntityIds, getMediaEntityIds, mediaCall,
 } from './homeassistant.js';
 
 /**
@@ -480,15 +480,18 @@ function setDemoOn(entityId, on, entity) {
     else haStates.set(entityId, on ? (entity?.on_state || 'on') : (entity?.off_state || 'off'));
 }
 
+/** Adds the icon Home Assistant would show, from the fallback icons (demo mode has no icon tables). */
+const withDemoIcon = (entityId, state) => ({ ...state, icon: fallbackIcon(state, entityId) });
+
 function details({ entity_id: entityId }) {
     if (!getControlEntityIds().has(entityId)) throw new HttpError(403, `Entity not authorized: ${entityId}`);
-    const entity = entityState(entityId, 0);
+    const entity = withDemoIcon(entityId, entityState(entityId, 0));
     const members = entityId.startsWith('group.') ? ensureGroup(entityId) : [];
     const favorites = Object.fromEntries([entityId, ...members].flatMap(id => {
         const colors = Object.entries(DEMO_FAVORITES).find(([suffix]) => id.endsWith(`_${suffix}`))?.[1];
         return colors ? [[id, colors]] : [];
     }));
-    return { entity, members: Object.fromEntries(members.map(id => [id, lightState(id)])), favorites };
+    return { entity, members: Object.fromEntries(members.map(id => [id, withDemoIcon(id, lightState(id))])), favorites };
 }
 
 function control(params) {
@@ -535,7 +538,7 @@ function homeassistant(params) {
 
     if (endpoint === 'states') {
         const ids = Array.isArray(params.entity_ids) ? params.entity_ids : [];
-        return Object.fromEntries(ids.map((id, i) => [id, entityState(id, i)]));
+        return Object.fromEntries(ids.map((id, i) => [id, params.icons ? withDemoIcon(id, entityState(id, i)) : entityState(id, i)]));
     }
     if (endpoint.startsWith('states/')) {
         return entityState(endpoint.slice('states/'.length), 0);

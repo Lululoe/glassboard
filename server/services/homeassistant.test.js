@@ -203,8 +203,12 @@ describe('Home Assistant control dialogs', () => {
 
     it('loads an entity with the states of its group members', async () => {
         const details = await handleHaRequest({ endpoint: 'details', entity_id: 'group.living' });
-        expect(details.entity).toEqual(states['group.living']);
-        expect(details.members).toEqual({ 'light.lamp': states['light.lamp'], 'switch.fan': states['switch.fan'] });
+        // Without the live connection, icons come from the entity or a fallback for its domain
+        expect(details.entity).toEqual({ ...states['group.living'], icon: 'mdi:google-circles-communities' });
+        expect(details.members).toEqual({
+            'light.lamp': { ...states['light.lamp'], icon: 'mdi:lightbulb' },
+            'switch.fan': { ...states['switch.fan'], icon: 'mdi:toggle-switch-variant-off' },
+        });
         await expect(handleHaRequest({ endpoint: 'details', entity_id: 'light.lamp' })).rejects.toMatchObject({ status: 403 });
     });
 

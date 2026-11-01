@@ -3,6 +3,7 @@ import { HttpError } from '../errors.js';
 import { demoHandlers, isDemoMode } from '../services/demo.js';
 import { fetchArtwork } from '../services/homeassistant.js';
 import { serviceHandlers } from '../services/index.js';
+import { mdiSvg } from '../services/mdi.js';
 
 const router = express.Router();
 
@@ -20,6 +21,18 @@ router.get('/ha/artwork', async (req, res, next) => {
             return;
         }
         res.set({ 'Content-Type': art.contentType, 'Cache-Control': 'private, max-age=300' }).send(art.body);
+    } catch (err) {
+        next(err);
+    }
+});
+
+/** A Material Design Icon as SVG, e.g. `/api/icons/mdi/lightbulb-off.svg`. */
+router.get('/icons/mdi/:file', async (req, res, next) => {
+    try {
+        const svg = await mdiSvg(String(req.params.file).replace(/\.svg$/, ''));
+        if (!svg) throw new HttpError(404, `Unknown icon: ${req.params.file}`);
+        // Icons never change for a given version of the package
+        res.set({ 'Content-Type': 'image/svg+xml', 'Cache-Control': 'public, max-age=604800' }).send(svg);
     } catch (err) {
         next(err);
     }

@@ -27,6 +27,9 @@ const HAControlCard = ({ config }) => {
     const openEntity = displayEntities.find(e => e.entity_id === openId);
 
     const getIcon = (iconName, entityId = '') => {
+        // Objects and prefixed names (mdi:, lu-, sh-, local-, URLs) go to the Icon component as they are
+        if (iconName && typeof iconName === 'object') return iconName;
+        if (typeof iconName === 'string' && /^(mdi[:-]|lu-|sh-|local-|https?:\/\/)/.test(iconName)) return iconName;
         if (!iconName) {
             // Defaults for entities that open a control dialog
             const domain = String(entityId).split('.')[0];
@@ -82,7 +85,8 @@ const HAControlCard = ({ config }) => {
                     // Get live state from HA, fallback to config
                     const liveState = entityStates[entity.entity_id];
                     const currentState = liveState?.state || entity.state || 'unknown';
-                    const iconString = getIcon(entity.icon, entity.entity_id);
+                    // The card's icon, else the one Home Assistant shows for the entity
+                    const iconString = getIcon(entity.icon || liveState?.icon, entity.entity_id);
 
                     // Determine if "on"
                     let isOn = false;
@@ -161,7 +165,7 @@ const HAControlCard = ({ config }) => {
             {openEntity && (
                 <ControlDialog
                     entity={openEntity}
-                    icon={getIcon(openEntity.icon, openEntity.entity_id)}
+                    icon={getIcon(openEntity.icon || entityStates[openEntity.entity_id]?.icon, openEntity.entity_id)}
                     onChange={refresh}
                     onClose={() => { setOpenId(null); refresh(); }}
                 />

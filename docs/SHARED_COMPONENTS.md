@@ -62,8 +62,9 @@ Renders an icon inside a rounded-square container, resembling a mobile app icon.
 
 Universal icon component that supports:
 1. Lucide React icons (by name, e.g., "lu-Home").
-2. Simple icons (by name, e.g., "sh-github").
-3. Image URLs (http/https).
+2. Material Design Icons, the icons Home Assistant uses (e.g., "mdi:lightbulb").
+3. Simple icons (by name, e.g., "sh-github").
+4. Image URLs (http/https).
 
 ### Props
 | Prop | Type | Description |
@@ -79,7 +80,7 @@ The system now primarily supports a structured object format for icons, allowing
 ### Object Format (Recommended)
 ```yaml
 icon:
-  source: "lucide" # Options: "lucide", "sh", "local", "url"
+  source: "lucide" # Options: "lucide", "mdi", "sh", "local", "url"
   value: "Server"  # The icon name or URL
   color: "#ff0000" # Optional: Override icon color
 ```
@@ -91,18 +92,25 @@ icon:
 *   **Value**: PasalCase icon name (e.g., `Home`, `HardDrive`).
 *   **Legacy String**: `lu-Home`
 
-#### 2. Dashboard Icons (SH)
+#### 2. Material Design Icons (MDI)
+The icons Home Assistant uses; browse them at [pictogrammers.com](https://pictogrammers.com/library/mdi/).
+*   **Source**: `mdi`
+*   **Value**: Kebab-case name (e.g., `lightbulb-group`, `thermostat`).
+*   **String**: `mdi:lightbulb-group` (as in Home Assistant) or `mdi-lightbulb-group`
+*   Served one at a time by the Glassboard server (`/api/icons/mdi/<name>.svg`), so no request leaves your network. They take the text color unless a `color` is set.
+
+#### 3. Dashboard Icons (SH)
 *   **Source**: `sh`
 *   **Value**: Kebab-case name (e.g., `home-assistant`, `plex`).
 *   **Legacy String**: `sh-home-assistant`
 
-#### 3. Local Icons
+#### 4. Local Icons
 Icons stored in `public/icons`.
 *   **Source**: `local`
 *   **Value**: Filename without extension (e.g., `my-icon`).
 *   **Legacy String**: `local-my-icon`
 
-#### 4. URLs
+#### 5. URLs
 *   **Source**: `url`
 *   **Value**: Full HTTP/HTTPS URL.
 *   **Legacy String**: `https://...`

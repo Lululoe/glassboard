@@ -232,28 +232,54 @@ describe('Home Assistant service with a live connection', () => {
         expect(states['light.desk']).toMatchObject({ entity_id: 'light.desk', state: 'on' });
         expect(fetch).not.toHaveBeenCalled();
 
-        // The dialog gets member states and favorite colors, which only the websocket offers
-        const details = handleHaRequest({ endpoint: 'details', entity_id: 'group.room' });
-        await vi.waitFor(() => expect(latest().last('config/entity_registry/get')).toBeDefined());
-        const ask = latest().sent.filter(m => m.type === 'config/entity_registry/get');
-        expect(ask.map(m => m.entity_id)).toEqual(['light.lamp']);
-        latest().receive({
-            id: ask[0].id, type: 'result', success: true,
-            result: { options: { light: { favorite_colors: [{ hs_color: [24, 85] }, { color_temp_kelvin: 2700 }, { bogus: 1 }, { rgb_color: ['x'] }] } } },
-        });
-        const result = await details;
-        expect(result.members['light.lamp']).toMatchObject({ state: 'off' });
+        // Home Assistant answers registry and icon table requests
+        let registryFails = false;
+        const registry = {
+            'group.room': { icon: null, platform: 'group', translation_key: null },
+            'light.lamp': {
+                icon: null, platform: 'hue', translation_key: 'lamp',
+                options: { light: { favorite_colors: [{ hs_color: [24, 85] }, { color_temp_kelvin: 2700 }, { bogus: 1 }, { rgb_color: ['x'] }] } },
+            },
+            'light.desk': { icon: 'mdi:star', platform: 'hue', translation_key: 'lamp' },
+        };
+        const icons = {
+            entity_component: { light: { _: { default: 'mdi:lightbulb', state: { off: 'mdi:lightbulb-off' } } } },
+            hue: { hue: { light: { lamp: { default: 'mdi:desk-lamp' } } } },
+        };
+        const socket = latest();
+        const send = socket.send.bind(socket);
+        socket.send = (data) => {
+            send(data);
+            const msg = JSON.parse(data);
+            const reply = (result) => queueMicrotask(() => socket.receive({ id: msg.id, type: 'result', ...result }));
+            if (msg.type === 'config/entity_registry/get') {
+                reply(registryFails ? { success: false, error: { message: 'Unauthorized' } } : { success: true, result: registry[msg.entity_id] });
+            }
+            if (msg.type === 'frontend/get_icons') reply({ success: true, result: { resources: icons[msg.integration || msg.category] } });
+        };
+        const registryAsks = (id) => socket.sent.filter(m => m.type === 'config/entity_registry/get' && m.entity_id === id).length;
+
+        // The dialog gets member states, icons and favorite colors, which only the websocket offers
+        const result = await handleHaRequest({ endpoint: 'details', entity_id: 'group.room' });
+        expect(result.entity).toMatchObject({ state: 'on', icon: 'mdi:lightbulb-group' });
+        expect(result.members['light.lamp']).toMatchObject({ state: 'off', icon: 'mdi:desk-lamp' });
         expect(result.favorites).toEqual({ 'light.lamp': [{ hs_color: [24, 85] }, { color_temp_kelvin: 2700 }] });
+        // An icon set on the entity in Home Assistant comes first
+        const withIcons = await handleHaRequest({ endpoint: 'states', entity_ids: ['light.desk'], icons: true });
+        expect(withIcons['light.desk']).toMatchObject({ state: 'on', icon: 'mdi:star' });
         expect(fetch).not.toHaveBeenCalled();
 
-        // Cached until Home Assistant reports a change to the light's settings
+        // Registry entries and icon tables are cached until Home Assistant reports a change
         await handleHaRequest({ endpoint: 'details', entity_id: 'group.room' });
-        expect(latest().sent.filter(m => m.type === 'config/entity_registry/get')).toHaveLength(1);
-        const registry = latest().sent.find(m => m.type === 'subscribe_events' && m.event_type === 'entity_registry_updated');
-        latest().receive({ id: registry.id, type: 'event', event: { data: { entity_id: 'light.lamp' } } });
-        const again = handleHaRequest({ endpoint: 'details', entity_id: 'group.room' });
-        await vi.waitFor(() => expect(latest().sent.filter(m => m.type === 'config/entity_registry/get')).toHaveLength(2));
-        latest().receive({ id: latest().last('config/entity_registry/get').id, type: 'result', success: false, error: { message: 'Unauthorized' } });
-        expect((await again).favorites).toEqual({});
+        expect(registryAsks('light.lamp')).toBe(1);
+        expect(socket.sent.filter(m => m.type === 'frontend/get_icons' && m.category === 'entity_component')).toHaveLength(1);
+        const updates = socket.sent.find(m => m.type === 'subscribe_events' && m.event_type === 'entity_registry_updated');
+        socket.receive({ id: updates.id, type: 'event', event: { data: { entity_id: 'light.lamp' } } });
+        registryFails = true;
+        const again = await handleHaRequest({ endpoint: 'details', entity_id: 'group.room' });
+        expect(registryAsks('light.lamp')).toBe(2);
+        expect(again.favorites).toEqual({});
+        // Without its registry entry, the light gets its domain's icon for its state
+        expect(again.members['light.lamp'].icon).toBe('mdi:lightbulb-off');
     });
 });
