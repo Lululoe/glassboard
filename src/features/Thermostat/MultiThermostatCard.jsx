@@ -168,8 +168,9 @@ const MultiThermostatCard = ({ config }) => {
         <TwoToneBase
             title={config.title || 'Climate'}
             subtitle={subtitle}
-            icon="lu-Thermometer"
-            iconBackground={ICON_BACKGROUND}
+            icon={config.icon || 'lu-Thermometer'}
+            iconBackground={config.iconBackground || ICON_BACKGROUND}
+            iconColor={config.iconColor}
             className={`multi-thermostat layout-${layout}`}
         >
             {rooms.length === 0 ? (

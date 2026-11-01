@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
+import StatusPill from '../../components/Shared/StatusPill';
+import UsageBar from '../../components/Shared/UsageBar';
 import Icon from '../../components/Shared/Icon';
 import EmptyState from '../../components/Shared/EmptyState';
 import useProxmox from './useProxmox';
@@ -10,11 +12,9 @@ import './ProxmoxCard.css';
  * @param {Object} props
  * @param {string} props.label - Label for the bar (e.g., 'CPU').
  * @param {number} props.value - Percentage value (0-100).
- * @param {string} props.colorClass - CSS class for bar color.
  * @returns {JSX.Element} The rendered progress bar.
  */
-const MiniBar = ({ label, value, colorClass }) => {
-    // Ensure value is valid
+const MiniBar = ({ label, value }) => {
     const safeValue = Math.max(0, Math.min(100, isNaN(value) ? 0 : value));
 
     return (
@@ -23,9 +23,7 @@ const MiniBar = ({ label, value, colorClass }) => {
                 <span>{label}</span>
                 <span>{Math.round(safeValue)}%</span>
             </div>
-            <div className="mini-bar-container">
-                <div className={`mini-bar-fill ${colorClass}`} style={{ width: `${safeValue}%` }} />
-            </div>
+            <UsageBar percent={safeValue} label={label} />
         </div>
     );
 };
@@ -52,15 +50,13 @@ const ProxmoxItem = ({ node }) => {
                         <span className="proxmox-id">({node.id})</span>
                     </div>
                 </div>
-                <div className={`proxmox-status-badge ${node.status}`}>
-                    {node.status}
-                </div>
+                <StatusPill tone={isRunning ? 'green' : 'gray'}>{node.status}</StatusPill>
             </div>
 
             <div className="proxmox-stats-row">
-                <MiniBar label="CPU" value={isRunning ? node.cpu : 0} colorClass="bar-cpu" />
-                <MiniBar label="RAM" value={isRunning ? node.ram : 0} colorClass="bar-ram" />
-                <MiniBar label="HDD" value={node.disk} colorClass="bar-disk" />
+                <MiniBar label="CPU" value={isRunning ? node.cpu : 0} />
+                <MiniBar label="RAM" value={isRunning ? node.ram : 0} />
+                <MiniBar label="HDD" value={node.disk} />
             </div>
         </div>
     );

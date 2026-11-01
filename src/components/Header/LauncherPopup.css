@@ -14,7 +14,7 @@ dialog.launcher-popup {
     background: var(--bg-popup);
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(50px);
-    border-radius: 12px;
+    border-radius: 14px;
     border: 0.5px solid var(--border-popup);
     box-shadow: var(--shadow-popup);
     z-index: 999;
@@ -50,9 +50,9 @@ dialog.launcher-popup::backdrop {
 }
 
 .launcher-section-title {
-    font-size: 14px;
+    font-size: var(--fs-14);
     font-weight: 600;
-    line-height: 20px;
+    line-height: 1.25rem;
     margin-bottom: 12px;
     color: var(--text-primary);
 }
@@ -71,7 +71,7 @@ dialog.launcher-popup::backdrop {
     align-items: center;
     min-width: 0;
     padding: 3px 1px;
-    border-radius: 10px;
+    border-radius: 9px;
     text-decoration: none;
     color: var(--text-primary);
     cursor: pointer;
@@ -112,8 +112,8 @@ dialog.launcher-popup::backdrop {
 
 .launcher-app-name {
     margin-top: 8px;
-    font-size: 12px;
-    line-height: 14px;
+    font-size: var(--fs-12);
+    line-height: 0.875rem;
     text-align: center;
     white-space: nowrap;
     max-width: calc(100% + 10px);
@@ -135,7 +135,7 @@ dialog.launcher-popup::backdrop {
     padding: 6px 0;
     text-decoration: none;
     color: var(--text-primary);
-    border-radius: 6px;
+    border-radius: 7px;
     transition: opacity var(--duration-standard) var(--ease-standard);
 }
 
@@ -154,9 +154,9 @@ dialog.launcher-popup::backdrop {
 }
 
 .launcher-link-text {
-    font-size: 14px;
+    font-size: var(--fs-14);
     font-weight: 400;
-    line-height: 20px;
+    line-height: 1.25rem;
 }
 
 @media (pointer: fine) {

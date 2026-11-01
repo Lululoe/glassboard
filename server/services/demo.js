@@ -2,6 +2,8 @@ import { findCard, getAllCards, getConfig } from '../config.js';
 import { HttpError } from '../errors.js';
 import { getGridApps } from './appstatus.js';
 import { graphSettings, hoursOf, makeBuckets, slotsFor } from './haGraph.js';
+import { robotsOf, simplifyValetudoMap } from './haVacuum.js';
+import { printerOf } from './haPrinter.js';
 import {
     climateCall, controlCalls, fallbackIcon, getClimateConfigs, getControlEntityIds, getMediaEntityIds, mediaCall,
 } from './homeassistant.js';
@@ -495,6 +497,212 @@ function demoGraph(params) {
     return { chart: settings.chart, range, minutes, times: buckets.map(b => b.start), end: now, series };
 }
 
+const FAN_SPEEDS = ['low', 'medium', 'high', 'max'];
+const WETNESS = ['off', 'low', 'medium', 'high'];
+const ROBOT_ROOMS = [['Kitchen', 0, 0, 50, 45], ['Living Room', 0, 48, 70, 60], ['Office', 53, 0, 45, 45], ['Hallway', 73, 48, 25, 60]];
+const robotStore = new Map();
+
+/** The simulated state of a robot: it cleans and charges slowly as time passes. */
+function robotState(entityId) {
+    if (!robotStore.has(entityId)) {
+        const first = robotStore.size === 0;
+        robotStore.set(entityId, {
+            state: first ? 'cleaning' : 'docked', since: Date.now(), battery: first ? 78 : 100, area: first ? 24 : 38, time: first ? 18 : 41,
+            fan: 'medium', wetness: 'low', worn: new Map(),
+        });
+    }
+    const r = robotStore.get(entityId);
+    const minutes = (Date.now() - r.since) / 60000;
+    r.since = Date.now();
+    if (r.state === 'cleaning') {
+        r.battery = Math.max(5, r.battery - minutes * 1.5);
+        r.area += minutes * 1.2;
+        r.time += minutes;
+    } else if (r.state === 'docked') {
+        r.battery = Math.min(100, r.battery + minutes * 4);
+    }
+    if (r.state === 'returning' && Date.now() - r.returningAt > 4000) r.state = 'docked';
+    return r;
+}
+
+/** What a simulated robot stat shows, guessed from its entity id. */
+function demoStat(r, id) {
+    if (/batt/.test(id)) return { value: Math.round(r.battery), unit: '%', battery: true };
+    if (/area/.test(id)) return { value: Math.round(r.area), unit: 'm²' };
+    if (/time|duration/.test(id)) return { value: Math.round(r.time), unit: 'min' };
+    if (/count|total/.test(id)) return { value: 212 + (seedOf(id) % 90), unit: '' };
+    return { value: 50 + (seedOf(id) % 50), unit: '' };
+}
+
+function demoVacuums(params) {
+    const robots = robotsOf(findCard(params.card_id));
+    if (robots.length === 0) throw new HttpError(403, `Not a vacuum card: ${params.card_id}`);
+    return {
+        robots: robots.map(robot => {
+            const r = robotState(robot.entity_id);
+            return {
+                entity_id: robot.entity_id,
+                name: robot.name || titleOf(robot.entity_id),
+                state: r.state,
+                battery: Math.round(r.battery),
+                progress: robot.progress ? (r.state === 'cleaning' ? Math.min(99, Math.round((r.area / 60) * 100)) : 0) : null,
+                fan: { value: r.fan, options: FAN_SPEEDS },
+                wetness: robot.wetness ? { value: r.wetness, options: WETNESS } : null,
+                stats: robot.stats.map(s => ({
+                    name: s.name || titleOf(s.entity_id),
+                    battery: false,
+                    ...demoStat(r, s.entity_id),
+                    ...(s.unit !== undefined ? { unit: s.unit } : {}),
+                })),
+                rooms: robot.rooms.map(room => ({ name: room.name || room.area, area: room.area, segment: room.segment === undefined ? null : String(room.segment) })),
+                consumables: robot.consumables.map((c, index) => {
+                    const seed = seedOf(c.entity_id);
+                    const reset = r.worn.get(index);
+                    return {
+                        index,
+                        name: c.name || titleOf(c.entity_id),
+                        value: reset ? 18000 : 240 + (seed % 90) * 90,
+                        unit: 'min',
+                        percent: c.percent ? (reset ? 100 : 4 + (seed % 90)) : null,
+                        resettable: Boolean(c.reset),
+                    };
+                }),
+                camera: robot.camera,
+                map: robot.map,
+            };
+        }),
+    };
+}
+
+function demoVacuumAction(params) {
+    const robot = robotsOf(findCard(params.card_id)).find(r => r.entity_id === params.entity_id);
+    if (!robot) throw new HttpError(403, `Robot not on this card: ${params.entity_id}`);
+    const r = robotState(robot.entity_id);
+    const { action } = params;
+    if (action === 'start' || action === 'clean_rooms') {
+        if (r.state === 'docked') {
+            r.area = 0;
+            r.time = 0;
+        }
+        r.state = 'cleaning';
+    } else if (action === 'pause') r.state = 'paused';
+    else if (action === 'stop') r.state = 'idle';
+    else if (action === 'return_to_base') {
+        r.state = 'returning';
+        r.returningAt = Date.now();
+    } else if (action === 'set_fan') r.fan = params.value;
+    else if (action === 'set_wetness') r.wetness = params.value;
+    else if (action === 'reset_consumable') r.worn.set(Number(params.index), true);
+    return [];
+}
+
+/** A Valetudo map of the simulated home, in Valetudo's format so it takes the real path. */
+const DEMO_PRINT_MINUTES = 516;
+const DEMO_SPOOLS = [['#AF7933FF', 'Generic PLA'], ['#2850E0FF', 'Generic PLA Silk'], ['#FFFFFFFF', 'Generic PLA'], ['#161616FF', 'Generic PLA']];
+const printerStore = new Map();
+
+/** The simulated state of a printer: its print moves on as time passes. */
+function printerState(cardId) {
+    if (!printerStore.has(cardId)) {
+        printerStore.set(cardId, { status: 'running', light: 'on', startedAt: Date.now() - DEMO_PRINT_MINUTES * 0.51 * 60000 });
+    }
+    const p = printerStore.get(cardId);
+    if (p.status === 'running' && Date.now() - p.startedAt >= DEMO_PRINT_MINUTES * 60000) p.status = 'finish';
+    return p;
+}
+
+/** Simulates a printer card's printer. */
+function demoPrinter(params) {
+    const settings = printerOf(params.card_id);
+    const p = printerState(params.card_id);
+    const printing = p.status === 'running' || p.status === 'pause';
+    const progress = Math.min(100, (Date.now() - p.startedAt) / (DEMO_PRINT_MINUTES * 60000) * 100);
+    const left = DEMO_PRINT_MINUTES * (1 - progress / 100);
+    return {
+        name: settings.name || settings.printer.toUpperCase(),
+        status: p.status,
+        stage: p.status === 'running' ? 'printing' : 'idle',
+        job: 'Omega Headphone Holder - Wood Look',
+        progress: Math.round(progress),
+        layer: Math.round(progress / 100 * 451),
+        totalLayers: 451,
+        remaining: Math.round(left),
+        endTime: new Date(Date.now() + left * 60000).toISOString(),
+        changedAt: new Date().toISOString(),
+        weight: 186.42,
+        length: 62.5,
+        error: null,
+        nozzle: { value: printing ? 220 : 26, target: printing ? 220 : 0 },
+        bed: { value: printing ? 55 : 20, target: printing ? 55 : 0 },
+        chamber: printing ? 38 : 24,
+        humidity: 43,
+        spools: DEMO_SPOOLS.map(([color, name], i) => ({
+            entity_id: `sensor.${settings.ams || 'ams'}_tray_${i + 1}`,
+            slot: `AMS Tray ${i + 1}`,
+            name,
+            color,
+            active: printing && i === 0,
+            empty: false,
+        })),
+        controls: { pause: true, resume: true, stop: true },
+        light: p.light,
+    };
+}
+
+/** Simulates pausing, resuming and stopping a print, and the chamber light. */
+function demoPrinterAction(params) {
+    printerOf(params.card_id);
+    const p = printerState(params.card_id);
+    const changes = {
+        pause: { status: 'pause' },
+        resume: { status: 'running' },
+        stop: { status: 'idle' },
+        light_on: { light: 'on' },
+        light_off: { light: 'off' },
+    };
+    if (!Object.hasOwn(changes, String(params.action))) throw new HttpError(400, `Unknown printer action: ${params.action}`);
+    Object.assign(p, changes[params.action]);
+    return [];
+}
+
+function demoVacuumMap(params) {
+    const robot = robotsOf(findCard(params.card_id)).find(r => r.map === params.entity_id || r.camera === params.entity_id);
+    if (!robot) throw new HttpError(403, `Camera not on this card: ${params.entity_id}`);
+    if (robot.camera === params.entity_id && robot.map !== params.entity_id) return { kind: 'image' };
+    const size = 5;
+    const layer = ([name, x, y, w, h], i) => ({
+        type: 'segment',
+        metaData: { segmentId: String(i + 1), name, active: false },
+        dimensions: { x: { min: x, max: x + w, avg: x + w / 2 }, y: { min: y, max: y + h, avg: y + h / 2 } },
+        compressedPixels: Array.from({ length: h }, (_, row) => [x, y + row, w]).flat(),
+    });
+    const r = robotState(robot.entity_id);
+    const t = (Date.now() / 4000) % 1;
+    const pos = r.state === 'docked' ? [10, 104] : [10 + 55 * t, 60 + 40 * Math.abs(Math.sin(t * 9))];
+    return simplifyValetudoMap({
+        pixelSize: size,
+        layers: ROBOT_ROOMS.map(layer),
+        entities: [
+            { type: 'path', points: Array.from({ length: 30 }, (_, i) => [10 + 55 * (i / 29) * t, 60 + 40 * Math.abs(Math.sin((i / 29) * t * 9))]).flat().map(v => v * size) },
+            { type: 'robot_position', points: pos.map(v => v * size), metaData: { angle: 90 } },
+            { type: 'charger_location', points: [10 * size, 104 * size] },
+        ],
+    });
+}
+
+/**
+ * A placeholder picture for a simulated robot camera.
+ * @param {*} cardId - The vacuum card.
+ * @param {string} entityId - The camera entity.
+ * @returns {{contentType: string, body: Buffer}} The image.
+ */
+export function demoCameraImage(cardId, entityId) {
+    if (!robotsOf(findCard(cardId)).some(r => r.camera === entityId || r.map === entityId)) throw new HttpError(403, `Camera not on this card: ${entityId}`);
+    const clock = new Date().toLocaleTimeString('en-GB');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360"><defs><linearGradient id="f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3028"/><stop offset="1" stop-color="#1c1815"/></linearGradient></defs><rect width="640" height="360" fill="url(#f)"/><path d="M0 360 L180 190 H460 L640 360 Z" fill="#57493a"/><rect x="90" y="90" width="120" height="110" fill="#241e19"/><rect x="420" y="110" width="90" height="85" fill="#2b241e"/><text x="620" y="340" text-anchor="end" font-family="sans-serif" font-size="18" fill="#ffffffb0">${clock}</text></svg>`;
+    return { contentType: 'image/svg+xml', body: Buffer.from(svg) };
+}
+
 function titleOf(entityId) {
     return entityId.split('.')[1].replace(/_/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
 }
@@ -613,6 +821,11 @@ function homeassistant(params) {
         return entityState(endpoint.slice('states/'.length), 0);
     }
     if (endpoint === 'graph') return demoGraph(params);
+    if (endpoint === 'vacuum') return demoVacuums(params);
+    if (endpoint === 'vacuum_action') return demoVacuumAction(params);
+    if (endpoint === 'vacuum_map') return demoVacuumMap(params);
+    if (endpoint === 'printer') return demoPrinter(params);
+    if (endpoint === 'printer_action') return demoPrinterAction(params);
     if (endpoint === 'climate') return climate(params);
     if (endpoint === 'media') return mediaAction(params);
     if (endpoint === 'details') return details(params);
@@ -675,6 +888,8 @@ export const demoHandlers = Object.fromEntries(Object.entries({
  * Clears the simulated Home Assistant states. Intended for tests.
  */
 export function resetDemoState() {
+    robotStore.clear();
+    printerStore.clear();
     haStates.clear();
     climateStates.clear();
     mediaStates.clear();

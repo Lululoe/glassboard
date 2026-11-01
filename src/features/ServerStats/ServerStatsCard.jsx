@@ -1,215 +1,144 @@
-import React from 'react';
-import BaseCard from '../../components/Shared/BaseCard';
+import TwoToneBase from '../../components/Shared/TwoToneBase';
 import Icon from '../../components/Shared/Icon';
+import UsageBar from '../../components/Shared/UsageBar';
+import { formatUsage } from '../../lib/format';
 import useServerStats from './useServerStats';
 import './ServerStatsCard.css';
 
-// Sub-components
+/** Temperatures from which the reading warns, then signals a problem, in °C. */
+const TEMP_WARN = 70;
+const TEMP_HIGH = 85;
+
 /**
- * Displays basic server information such as hostname and IP.
+ * One metric: its icon, name and value, with what is below it.
  * @param {Object} props
- * @param {string} props.hostname - Server hostname.
- * @param {string} props.ip - Server IP address.
- * @returns {JSX.Element} The info tile.
+ * @param {string} props.title - The metric's name.
+ * @param {string} props.iconName - Icon name.
+ * @param {import('react').ReactNode} props.value - The current value.
+ * @param {string} [props.tone] - Extra class for the value, for warnings.
+ * @param {import('react').ReactNode} [props.children] - Shown under the row, such as a bar.
+ * @returns {JSX.Element} The row.
  */
-const InfoTile = ({ hostname, ip }) => {
-    return (
-        <div className="stat-tile stat-info">
-            <div className="stat-info-content">
-                <div className="stat-hostname">{hostname}</div>
-                <div className="stat-ip">{ip}</div>
-            </div>
-            <div className="stat-icon-circle">
-                <Icon icon="lu-Server" size={20} />
-            </div>
+const StatRow = ({ title, iconName, value, tone = '', children }) => (
+    <div className="stat-row">
+        <div className="stat-row-head">
+            <Icon icon={iconName} size={16} className="stat-row-icon" />
+            <span className="stat-title">{title}</span>
+            <span className={`stat-value ${tone}`.trim()}>{value}</span>
         </div>
+        {children}
+    </div>
+);
+
+/**
+ * A metric with a usage bar.
+ * @param {Object} props
+ * @param {string} props.title - The metric's name.
+ * @param {string} props.iconName - Icon name.
+ * @param {number} props.value - The current value.
+ * @param {number} props.max - The largest possible value.
+ * @param {string} [props.label] - Text for the value; defaults to the percentage.
+ * @returns {JSX.Element} The row.
+ */
+const BarRow = ({ title, iconName, value, max, label }) => {
+    const percent = max > 0 ? (value / max) * 100 : 0;
+    return (
+        <StatRow title={title} iconName={iconName} value={label || `${Math.round(percent)}%`}>
+            <UsageBar percent={percent} label={title} />
+        </StatRow>
     );
 };
 
 /**
- * Displays a statistic as a percentage bar (e.g., CPU, RAM).
+ * Network traffic in and out.
  * @param {Object} props
- * @param {string} props.title - Tile title.
- * @param {string} props.iconName - Lucide icon name.
- * @param {number} props.value - Current value.
- * @param {number} props.max - Maximum possible value.
- * @param {string} [props.label] - Optional custom text for the value label.
- * @param {string} props.colorClass - CSS class for bar color.
- * @returns {JSX.Element} The bar tile.
+ * @param {number} props.netIn - Traffic in, in bytes per second.
+ * @param {number} props.netOut - Traffic out, in bytes per second.
+ * @returns {JSX.Element} The row.
  */
-const BarTile = ({ title, iconName, value, max, label, colorClass }) => {
-    const percentage = Math.min(100, Math.max(0, (value / max) * 100));
-
+const NetworkRow = ({ netIn, netOut }) => {
+    const speed = (bytes) => (bytes / 1024 / 1024).toFixed(1);
     return (
-        <div className={`stat-tile ${colorClass}`}>
-            <div className="stat-header">
-                <div className="stat-icon-circle">
-                    <Icon icon={iconName} size={20} />
-                </div>
-                <div style={{ flex: 1 }}>
-                    <div className="stat-title">{title}</div>
-                    <div className="stat-value-text">{label || `${Math.round(percentage)}%`}</div>
-                </div>
-            </div>
-            <div className="stat-bar-container">
-                <div className="stat-bar-fill" style={{ width: `${percentage}%` }} />
-            </div>
-        </div>
+        <StatRow
+            title="Network"
+            iconName="lu-Network"
+            value={(
+                <span className="stat-network">
+                    <Icon icon="lu-ArrowDown" size={13} /> {speed(netIn)}
+                    <Icon icon="lu-ArrowUp" size={13} /> {speed(netOut)} MB/s
+                </span>
+            )}
+        />
     );
 };
 
 /**
- * Displays network usage statistics (In/Out).
+ * The temperature with its recent history as small bars.
  * @param {Object} props
- * @param {string} props.title - Tile title.
- * @param {string} props.iconName - Lucide icon name.
- * @param {number} props.netIn - Network traffic in (bytes).
- * @param {number} props.netOut - Network traffic out (bytes).
- * @returns {JSX.Element} The network tile.
+ * @param {Array<number>} props.data - Readings in °C, oldest first.
+ * @returns {JSX.Element} The row.
  */
-const NetworkTile = ({ title, iconName, netIn, netOut }) => {
-    const formatSpeed = (bytes) => {
-        const mb = bytes / 1024 / 1024;
-        return mb.toFixed(1);
-    };
-
+const TemperatureRow = ({ data }) => {
+    const current = data[data.length - 1] ?? 0;
+    const max = Math.max(...data, 60);
+    const min = Math.min(...data, 30);
+    const tone = current >= TEMP_HIGH ? 'high' : current >= TEMP_WARN ? 'warn' : '';
     return (
-        <div className="stat-tile stat-network">
-            <div className="stat-header">
-                <div className="stat-icon-circle">
-                    <Icon icon={iconName} size={20} />
-                </div>
-                <div className="stat-title">{title}</div>
+        <StatRow title="Temperature" iconName="lu-Thermometer" value={`${current}°C`} tone={tone}>
+            <div className="stat-history" aria-hidden="true">
+                {data.map((value, index) => (
+                    <div key={index} style={{ height: `${Math.max(10, ((value - min) / (max - min || 1)) * 100)}%` }} />
+                ))}
             </div>
-            <div className="stat-meta" style={{ marginTop: 'auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon icon="lu-ArrowDown" size={14} /> {formatSpeed(netIn)} MB
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <Icon icon="lu-ArrowUp" size={14} /> {formatSpeed(netOut)} MB
-                </div>
-            </div>
-        </div>
+        </StatRow>
     );
 };
 
 /**
- * Displays a historical graph for a metric (e.g., Temperature).
+ * Shows the host's CPU, memory, storage, network and temperature as compact rows, so all of
+ * them fit a one-wide card without scrolling.
  * @param {Object} props
- * @param {string} props.title - Tile title.
- * @param {string} props.iconName - Lucide icon name.
- * @param {Array<number>} props.data - Array of historical data points.
- * @param {string} [props.unit='°C'] - Unit label.
- * @param {string} props.colorClass - CSS class for styling.
- * @returns {JSX.Element} The graph tile.
- */
-const GraphTile = ({ title, iconName, data, unit = '°C', colorClass }) => {
-    const current = data[data.length - 1] || 0;
-    const maxVal = Math.max(...data, 60); // dynamic scale max
-    const minVal = Math.min(...data, 30); // dynamic scale min
-
-    return (
-        <div className={`stat-tile ${colorClass}`}>
-            <div className="stat-header">
-                <div className="stat-icon-circle">
-                    <Icon icon={iconName} size={20} />
-                </div>
-                <div style={{ flex: 1 }}>
-                    <div className="stat-title">{title}</div>
-                    <div className="stat-value-text">{current}{unit}</div>
-                </div>
-            </div>
-            <div className="stat-graph-container">
-                {data.map((val, idx) => {
-                    const height = ((val - minVal) / (maxVal - minVal || 1)) * 100;
-                    return (
-                        <div
-                            key={idx}
-                            className="stat-graph-bar"
-                            style={{ height: `${Math.max(10, height)}%` }}
-                            title={`${val}${unit}`}
-                        />
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
-
-/**
- * ServerStatsCard component renders various server metrics like CPU, RAM, Network, and Temperature.
- * @param {Object} props
- * @param {Object} props.config - Configuration object.
+ * @param {Object} props.config - Card configuration (`data.sensors`, `icon`, `iconColor`, `iconBackground`).
  * @returns {JSX.Element} The server stats card.
  */
 const ServerStatsCard = ({ config }) => {
     const stats = useServerStats();
-
-    // Default sensors if not provided
     const sensors = config.data?.sensors || ['cpu', 'ram', 'storage', 'network', 'temp'];
 
     return (
-        <BaseCard
+        <TwoToneBase
             className={`server-stats-card col-span-${config.colSpan || 1}`}
-            hoverable={false}
+            title={stats.info.hostname}
+            subtitle={stats.info.ip}
+            icon={config.icon || 'lu-Server'}
+            iconBackground={config.iconBackground}
+            iconColor={config.iconColor}
         >
             <div className="server-stats-grid">
-                <InfoTile hostname={stats.info.hostname} ip={stats.info.ip} />
-
-                {sensors.includes('cpu') && (
-                    <BarTile
-                        title="CPU Load"
-                        iconName="lu-Cpu"
-                        value={stats.cpu}
-                        max={100}
-                        colorClass="stat-cpu"
-                    />
-                )}
-
+                {sensors.includes('cpu') && <BarRow title="CPU Load" iconName="lu-Cpu" value={stats.cpu} max={100} />}
                 {sensors.includes('ram') && (
-                    <BarTile
+                    <BarRow
                         title="RAM Usage"
                         iconName="lu-MemoryStick"
                         value={stats.ram.used}
                         max={stats.ram.total}
-                        label={`${stats.ram.used} / ${stats.ram.total} GB`}
-                        colorClass="stat-ram"
+                        label={formatUsage(stats.ram.used, stats.ram.total)}
                     />
                 )}
-
                 {sensors.includes('storage') && (
-                    <BarTile
+                    <BarRow
                         title="Storage"
                         iconName="lu-HardDrive"
                         value={stats.storage.used}
                         max={stats.storage.total}
-                        label={`${stats.storage.used}GB Used / ${stats.storage.free}GB Free`}
-                        colorClass="stat-storage"
+                        label={formatUsage(stats.storage.used, stats.storage.total)}
                     />
                 )}
-
-                {sensors.includes('temp') && (
-                    <GraphTile
-                        title="Temperature"
-                        iconName="lu-Thermometer"
-                        data={stats.temp}
-                        colorClass="stat-temp"
-                    />
-                )}
-
-                {sensors.includes('network') && (
-                    <NetworkTile
-                        title="Network"
-                        iconName="lu-Network"
-                        netIn={stats.network.in}
-                        netOut={stats.network.out}
-                    />
-                )}
+                {sensors.includes('network') && <NetworkRow netIn={stats.network.in} netOut={stats.network.out} />}
+                {sensors.includes('temp') && <TemperatureRow data={stats.temp} />}
             </div>
-        </BaseCard>
+        </TwoToneBase>
     );
 };
 
 export default ServerStatsCard;
-
-

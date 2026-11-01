@@ -27,6 +27,15 @@
     pointer-events: none;
 }
 
+/* No background: the icon stands on the card, without the material of a tile */
+.app-icon-container.is-bare {
+    filter: none;
+}
+
+.app-icon-container.is-bare::after {
+    display: none;
+}
+
 .app-icon {
     width: 28px;
     height: 28px;

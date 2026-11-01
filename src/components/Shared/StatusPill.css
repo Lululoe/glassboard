@@ -1,0 +1,42 @@
+.status-pill {
+    --pill-color: var(--system-gray);
+    --pill-text: var(--system-gray-text);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--pill-color) 18%, transparent);
+    color: var(--pill-text);
+    font-size: var(--fs-12);
+    font-weight: 600;
+    line-height: 1rem;
+    white-space: nowrap;
+    text-transform: capitalize;
+}
+
+.status-pill.green {
+    --pill-color: var(--system-green);
+    --pill-text: var(--system-green-text);
+}
+
+.status-pill.orange {
+    --pill-color: var(--system-orange);
+    --pill-text: var(--system-orange-text);
+}
+
+.status-pill.blue {
+    --pill-color: var(--system-blue);
+    --pill-text: var(--system-blue-text);
+}
+
+.status-pill.purple {
+    --pill-color: var(--system-purple);
+    --pill-text: var(--system-purple-text);
+}
+
+.status-pill.red {
+    --pill-color: var(--system-red);
+    --pill-text: var(--system-red-text);
+}

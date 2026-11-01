@@ -3,7 +3,30 @@ import TwoToneBase from '../../components/Shared/TwoToneBase';
 import { useWeather } from './useWeather';
 import Icon from '../../components/Shared/Icon';
 import './WeatherCard.css';
+import { useElementSize } from '../../hooks/useElementSize';
 import { useFitCount } from '../../hooks/useFitCount';
+
+/** Content height from which the other forecast fits underneath, in pixels. */
+const STRIP_FROM = 190;
+/** Content height from which a forecast with a strip also has room for the condition. */
+const ROOMY_FROM = 270;
+/** Most forecast entries shown side by side. */
+const MAX_DAYS = 7;
+/** Width each entry in the strip needs, in pixels. */
+const STRIP_ITEM_WIDTH = 72;
+
+/**
+ * Turns a forecast entry's time into its label.
+ * @param {Object} item - The forecast entry.
+ * @param {number} index - Its position in the forecast.
+ * @param {string} type - 'daily' or 'hourly'.
+ * @returns {string} For example `Today`, `Mon` or `14:00`.
+ */
+const labelOf = (item, index, type) => {
+    const date = new Date(item.datetime);
+    if (type === 'daily') return index === 0 ? 'Today' : date.toLocaleDateString(undefined, { weekday: 'short' });
+    return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+};
 
 /**
  * Maps a weather condition string to a corresponding Lucide React icon name.
@@ -33,7 +56,6 @@ const getWeatherIcon = (condition) => {
  * @returns {JSX.Element} The rendered WeatherCard.
  */
 const WeatherCard = ({ config = {} }) => {
-    const colSpan = config.colSpan || 1;
     const icon = config.icon || "lu-CloudSun";
     // Default gradient for WeatherCard
     const defaultBackground = "linear-gradient(45deg,rgba(54, 111, 255, 1) 0%, rgba(128, 227, 255, 1) 100%)";
@@ -41,9 +63,15 @@ const WeatherCard = ({ config = {} }) => {
     const iconColor = config.iconColor;
 
     const [forecastType, setForecastType] = useState('daily');
-    // Up to two days per grid column, as many as fit the card's current width
-    const [visibleCols, gridRef] = useFitCount(80, colSpan * 2);
+    // As many as fit the card's current width, so a wide card shows more instead of gaps
+    const [visibleCols, gridRef] = useFitCount(80, MAX_DAYS);
     const { weather, loading, error } = useWeather(config.id, forecastType);
+    const [bodySize, measureBody] = useElementSize();
+    const showStrip = bodySize.height >= STRIP_FROM;
+    const stripType = forecastType === 'daily' ? 'hourly' : 'daily';
+    const { weather: stripWeather } = useWeather(config.id, stripType, showStrip);
+    const stripItems = stripWeather?.forecast || [];
+    const stripCount = Math.max(4, Math.floor(bodySize.width / STRIP_ITEM_WIDTH));
 
     const toggleType = () => {
         setForecastType(prev => prev === 'daily' ? 'hourly' : 'daily');
@@ -111,28 +139,17 @@ const WeatherCard = ({ config = {} }) => {
                     title={`Show ${forecastType === 'daily' ? 'hourly' : 'daily'} forecast`}
                     aria-label={`Show ${forecastType === 'daily' ? 'hourly' : 'daily'} forecast`}
                 >
-                    {forecastType === 'daily' ? <Icon icon="lu-Clock" size={18} /> : <Icon icon="lu-CalendarDays" size={18} />}
+                    {forecastType === 'daily' ? <Icon icon="lu-Clock" size={20} /> : <Icon icon="lu-CalendarDays" size={20} />}
                 </button>
             }
         >
-            <div className="weather-grid" ref={gridRef} style={{ gridTemplateColumns: `repeat(${visibleCols}, minmax(0, 1fr))` }}>
-                {forecast.slice(0, visibleCols).map((item, idx) => {
-                    const itemIcon = getWeatherIcon(item.condition);
-                    const date = new Date(item.datetime);
-
-                    let label;
-                    if (forecastType === 'daily') {
-                        label = idx === 0 ? 'Today' : date.toLocaleDateString(undefined, { weekday: 'short' });
-                    } else {
-                        // Hourly: show time (e.g. 14:00)
-                        label = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
-                    }
-
-                    return (
+            <div className={`weather-body${showStrip && bodySize.height < ROOMY_FROM ? ' has-strip' : ''}`} ref={measureBody}>
+                <div className="weather-grid" ref={gridRef} style={{ gridTemplateColumns: `repeat(${visibleCols}, minmax(0, 1fr))` }}>
+                    {forecast.slice(0, visibleCols).map((item, idx) => (
                         <div key={idx} className="weather-day">
-                            <div className="weather-day-header">{label}</div>
+                            <div className="weather-day-header">{labelOf(item, idx, forecastType)}</div>
                             <div className="weather-day-body">
-                                <Icon icon={itemIcon} size={32} className="weather-day-icon" />
+                                <Icon icon={getWeatherIcon(item.condition)} size={32} className="weather-day-icon" />
                                 <div className="weather-day-condition">{item.condition}</div>
                                 <div className="weather-day-temp">
                                     {item.temperature !== undefined && (
@@ -150,8 +167,24 @@ const WeatherCard = ({ config = {} }) => {
                                 )}
                             </div>
                         </div>
-                    );
-                })}
+                    ))}
+                </div>
+                {showStrip && stripItems.length > 0 && (
+                    <div
+                        className="weather-strip"
+                        role="group"
+                        aria-label={stripType === 'hourly' ? 'Next hours' : 'Next days'}
+                        style={{ gridTemplateColumns: `repeat(${Math.min(stripItems.length, stripCount)}, minmax(0, 1fr))` }}
+                    >
+                        {stripItems.slice(0, stripCount).map((item, idx) => (
+                            <div key={idx} className="weather-strip-item">
+                                <span className="weather-strip-label">{labelOf(item, idx, stripType)}</span>
+                                <Icon icon={getWeatherIcon(item.condition)} size={20} className="weather-day-icon" />
+                                <span className="weather-strip-temp">{Math.round(item.temperature)}°</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </TwoToneBase>
     );

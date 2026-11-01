@@ -402,7 +402,7 @@ const MediaPlayerCard = ({ config }) => {
             <>
                 <Artwork player={player} className="mp-bg" />
                 <div className="mp-top">
-                    <span className="mp-chip"><Speaker size={15} aria-hidden="true" />{player.name}</span>
+                    <span className="mp-chip"><Speaker size={15} aria-hidden="true" /><span className="mp-chip-name">{player.name}</span></span>
                     <OutputButton player={player} onClick={() => setSheetFor(player.id)} />
                 </div>
                 <div className="mp-panel">

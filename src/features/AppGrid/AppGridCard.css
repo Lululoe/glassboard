@@ -200,7 +200,7 @@
     background: rgb(255, 48, 55);
     color: #fff;
     font-size: calc(var(--icon) * 0.24 * var(--u));
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1;
     display: flex;
     align-items: center;

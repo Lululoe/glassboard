@@ -9,12 +9,13 @@ const REFRESH_INTERVAL = 30 * 60 * 1000;
  * so only the card id is sent.
  * @param {string} cardId - Id of the weather card in config.yaml.
  * @param {string} [type='daily'] - Forecast type ('daily' or 'hourly').
+ * @param {boolean} [enabled=true] - Whether to load it at all.
  * @returns {{weather: {forecast: Array<Object>, units: string}|null, loading: boolean, error: string|null}}
  */
-export const useWeather = (cardId, type = 'daily') => {
+export const useWeather = (cardId, type = 'daily', enabled = true) => {
     const { data, loading, error } = usePolling(
         () => callService('weather', { cardId, type }),
-        { interval: REFRESH_INTERVAL, enabled: cardId !== undefined, key: `${cardId}|${type}` }
+        { interval: REFRESH_INTERVAL, enabled: enabled && cardId !== undefined, key: `${cardId}|${type}` }
     );
 
     return { weather: data ?? null, loading, error };

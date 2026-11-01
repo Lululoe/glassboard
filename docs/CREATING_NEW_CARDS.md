@@ -60,9 +60,14 @@ export const cardInfo = {
         sizes: ['quarter', 'half', '1', '2'], // optional, defaults to 1–3 columns
         defaults: { colSpan: 1, title: 'Hello' }, // optional, properties of a new card
         Editor: MyCardEditor,                    // optional settings form
+        headerIcon: true,                        // optional, see below
     },
 };
 ```
+
+Set `headerIcon` when the card's `TwoToneBase` header reads `config.icon`, `config.iconColor` and
+`config.iconBackground`. The card editor then shows the real card and offers those settings. It draws the card with its
+saved options, inert and with a live icon and size, so the card must also render before it has its data.
 
 Without `sizes`, edit mode offers one, two and three columns; list `half` and `quarter` only if the card works at
 those sizes.

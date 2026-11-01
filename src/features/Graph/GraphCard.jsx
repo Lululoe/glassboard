@@ -180,6 +180,7 @@ const GraphCard = ({ config }) => {
             subtitle={subtitle}
             icon={config.icon || ICONS[chart]}
             iconBackground={config.iconBackground || ICON_BACKGROUNDS[chart]}
+            iconColor={config.iconColor}
             actions={actions}
         >
             <div className="graph-body" ref={measureBody}>

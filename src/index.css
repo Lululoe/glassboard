@@ -7,6 +7,18 @@
 :root {
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
+  /* Type scale, in rem so text follows the browser's text size setting */
+  --fs-11: 0.6875rem;
+  --fs-12: 0.75rem;
+  --fs-13: 0.8125rem;
+  --fs-14: 0.875rem;
+  --fs-15: 0.9375rem;
+  --fs-17: 1.0625rem;
+  --fs-21: 1.3125rem;
+  --fs-28: 1.75rem;
+  --fs-34: 2.125rem;
+  --fs-40: 2.5rem;
+
   /* Layout variables - static (modelled on iCloud's tiles) */
   --radius-card: 11px;
   --gap-grid: 30px;
@@ -25,6 +37,12 @@
      of them; themes that predate these tokens keep working with the defaults. */
   --text-tertiary: rgba(255, 255, 255, 0.5);
   --text-quaternary: rgba(255, 255, 255, 0.42);
+  /* Secondary text on a filled control or tile, which is darker or lighter than the card */
+  --text-on-fill: rgba(255, 255, 255, 0.76);
+  /* Text and icons on a control filled with --text-primary */
+  --ink-inverse: #000;
+  /* Shade over the edge of a list with more to scroll to */
+  --scroll-shade: rgba(0, 0, 0, 0.5);
   --bg-card-surface: radial-gradient(circle at 97% 3.3%, rgba(0, 0, 0, 0.35) 0, rgba(0, 0, 0, 0.6) 164%);
   --bg-toolbar: rgba(56, 56, 61, 0.6);
   --bg-fill: rgba(118, 118, 128, 0.24);
@@ -51,6 +69,7 @@
      light mode needs Apple's darker, accessible variants to stay readable. */
   --system-red-text: var(--system-red);
   --system-orange-text: var(--system-orange);
+  --system-yellow-text: var(--system-yellow);
   --system-green-text: var(--system-green);
   --system-blue-text: var(--system-blue);
   --system-purple-text: var(--system-purple);
@@ -60,6 +79,9 @@
 :root[data-theme="light"] {
   --text-tertiary: rgba(60, 60, 67, 0.3);
   --text-quaternary: rgba(60, 60, 67, 0.18);
+  --text-on-fill: rgba(60, 60, 67, 0.92);
+  --ink-inverse: #fff;
+  --scroll-shade: rgba(120, 120, 128, 0.32);
   /* iCloud fades to 13% white, which leaves secondary text near 2:1 over a saturated page;
      a 78% far stop keeps it at 4.5:1 or better */
   --bg-card-surface: radial-gradient(circle at 100% 0, rgba(255, 255, 255, 0.85) 0, rgba(245, 245, 245, 0.78) 183%);
@@ -82,12 +104,13 @@
   --system-purple: #af52de;
   --system-pink: #ff2d55;
 
-  --system-red-text: #d70015;
-  --system-orange-text: #c93400;
-  --system-green-text: #248a3d;
+  --system-red-text: #c00013;
+  --system-orange-text: #9c2a00;
+  --system-yellow-text: #806000;
+  --system-green-text: #17672b;
   --system-blue-text: #0040dd;
   --system-purple-text: #8944ab;
-  --system-gray-text: #6c6c70;
+  --system-gray-text: #545458;
 }
 
 html {

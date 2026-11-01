@@ -102,4 +102,43 @@ describe('layout API', () => {
         expect(res.status).toBe(200);
         expect(readLayout()).toEqual({ pages: {}, removed: [] });
     });
+    it('saves the header menu and icon backgrounds, and keeps them when left out', async () => {
+        const launcher = { apps: [{ name: 'Plex', url: 'http://plex', icon: { source: 'sh', value: 'plex-light', color: 'currentColor' } }], links: [] };
+        const pages = () => ({ home: [{ id: 'a', type: 'x' }], admin: [{ id: 'c', type: 'x' }] });
+
+        await put(server, { pages: pages(), launcher, iconBackgrounds: ['linear-gradient(90deg, #111111, #222222)'] }).expect(200);
+        expect(readLayout().launcher).toEqual(launcher);
+        expect(readLayout().iconBackgrounds).toEqual(['linear-gradient(90deg, #111111, #222222)']);
+
+        await put(server, { pages: pages() }).expect(200);
+        expect(readLayout().launcher).toEqual(launcher);
+        expect(readLayout().iconBackgrounds).toEqual(['linear-gradient(90deg, #111111, #222222)']);
+    });
+
+    it('does not store a header menu equal to config.yaml', async () => {
+        const launcher = { apps: [{ name: 'Plex', url: 'http://plex' }] };
+        setConfig({ ...config(), launcher });
+        await put(server, { pages: { home: [], admin: [] }, launcher }).expect(200);
+        expect(readLayout().launcher).toBeUndefined();
+    });
+
+    it('rejects a header menu item without a name', async () => {
+        await put(server, { pages: { home: [], admin: [] }, launcher: { apps: [{ url: 'http://x' }] } }).expect(400);
+    });
+
+    it('lists the Material icon names', async () => {
+        const res = await request(server).get('/api/icons/mdi').expect(200);
+        expect(res.body.names).toContain('lightbulb-off');
+    });
+
+    it('undoes a reset', async () => {
+        await put(server, { pages: { home: [{ id: 'a', type: 'x', colSpan: 2 }], admin: [] } }).expect(200);
+        const saved = readLayout();
+        await request(server).delete('/api/config/layout').expect(200);
+        expect(readLayout().pages).toEqual({});
+
+        await request(server).post('/api/config/layout/restore').expect(200);
+        expect(readLayout()).toEqual(saved);
+        await request(server).post('/api/config/layout/restore').expect(404);
+    });
 });

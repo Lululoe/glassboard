@@ -1,8 +1,8 @@
 import { useLayoutEffect, useState } from 'react';
 
 // Keep in sync with the breakpoints in BentoGrid.css
-const TABLET = '(max-width: 1024px)';
-const PHONE = '(max-width: 768px)';
+const TABLET = '(max-width: 999px)';
+const PHONE = '(max-width: 639px)';
 
 /**
  * Estimates the number of columns from the window width, before the grid can be measured.

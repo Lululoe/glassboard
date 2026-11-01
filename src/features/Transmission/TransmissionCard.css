@@ -1,5 +1,5 @@
 .torrent-secondary-info {
-    font-size: 0.85rem;
+    font-size: var(--fs-13);
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -88,7 +88,7 @@
 .progress-percent {
     min-width: 40px;
     text-align: right;
-    font-size: 0.75rem;
+    font-size: var(--fs-12);
     color: var(--text-secondary);
 }
 
@@ -115,7 +115,7 @@
 .torrent-header {
     display: flex;
     justify-content: space-between;
-    font-size: 0.9rem;
+    font-size: var(--fs-14);
     font-weight: 600;
 }
 
@@ -138,7 +138,7 @@
 .torrent-left {
     color: var(--text-secondary);
     font-weight: 400;
-    font-size: 0.8rem;
+    font-size: var(--fs-13);
     margin-left: 12px;
     white-space: nowrap;
     flex: 0 0 auto;

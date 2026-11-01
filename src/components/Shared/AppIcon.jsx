@@ -17,7 +17,10 @@ import './AppIcon.css';
  */
 const AppIcon = ({ icon, background, color, className = '', size = "100%" }) => {
     return (
-        <div className={`app-icon-container ${className}`} style={{ background: background || 'var(--icon-background)' }}>
+        <div
+            className={`app-icon-container${background === 'transparent' ? ' is-bare' : ''} ${className}`}
+            style={{ background: background || 'var(--icon-background)' }}
+        >
             <Icon icon={icon} size={size} className="app-icon" color={color} />
         </div>
     );

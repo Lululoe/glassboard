@@ -20,8 +20,8 @@ All cards support these base options:
 ---
 
 ## Card Sizes
-The grid has three columns on wide screens, two on tablets (up to 1024px) and one on phones (up to 768px). Rows
-are as tall as a column is wide, so a one-wide card is always square.
+The grid has three columns from 1000px wide, two from 640px and one below that. Rows are as tall as a column is wide,
+so a one-wide card is square, until rows reach 440px; past that a card would only gain gaps.
 
 | Size | Config | Shape |
 |------|--------|-------|
@@ -40,7 +40,7 @@ layout rather than a squeezed wide one. On tablets later cards move up to fill g
 
 Not every card works at every size. In edit mode each card only offers the sizes its type supports; most cards
 support one to three wide, `hacontrol` and `spacer` also support half and quarter, and `thermostat` and
-`mediaplayer` support quarter, half and one wide. A size set in
+`mediaplayer` support quarter, half and one wide, `vacuum` half and one to three wide, and `printer` half and one wide. A size set in
 `config.yaml` is always used, even if edit mode would not offer it.
 
 ## Editing the Dashboard
@@ -74,14 +74,48 @@ Each card can be hidden on phones, tablets or desktops with the switches in its 
 While editing, hidden cards stay visible but dimmed, labelled "Hidden on phone" (or tablet/desktop), so they can
 still be moved and edited.
 
+### Editing icons
+Cards with a header (Weather, Media, Graph, Vacuum, Printer, Proxmox, Server Stats, Transmission, Pull Requests and
+Multiroom Thermostat) show the real card at the top of their editor, with the settings of its icon top left: which icon, its
+color and its background. The icons in a card's top right corner belong to the card and aren't configurable.
+
+The **App Grid** and the **header menu** are arranged directly on the preview:
+
+- **Select** an app or link to change it, **drag** it to reorder it, and use the minus badge to remove it (with Undo).
+  On a touch screen, hold before dragging.
+- With the keyboard, Enter selects, the arrow keys move between items, Shift and an arrow key moves the item, and
+  Delete removes it. Esc clears the selection.
+- Apps that don't fit appear under **Won't show**, where they can be dragged back up.
+- An App Grid can show **this card's apps** or the **header menu's apps**.
+
+**Icons** can be searched across the complete Lucide, Material and [selfh.st](https://selfh.st/icons/) catalogs, or
+given as an image URL. Selfh.st icons have a **Full color / Monochrome** switch; a few have no monochrome version.
+
+**Icon color** applies to Lucide, Material and monochrome selfh.st icons and SVG images. **Default** follows the text
+color (or the card's own default). Full-color icons and PNGs keep their own colors.
+
+**Backgrounds** offer presets and a **+**, which adds your own preset starting from the current background: solid,
+linear or radial gradient with up to four colors, direction and opacity; plain CSS; or none, for an icon without a
+tile. Your presets are available on every icon and are stored as `iconBackgrounds`. Editing a preset later doesn't
+change icons that already use it. The list can also be set at the top level of `config.yaml`:
+
+```yaml
+iconBackgrounds:
+  - "linear-gradient(135deg, #5e5ce6, #bf5af2)"
+```
+
+The selfh.st catalog and its icons load from jsDelivr, so that tab needs internet access.
+
 ### Where changes are saved
 Changes are saved to `layout.yaml` next to `config.yaml`, never to `config.yaml` itself, so your comments and
 formatting stay untouched. Every device sees the saved dashboard. For cards from `config.yaml`, `layout.yaml`
 only stores the page, position, size and visibility, unless the card's options were changed in the browser; then
 it stores the whole card, and later edits to that card in `config.yaml` are ignored until you reset. Cards added
-in the browser live only in `layout.yaml`, and cards removed in the browser are listed under `removed`. Cards added
-to `config.yaml` later appear after the saved ones. Deleting `layout.yaml` (or **Reset**) restores the dashboard
-from `config.yaml`.
+in the browser live only in `layout.yaml`, and cards removed in the browser are listed under `removed`. A header menu
+edited in the browser replaces `launcher` from `config.yaml` as a whole, as do `iconBackgrounds`. Cards added
+to `config.yaml` later appear after the saved ones. Deleting `layout.yaml` (or **Reset…**) restores the dashboard
+from `config.yaml`. **Reset…** asks first and offers **Undo** in the header afterwards, using a copy it keeps as
+`layout.yaml.bak`.
 
 Saving needs an `id` on every card. Secrets such as API keys and passwords are never sent to the browser; when a
 card is saved, the server keeps the values it already has.
@@ -119,7 +153,7 @@ Displays a grid of application shortcuts.
 |-------|------|-------------|
 | `name` | string | Display name. |
 | `url` | string | URL to open when clicked. |
-| `icon` | string/object | URL (svg/png), Lucide icon name, or object `{ source, value }`. |
+| `icon` | string/object | URL (svg/png), icon name, or object `{ source, value, color }`, where `source` is `lucide`, `mdi`, `sh`, `local` or `url`. A `color` is only possible in the object form. |
 | `bgColor` | string | Optional CSS background (e.g., gradient). |
 | `statusUrl` | string | Optional. URL the server checks instead of `url` (e.g. an internal address). |
 | `statusCheck` | boolean | Optional. Set to `false` to skip the status check for this app. |
@@ -499,6 +533,148 @@ card's shared values for that room.
 
 ---
 
+## Vacuum (`vacuum`)
+One robot: start (pause while cleaning), stop and return to dock in the header, and its stats and a bar below. The full
+height card adds fan speed, mop wetness and rooms. Tapping the header opens the robot's details. Half height or one to
+three wide; two and three wide cards can also show the map, all stats and the consumables.
+
+### Configuration
+| Option | Type | Description |
+|--------|------|-------------|
+| `entity_id` | string | Required. The `vacuum.*` entity. Its `fan_speed_list` gives the fan speeds. |
+| `name` | string | Name; defaults to Home Assistant's. |
+| `battery` | string | Battery sensor. Defaults to the first battery among `stats`, then the robot's `battery_level` attribute. |
+| `progress` | string | Sensor with the cleaning progress in percent. While cleaning, the bar shows it; otherwise, and without one, it shows the battery. |
+| `wetness` | string | `select.*` entity for mop wetness. Without one, the control is hidden. |
+| `stats` | array | Any number of entities, see below. The first three show on the cards, all of them in the details. |
+| `rooms` | array | Rooms to clean, see below. With fewer than two, the section is hidden. |
+| `consumables` | array | Shown in the details, see below. |
+| `map` | string | Camera entity for the details, see below. |
+| `camera` | string | Camera entity for the details, see below. |
+| `show_map` | boolean | Two and three wide: show the `map` entity on the card. |
+| `show_stats` | boolean | Two and three wide: show all stats on the card. |
+| `show_consumables` | boolean | Two and three wide: show the consumables on the card. |
+
+The `show_` sections sit in columns beside the card's content. Those that don't fit share: on a three wide card the map
+gets a column and the other two stack, and on a two wide card a switch chooses between them. On smaller screens the card
+narrows to one wide without them, and they stay in the robot's details.
+
+**Stats**: each is an entity id, or an object.
+| Field | Description |
+|-------|-------------|
+| `entity_id` | Required. The entity. |
+| `attribute` | Show this attribute instead of the state. |
+| `name` | Label; defaults to the attribute or Home Assistant's name. |
+| `unit` | Unit; defaults to the entity's. |
+
+Values are shown in the units people expect: `720 s` as `12 min`, `8160 min` as `136 h` and `90000 cm²` as `9 m²`.
+
+**Rooms**: rooms are cleaned with `vacuum.clean_area`, so the robot's segments need to be mapped to Home Assistant areas.
+With none picked, `vacuum.start` cleans everything.
+| Field | Description |
+|-------|-------------|
+| `area` | Required. The Home Assistant area id. |
+| `name` | Label; defaults to the area id. |
+| `segment` | Map segment id of this room. Without one, the map matches segments to rooms by name. |
+
+**Consumables**: each is an entity id, or an object.
+| Field | Description |
+|-------|-------------|
+| `entity_id` | Required. How much is left, e.g. a sensor with the remaining minutes. |
+| `attribute` | Read this attribute instead of the state. |
+| `name` | Label; defaults to Home Assistant's name. |
+| `unit` | Unit; defaults to the entity's. |
+| `percent` | Sensor with the percentage left. The bar shows it, orange from 20% and red from 10%, and it's listed beside the value unless they're the same. Without one, the bar is full and green as long as `entity_id` isn't 0. |
+| `reset` | `button.*` entity that resets it. Its Reset button is always available, and asks once more before pressing. |
+
+**Map and camera**: both are optional and take any `camera.*` entity. Valetudo's map data camera (e.g.
+`camera.robo_map_data`) is drawn as a minimal map with rooms, walls, the path, the dock and the robot, where tapping a
+room picks it; any other camera shows its picture, refreshed every two seconds. With both set, a switch chooses between
+them; with neither, the details show only stats, consumables and controls.
+
+### Example
+```yaml
+- id: robo
+  type: vacuum
+  entity_id: vacuum.l10s_ultra
+  battery: sensor.l10s_ultra_battery_level
+  wetness: select.l10s_ultra_water
+  map: camera.l10s_ultra_map_data
+  stats:
+    - { entity_id: sensor.l10s_ultra_battery_level, name: Battery }
+    - { entity_id: sensor.l10s_ultra_current_statistics_area, name: Area }
+    - { entity_id: sensor.l10s_ultra_current_statistics_time, name: Time }
+    - { entity_id: vacuum.l10s_ultra, attribute: fan_speed, name: Fan }
+  rooms:
+    - { area: kitchen, name: Kitchen }
+    - { area: living_room, name: Living Room }
+  consumables:
+    - entity_id: sensor.l10s_ultra_main_brush
+      name: Main brush
+      reset: button.l10s_ultra_reset_main_brush_consumable
+    - entity_id: sensor.l10s_ultra_dock_detergent
+      name: Dock detergent
+      percent: sensor.l10s_ultra_dock_detergent
+```
+
+---
+
+## Multiple Vacuums (`vacuums`)
+Up to six robots: start, stop and return to dock in the header act on all of them. Each robot shows the half height
+content in a row or, when there's a column for each (at most as many robots as columns), the full height content.
+Tapping a robot opens its details, whose controls act on that robot only. One to three wide.
+
+### Configuration
+| Option | Type | Description |
+|--------|------|-------------|
+| `robots` | array | Required. Entity ids, or objects with the options of the `vacuum` card. |
+| `title` | string | Card title; defaults to `Robots`. |
+
+### Example
+```yaml
+- id: robots
+  type: vacuums
+  colSpan: 2
+  robots:
+    - entity_id: vacuum.l10s_ultra
+      wetness: select.l10s_ultra_water
+      rooms:
+        - { area: kitchen, name: Kitchen }
+        - { area: office, name: Office }
+    - vacuum.s5_max
+```
+
+---
+
+## 3D Printer (`printer`)
+A printer from the [Bambu Lab integration](https://github.com/greghesp/ha-bambulab): progress, time left, nozzle, bed and
+chamber temperatures and the loaded spools by colour, with the one in use ringed. Half height or one wide.
+
+The progress bar stays in place while nothing is printing, empty and grey.
+
+### Configuration
+| Option | Type | Description |
+|--------|------|-------------|
+| `printer` | string | Required. The start of the printer's entity ids: `p2s` for `sensor.p2s_print_status`. |
+| `name` | string | Name to show. Defaults to the printer's name in Home Assistant. |
+| `ams` | string | The start of the AMS's entity ids. Defaults to `ams`, for `sensor.ams_tray_1`. |
+| `trays` | array | Spool entities to show instead, for example with several AMS units. |
+
+Without `trays`, the card shows the AMS's four trays, and the external spool while something is loaded on it.
+
+**Buttons**: pause or resume (`button.<printer>_pause`, `_resume`) and stop (`_stop`) show during a print, and stopping asks
+for a second tap. The chamber light (`light.<printer>_chamber_light`) always shows. A button whose entity is missing or
+unavailable in Home Assistant stays hidden.
+
+### Example
+```yaml
+- id: printer
+  type: printer
+  printer: p2s
+```
+
+---
+
 ## Empty Space (`spacer`)
 An invisible card that only takes up room, to shape the layout: to start a new row, leave a gap next to a wide
 card, or fill the rest of a slot of half and quarter cards. It supports every size and has no options. In edit
@@ -535,7 +711,7 @@ Displays active torrent downloads/seeds.
 ---
 
 ## Weather (`weather`)
-Displays a daily (7 days) or hourly (24 hours) weather forecast from the free [Open-Meteo](https://open-meteo.com) API. No API key or Home Assistant is required. The forecast refreshes every 30 minutes.
+Displays a daily (7 days) or hourly (24 hours) weather forecast, with the other one in a strip underneath when the card has the height for it. It comes from the free [Open-Meteo](https://open-meteo.com) API. No API key or Home Assistant is required. The forecast refreshes every 30 minutes.
 
 ### Configuration
 | Option | Type | Default | Description |

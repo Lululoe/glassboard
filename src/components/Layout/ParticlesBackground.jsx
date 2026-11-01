@@ -19,7 +19,9 @@ const ParticlesBackground = () => {
         });
     }, []);
 
-    if (!init || !particles || particles.enable === false) {
+    // Moving particles are decoration, so they stay away for people who asked for less motion
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (!init || !particles || particles.enable === false || reducedMotion) {
         return null;
     }
 

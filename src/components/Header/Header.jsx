@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './Header.css';
-import { LayoutTemplate, Sun, Moon, LayoutGrid, SquarePen, Plus } from 'lucide-react';
+import { LayoutTemplate, Sun, Moon, LayoutGrid, Pencil, SquarePen, Plus } from 'lucide-react';
 import LauncherPopup from './LauncherPopup';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -16,8 +16,12 @@ import { useTheme } from '../../context/ThemeContext';
  * @param {string|null} [props.edit.status] - Message shown next to the edit controls.
  * @param {() => void} props.edit.onStart - Turns edit mode on.
  * @param {() => void} props.edit.onDone - Saves and leaves edit mode.
- * @param {() => void} props.edit.onReset - Resets the dashboard to config.yaml.
+ * @param {() => void} props.edit.onReset - Asks whether to reset the dashboard to config.yaml.
+ * @param {boolean} [props.edit.canUndoReset] - Whether a reset was just done.
+ * @param {boolean} [props.edit.undoFailed] - Whether undoing it just failed.
+ * @param {() => void} [props.edit.onUndoReset] - Undoes it.
  * @param {() => void} props.edit.onAdd - Opens the list of cards to add.
+ * @param {() => void} [props.edit.onEditMenu] - Opens the editor of the header menu.
  * @returns {JSX.Element} The rendered header.
  */
 const Header = ({ config, edit }) => {
@@ -47,8 +51,21 @@ const Header = ({ config, edit }) => {
                     >
                         <Plus size={22} aria-hidden="true" />
                     </button>
+                    {edit.onEditMenu && (
+                        <button
+                            type="button"
+                            className="button-reset icon-button header-menu-edit"
+                            onClick={edit.onEditMenu}
+                            disabled={edit.saving}
+                            title="Edit header menu"
+                            aria-label="Edit header menu"
+                        >
+                            <LayoutGrid size={20} aria-hidden="true" />
+                            <span className="header-menu-edit-badge"><Pencil size={10} strokeWidth={3} aria-hidden="true" /></span>
+                        </button>
+                    )}
                     <button type="button" className="button-reset header-text-button" onClick={edit.onReset} disabled={edit.saving}>
-                        Reset
+                        Reset…
                     </button>
                     <button type="button" className="button-reset header-done-button" onClick={edit.onDone} disabled={edit.saving}>
                         Done
@@ -56,6 +73,14 @@ const Header = ({ config, edit }) => {
                 </div>
             ) : (
             <div className="header-right">
+                {edit?.canUndoReset && (
+                    <span className="header-edit-status" role="status">
+                        {edit.undoFailed ? "Couldn't undo the reset." : 'Dashboard reset.'}{' '}
+                        <button type="button" className="button-reset header-undo" onClick={edit.onUndoReset}>
+                            {edit.undoFailed ? 'Try Again' : 'Undo'}
+                        </button>
+                    </span>
+                )}
                 {edit?.available && (
                     <button
                         type="button"

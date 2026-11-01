@@ -13,7 +13,7 @@
     color: var(--text-secondary);
     cursor: pointer;
     padding: 4px;
-    border-radius: 6px;
+    border-radius: 7px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -52,13 +52,62 @@
     color: var(--text-secondary);
 }
 
+/* The main forecast, with the other one underneath when the card has the height for it */
+.weather-body {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
 /* Weather Grid Layout (matching Media Grid) */
 .weather-grid {
+    flex: 1;
+    min-height: 0;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
-    height: 100%;
     overflow: hidden;
+}
+
+.weather-grid .weather-day-body {
+    justify-content: center;
+}
+
+.has-strip .weather-day-condition {
+    display: none;
+}
+
+.has-strip .weather-day-icon {
+    margin: 0;
+}
+
+.weather-strip {
+    flex-shrink: 0;
+    display: grid;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: var(--seperator-width) solid var(--color-separator);
+}
+
+.weather-strip-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    font-size: var(--fs-13);
+    line-height: 1.125rem;
+}
+
+.weather-strip-label {
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.weather-strip-temp {
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 .weather-day {
@@ -77,8 +126,8 @@
 }
 
 .weather-day-header {
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--fs-14);
+    line-height: 1.25rem;
     color: var(--text-primary);
     margin-bottom: 8px;
     font-weight: 600;
@@ -102,7 +151,7 @@
 }
 
 .weather-day-condition {
-    font-size: 0.85rem;
+    font-size: var(--fs-13);
     color: var(--text-secondary);
     text-transform: capitalize;
     text-align: center;
@@ -111,7 +160,7 @@
 .weather-day-temp {
     display: flex;
     gap: 8px;
-    font-size: 1.1rem;
+    font-size: var(--fs-17);
     font-weight: 600;
 }
 
@@ -119,7 +168,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.8rem;
-    color: var(--card-primary);
+    font-size: var(--fs-13);
+    color: var(--system-blue-text);
     font-weight: 500;
 }

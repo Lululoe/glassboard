@@ -46,7 +46,7 @@ themes:
         "--color-separator": "rgba(60, 60, 67, 0.18)"
         "--bg-popup": "rgba(255, 255, 255, 0.8)"
         "--text-primary": "#1c1c1e"
-        "--text-secondary": "rgba(60, 60, 67, 0.8)"
+        "--text-secondary": "rgba(60, 60, 67, 0.86)"
         "--icon-background": "linear-gradient(135deg, #fff, #f0f0f0)"
         "--icon-border-color": "#d1d1d6"
 

@@ -57,7 +57,7 @@ export function graphRanges(config) {
 }
 
 /** Short label of a range for the selector, e.g. `24H`. */
-export const rangeLabel = (range) => String(range).toUpperCase();
+export const rangeLabel = (range) => String(range).toLowerCase();
 
 /** Long label of a range, e.g. `Last 24 hours`. */
 export function longLabel(range) {

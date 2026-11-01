@@ -114,3 +114,18 @@ describe('layout file', () => {
         expect(readLayout()).toEqual({ pages: {}, removed: [] });
     });
 });
+
+describe('shared settings in the layout overlay', () => {
+    it('applies the header menu and icon backgrounds over config.yaml', () => {
+        const config = { cards: [], launcher: { apps: [{ name: 'Old', url: 'http://old' }] } };
+        const launcher = { apps: [{ name: 'New', url: 'http://new' }] };
+        const result = applyLayout(config, { launcher, iconBackgrounds: ['#123456'] });
+        expect(result.launcher).toEqual(launcher);
+        expect(result.iconBackgrounds).toEqual(['#123456']);
+    });
+
+    it('keeps config.yaml when the overlay has neither', () => {
+        const config = { cards: [], launcher: { apps: [] }, iconBackgrounds: ['#abcdef'] };
+        expect(applyLayout(config, { pages: {} })).toEqual(config);
+    });
+});

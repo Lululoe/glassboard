@@ -4,6 +4,7 @@ import { getCardInfo, getCardSizes } from '../../features/registry';
 import { DEVICES, SIZES, sizeOf, usableSizes, withSize } from '../Grid/gridLayout';
 import { SegmentedField, ToggleField } from './EditorFields';
 import { setIn } from './setIn';
+import { CardIconInspector, CardIconStage } from './icons/CardIconStage';
 import './CardEditor.css';
 
 const SIZE_NAMES = { quarter: 'Quarter', half: 'Half', 1: '1 wide', 2: '2 wide', 3: '3 wide' };
@@ -38,25 +39,31 @@ const fromYaml = (text, id) => {
 /**
  * Modal editor for one card. The Settings tab has the size and screen-size visibility of
  * every card plus the card type's own form, if it has one; the YAML tab edits every
- * property directly, for options the form does not cover.
+ * property directly, for options the form does not cover. Cards with a header show the real
+ * card with its icon's settings; card types with their own stage, like the app grid, arrange
+ * their items directly on the card.
  * @param {Object} props
  * @param {Object} props.card - The card being edited.
+ * @param {Object} [props.globalConfig] - The dashboard config, for the card preview.
  * @param {boolean} [props.isNew] - Whether the card was just added; Cancel then removes it again.
  * @param {(card: Object) => void} props.onSave - Receives the edited card.
  * @param {() => void} props.onCancel - Closes without changes.
  * @param {() => void} props.onRemove - Removes the card from the dashboard.
  * @returns {JSX.Element} The dialog.
  */
-const CardEditor = ({ card, isNew = false, onSave, onCancel, onRemove }) => {
+const CardEditor = ({ card, globalConfig, isNew = false, onSave, onCancel, onRemove }) => {
     const dialogRef = useRef(null);
     const [draft, setDraft] = useState(card);
     const [tab, setTab] = useState('settings');
     const [yamlText, setYamlText] = useState('');
     const [error, setError] = useState(null);
     const [confirmRemove, setConfirmRemove] = useState(false);
+    const [selection, setSelection] = useState(null);
 
     const info = getCardInfo(draft.type);
     const Editor = info?.Editor;
+    const stage = info?.stage;
+    const hasStage = Boolean(stage || info?.headerIcon);
     const sizes = usableSizes(getCardSizes(draft.type), 3);
     const hideOn = Array.isArray(draft.hideOn) ? draft.hideOn : [];
 
@@ -75,6 +82,7 @@ const CardEditor = ({ card, isNew = false, onSave, onCancel, onRemove }) => {
         }
         try {
             setDraft(fromYaml(yamlText, card.id));
+            setSelection(null);
             setError(null);
             setTab('settings');
         } catch (err) {
@@ -98,9 +106,13 @@ const CardEditor = ({ card, isNew = false, onSave, onCancel, onRemove }) => {
     return (
         <dialog
             ref={dialogRef}
-            className="editor-dialog"
+            className={`editor-dialog${hasStage ? ' has-stage' : ''}${stage?.split ? ' is-split' : ''}`}
             aria-labelledby="card-editor-title"
-            onCancel={(e) => { e.preventDefault(); onCancel(); }}
+            onCancel={(e) => {
+                e.preventDefault();
+                if (selection) setSelection(null);
+                else onCancel();
+            }}
         >
             <header className="editor-dialog-header">
                 <button type="button" className="button-reset editor-dialog-action" onClick={onCancel}>Cancel</button>
@@ -118,11 +130,24 @@ const CardEditor = ({ card, isNew = false, onSave, onCancel, onRemove }) => {
                 <button type="button" role="tab" aria-selected={tab === 'yaml'} className="button-reset" onClick={() => showTab('yaml')}>YAML</button>
             </div>
 
+            <div className={hasStage && tab === 'settings' ? 'editor-workspace' : 'editor-dialog-scroll'}>
+            {tab === 'settings' && info?.headerIcon && (
+                <div className="editor-workspace-stage">
+                    <CardIconStage config={draft} savedConfig={card} globalConfig={globalConfig} />
+                </div>
+            )}
+            {tab === 'settings' && stage && (
+                <div className="editor-workspace-stage">
+                    <stage.Stage config={draft} globalConfig={globalConfig} onChange={setDraft} selection={selection} onSelect={setSelection} />
+                </div>
+            )}
             <div className="editor-dialog-body">
                 {error && <div className="editor-error" role="alert">{error}</div>}
 
                 {tab === 'settings' ? (
                     <>
+                        {info?.headerIcon && <CardIconInspector config={draft} onChange={setDraft} />}
+                        {stage && <stage.Inspector config={draft} onChange={setDraft} selection={selection} onSelect={setSelection} />}
                         <section className="editor-section" aria-label="Layout">
                             <h3 className="editor-section-title">Layout</h3>
                             {sizes.length > 1 && (
@@ -181,6 +206,7 @@ const CardEditor = ({ card, isNew = false, onSave, onCancel, onRemove }) => {
                         </button>
                     )}
                 </div>
+            </div>
             </div>
         </dialog>
     );

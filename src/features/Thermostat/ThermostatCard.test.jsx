@@ -63,10 +63,10 @@ describe('Thermostat card', () => {
         }} />);
 
         await screen.findByText('21.0°');
-        expect(screen.getAllByRole('button').map(b => b.textContent)).toEqual(['Cozy22°', 'Saver', 'Off']);
+        expect(screen.getAllByRole('button').map(b => b.textContent)).toEqual(['Cozy22.0°', 'Saver', 'Off']);
 
         fireEvent.click(screen.getByRole('button', { name: /Cozy/ }));
-        expect(screen.getByText('22.0°')).toBeInTheDocument();
+        expect(screen.getAllByText('22.0°').length).toBeGreaterThan(1);
         fireEvent.click(screen.getByRole('button', { name: 'Saver' }));
         await waitFor(() => expect(climateCalls()).toHaveLength(2));
         expect(climateCalls()).toEqual([
