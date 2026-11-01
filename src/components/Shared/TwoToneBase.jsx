@@ -1,6 +1,35 @@
-import React from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import AppIcon from '../../components/Shared/AppIcon';
 import './TwoToneBase.css';
+
+/**
+ * Follows whether a scrollable element has more content below what is visible. Cards that
+ * set their content to not scroll never report any.
+ * @param {import('react').RefObject<HTMLElement>} ref - The element.
+ * @returns {boolean} Whether there is more to scroll to.
+ */
+function useHasMoreBelow(ref) {
+    const [more, setMore] = useState(false);
+
+    useLayoutEffect(() => {
+        const el = ref.current;
+        if (!el || typeof ResizeObserver === 'undefined') return undefined;
+        const measure = () => setMore(
+            getComputedStyle(el).overflowY !== 'hidden' && el.scrollHeight - el.scrollTop - el.clientHeight > 4,
+        );
+        measure();
+        const observer = new ResizeObserver(measure);
+        observer.observe(el);
+        Array.from(el.children).forEach(child => observer.observe(child));
+        el.addEventListener('scroll', measure, { passive: true });
+        return () => {
+            observer.disconnect();
+            el.removeEventListener('scroll', measure);
+        };
+    }, [ref]);
+
+    return more;
+}
 
 /**
  * TwoToneBase Component
@@ -32,6 +61,8 @@ const TwoToneBase = ({
     headerLabel,
     className = ''
 }) => {
+    const contentRef = useRef(null);
+    const hasMore = useHasMoreBelow(contentRef);
     const HeaderInfo = url ? 'a' : onHeaderClick ? 'button' : 'div';
     /** @type {Object} */
     const headerProps = onHeaderClick && !url
@@ -52,7 +83,11 @@ const TwoToneBase = ({
                     )}
                     <div className="two-tone-titles">
                         <div className="two-tone-title">{title}</div>
-                        {subtitle && <div className="two-tone-subtitle">{subtitle}</div>}
+                        {subtitle && (
+                            <div className="two-tone-subtitle">
+                                {typeof subtitle === 'string' ? <span className="two-tone-subtitle-text">{subtitle}</span> : subtitle}
+                            </div>
+                        )}
                     </div>
                 </HeaderInfo>
                 {actions && (
@@ -61,9 +96,10 @@ const TwoToneBase = ({
                     </div>
                 )}
             </div>
-            <div className="two-tone-content scrollable">
+            <div className="two-tone-content scrollable" ref={contentRef}>
                 {children}
             </div>
+            {hasMore && <div className="two-tone-more" aria-hidden="true" />}
         </div>
     );
 };

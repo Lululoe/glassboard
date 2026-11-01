@@ -95,6 +95,7 @@
 }
 
 .icon-stage-card {
+    container: tile / size;
     display: flex;
 }
 
@@ -124,8 +125,8 @@
     margin: 0;
     width: 100%;
     max-width: 420px;
-    font-size: 12px;
-    line-height: 16px;
+    font-size: var(--fs-12);
+    line-height: 1rem;
     text-align: right;
     color: rgba(255, 255, 255, 0.85);
 }
@@ -159,7 +160,7 @@
     border-radius: 9px;
     background: rgba(255, 255, 255, 0.95);
     color: #1c1c1e;
-    font-size: 14px;
+    font-size: var(--fs-14);
     font-weight: 600;
     white-space: nowrap;
     cursor: pointer;
@@ -177,8 +178,8 @@
 .icon-stage-hint {
     flex: 1;
     min-width: 150px;
-    font-size: 12px;
-    line-height: 16px;
+    font-size: var(--fs-12);
+    line-height: 1rem;
     text-align: right;
     color: rgba(255, 255, 255, 0.85);
 }
@@ -295,8 +296,8 @@
 }
 
 .arrange-tray-title {
-    font-size: 13px;
-    line-height: 18px;
+    font-size: var(--fs-13);
+    line-height: 1.125rem;
     font-weight: 600;
     color: rgba(255, 255, 255, 0.9);
 }
@@ -334,7 +335,7 @@
     background: var(--bg-popup);
     backdrop-filter: blur(50px);
     -webkit-backdrop-filter: blur(50px);
-    border-radius: 12px;
+    border-radius: 14px;
     border: 0.5px solid var(--border-popup);
     box-shadow: var(--shadow-popup);
     user-select: none;
@@ -345,7 +346,7 @@
     margin: 0 -8px;
     padding-left: 8px;
     padding-right: 8px;
-    border-radius: 8px;
+    border-radius: 9px;
 }
 
 /* Settings of the selected icon */
@@ -368,7 +369,7 @@
 .icon-inspector-head .editor-dialog-action,
 .icon-builder-actions .editor-dialog-action {
     min-height: 32px;
-    font-size: 15px;
+    font-size: var(--fs-15);
 }
 
 .icon-grid {
@@ -415,8 +416,8 @@
     grid-column: 1 / -1;
     margin: 0;
     padding: 8px 0;
-    font-size: 13px;
-    line-height: 18px;
+    font-size: var(--fs-13);
+    line-height: 1.125rem;
     color: var(--text-secondary);
 }
 
@@ -435,8 +436,8 @@
 
 .icon-code {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 12px;
-    line-height: 16px;
+    font-size: var(--fs-12);
+    line-height: 1rem;
     color: var(--text-secondary);
     overflow-wrap: anywhere;
     margin-top: -8px;
@@ -500,7 +501,7 @@
 .icon-color-row .editor-input {
     flex: 1;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 14px;
+    font-size: var(--fs-14);
 }
 
 .icon-color-well {
@@ -581,7 +582,7 @@
 }
 
 .icon-slider output {
-    font-size: 13px;
+    font-size: var(--fs-13);
     color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
 }

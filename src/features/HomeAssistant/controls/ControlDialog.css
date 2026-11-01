@@ -96,17 +96,17 @@ html:has(dialog.ctl-overlay[open]) {
 
 .ctl-title {
     margin: 0;
-    font-size: 17px;
+    font-size: var(--fs-17);
     font-weight: 600;
-    line-height: 22px;
+    line-height: 1.375rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .ctl-sub {
-    font-size: 13px;
-    line-height: 18px;
+    font-size: var(--fs-13);
+    line-height: 1.125rem;
     color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
@@ -170,7 +170,7 @@ html:has(dialog.ctl-overlay[open]) {
     padding: 32px 20px;
     text-align: center;
     color: var(--text-secondary);
-    font-size: 15px;
+    font-size: var(--fs-15);
 }
 
 /* Panes: the group's light list and the selected light */
@@ -207,7 +207,7 @@ html:has(dialog.ctl-overlay[open]) {
     align-items: center;
     gap: 12px;
     padding: 6px 10px;
-    border-radius: 12px;
+    border-radius: 14px;
     text-align: left;
 }
 
@@ -233,7 +233,7 @@ html:has(dialog.ctl-overlay[open]) {
 
 .ctl-item-name {
     display: block;
-    font-size: 15px;
+    font-size: var(--fs-15);
     font-weight: 600;
     white-space: nowrap;
     overflow: hidden;
@@ -242,7 +242,7 @@ html:has(dialog.ctl-overlay[open]) {
 
 .ctl-item-state {
     display: block;
-    font-size: 12px;
+    font-size: var(--fs-12);
     color: var(--text-secondary);
 }
 
@@ -272,8 +272,8 @@ html:has(dialog.ctl-overlay[open]) {
 }
 
 .ctl-detail-title .ctl-title {
-    font-size: 19px;
-    line-height: 24px;
+    font-size: var(--fs-21);
+    line-height: 1.5rem;
 }
 
 .ctl-scroll {
@@ -303,7 +303,7 @@ html:has(dialog.ctl-overlay[open]) {
 }
 
 .ctl-section-label {
-    font-size: 13px;
+    font-size: var(--fs-13);
     font-weight: 600;
     letter-spacing: 0.3px;
     text-transform: uppercase;
@@ -334,10 +334,10 @@ html:has(dialog.ctl-overlay[open]) {
 .ctl-slider-cap {
     display: flex;
     justify-content: space-between;
-    font-size: 13px;
+    font-size: var(--fs-13);
     font-weight: 600;
     /* Fixed, so a slider is always 68px tall and the bottom sections line up */
-    line-height: 18px;
+    line-height: 1.125rem;
     color: var(--text-secondary);
 }
 
@@ -349,7 +349,7 @@ html:has(dialog.ctl-overlay[open]) {
 .ctl-track {
     position: relative;
     height: 44px;
-    border-radius: 12px;
+    border-radius: 14px;
     touch-action: none;
     cursor: ew-resize;
     background: linear-gradient(90deg, var(--ctl-track-low), #fff);
@@ -413,7 +413,7 @@ html:has(dialog.ctl-overlay[open]) {
 }
 
 .ctl-preset-name {
-    font-size: 11px;
+    font-size: var(--fs-11);
     color: var(--text-secondary);
     white-space: nowrap;
 }
@@ -427,7 +427,7 @@ html:has(dialog.ctl-overlay[open]) {
     align-items: center;
     gap: 12px;
     padding: 0 16px;
-    font-size: 16px;
+    font-size: var(--fs-15);
     font-weight: 600;
     transition: background var(--duration-standard) var(--ease-standard), transform var(--duration-standard) var(--ease-standard);
 }
@@ -447,7 +447,7 @@ html:has(dialog.ctl-overlay[open]) {
     flex-direction: column;
     justify-content: center;
     gap: 8px;
-    font-size: 18px;
+    font-size: var(--fs-17);
 }
 
 .ctl-power:active {
@@ -470,7 +470,7 @@ html:has(dialog.ctl-overlay[open]) {
 }
 
 .ctl-master-name {
-    font-size: 15px;
+    font-size: var(--fs-15);
     font-weight: 600;
 }
 
@@ -479,14 +479,14 @@ html:has(dialog.ctl-overlay[open]) {
     min-height: 44px;
     display: grid;
     place-items: center;
-    border-radius: 16px;
+    border-radius: 14px;
 }
 
 .ctl-switch {
     position: relative;
     width: 51px;
     height: 31px;
-    border-radius: 16px;
+    border-radius: 14px;
     background: var(--bg-fill-hover);
     transition: background var(--duration-standard) var(--ease-standard);
 }
@@ -534,7 +534,7 @@ html:has(dialog.ctl-overlay[open]) {
         display: block;
         width: 36px;
         height: 5px;
-        border-radius: 3px;
+        border-radius: 4px;
         background: var(--text-tertiary);
         margin: 8px auto 0;
         flex-shrink: 0;

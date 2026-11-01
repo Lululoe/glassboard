@@ -73,6 +73,36 @@ Universal icon component that supports:
 | `size` | number | Size in pixels. |
 | `className` | string | CSS class. |
 
+## StatusPill
+`src/components/Shared/StatusPill.jsx`
+
+The state of an item in a tinted pill, such as Running, Open or Heating. Use it wherever a card shows a state, so states
+look the same on every card.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `tone` | string | `gray` | `gray`, `green`, `orange`, `blue`, `purple` or `red`. |
+| `children` | node | | The icon, if any, and the word. |
+
+## UsageBar
+`src/components/Shared/UsageBar.jsx`
+
+How much of something is used. The bar uses the accent color, turns orange at 75% and red at 90%, so red only ever means
+a problem.
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `percent` | number | The usage from 0 to 100. |
+| `label` | string | What is measured, for assistive technology. |
+
+## Formatting
+`src/lib/format.js` has the formats cards share: `formatUsage` (`1.2 / 1.8 TB`), `formatRelativeTime` (`3 hours ago`) and
+`formatFullTime` for tooltips. Dates and times use the browser's language.
+
+## Type scale
+Font sizes use the `--fs-*` tokens in `src/index.css` (11, 12, 13, 14, 15, 17, 21, 28, 34 and 40), which are in rem so text
+follows the browser's text size setting. Small full-size tiles can tighten their spacing with `@container tile (max-height: ...)`.
+
 ## Icon Configuration
 
 The system now primarily supports a structured object format for icons, allowing explicit definition of source, value, and optional color. String formats are supported for backward compatibility.

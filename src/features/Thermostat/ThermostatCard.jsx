@@ -134,6 +134,7 @@ const ThermostatCard = ({ config }) => {
         <button
             type="button"
             className={`button-reset ${className}`}
+            title="Off"
             aria-pressed={!t.on}
             onClick={() => t.setOn(false)}
         >
@@ -181,12 +182,13 @@ const ThermostatCard = ({ config }) => {
                                             key={p.key}
                                             type="button"
                                             className="button-reset thermo-chip"
+                                            title={p.name}
                                             aria-pressed={t.activePreset === p.key}
                                             aria-label={p.temperature !== undefined ? `${p.name}, ${p.temperature}°` : p.name}
                                             onClick={() => t.applyPreset(p)}
                                         >
                                             <Icon icon={p.icon} size={15} />
-                                            <span>{p.temperature !== undefined ? `${p.temperature}°` : p.name}</span>
+                                            <span>{p.temperature !== undefined ? `${formatTemp(p.temperature, t.step)}°` : p.name}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -204,7 +206,7 @@ const ThermostatCard = ({ config }) => {
                                     >
                                         <Icon icon={p.icon} size={18} />
                                         <span>{p.name}</span>
-                                        {p.temperature !== undefined && <span className="thermo-preset-temp">{p.temperature}°</span>}
+                                        {p.temperature !== undefined && <span className="thermo-preset-temp">{formatTemp(p.temperature, t.step)}°</span>}
                                     </button>
                                 ))}
                                 {offButton('thermo-preset')}

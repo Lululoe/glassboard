@@ -106,8 +106,8 @@ button.ha-tile:focus-visible {
 
 .ha-tile-name {
     font-weight: 600;
-    font-size: 15px;
-    line-height: 20px;
+    font-size: var(--fs-15);
+    line-height: 1.25rem;
     width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -119,14 +119,18 @@ button.ha-tile:focus-visible {
 }
 
 .ha-tile-state {
-    font-size: 13px;
-    line-height: 18px;
+    font-size: var(--fs-13);
+    line-height: 1.125rem;
     /* Dark secondary label on the white tile: 6.9:1 */
     color: rgba(60, 60, 67, 0.85);
 }
 
 .ha-tile.off .ha-tile-state {
-    color: var(--text-secondary);
+    color: var(--text-on-fill);
+}
+
+.ha-tile-state::first-letter {
+    text-transform: uppercase;
 }
 
 /* Tiles with a control dialog: the whole tile opens it, the icon switches the entity */

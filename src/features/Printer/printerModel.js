@@ -45,9 +45,9 @@ export function formatDuration(minutes) {
 export function formatClock(iso, now = new Date()) {
     const date = new Date(iso || NaN);
     if (Number.isNaN(date.getTime())) return '';
-    const time = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const time = date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
     if (date.toDateString() === now.toDateString()) return time;
-    return `${date.toLocaleDateString('en-GB', { weekday: 'short' })} ${time}`;
+    return `${date.toLocaleDateString(undefined, { weekday: 'short' })} ${time}`;
 }
 
 /**

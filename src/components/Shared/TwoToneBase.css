@@ -27,7 +27,7 @@
 .two-tone-header-actions {
     display: flex;
     align-items: center;
-    align-self: flex-start;
+    flex-shrink: 0;
     margin-left: 8px;
 }
 
@@ -89,9 +89,9 @@ button.two-tone-header-info:focus-visible {
 }
 
 .two-tone-title {
-    font-size: 21px;
+    font-size: var(--fs-21);
     font-weight: 600;
-    line-height: 25px;
+    line-height: 1.5625rem;
     color: var(--text-primary);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -99,8 +99,8 @@ button.two-tone-header-info:focus-visible {
 }
 
 .two-tone-subtitle {
-    font-size: 14px;
-    line-height: 20px;
+    font-size: var(--fs-14);
+    line-height: 1.25rem;
     color: var(--text-secondary);
     display: flex;
     align-items: center;
@@ -111,11 +111,12 @@ button.two-tone-header-info:focus-visible {
 }
 
 .two-tone-header-action {
-    color: var(--card-primary);
+    position: relative;
+    color: var(--text-primary);
     cursor: pointer;
     width: 38px;
     height: 38px;
-    border-radius: 8px;
+    border-radius: 9px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -128,13 +129,45 @@ button.two-tone-header-info:focus-visible {
     }
 }
 
-.two-tone-header-action:active {
+.two-tone-header-action:active:not(:disabled) {
     opacity: 0.4;
+}
+
+.two-tone-header-action:disabled {
+    opacity: 0.38;
+    cursor: default;
+}
+
+/* A 44pt tap area on touch screens, without changing how the icons look */
+@media (pointer: coarse) {
+    .two-tone-header-action::after {
+        content: '';
+        position: absolute;
+        inset: -3px;
+    }
 }
 
 .two-tone-header-action:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
+}
+
+.two-tone-subtitle-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Sits on the bottom edge of a list while there is more to scroll to */
+.two-tone-more {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 32px;
+    background: linear-gradient(transparent, var(--scroll-shade));
+    border-radius: 0 0 var(--radius-card) var(--radius-card);
+    pointer-events: none;
 }
 
 .two-tone-content {
@@ -148,3 +181,33 @@ button.two-tone-header-info:focus-visible {
 }
 
 /* Use the utility class `scrollable` (in src/index.css) on any element to enable themed scrollbars */
+
+/* The smallest half-height tiles: a slimmer header leaves room for the content */
+@container tile (max-height: 150px) {
+    .two-tone-header {
+        min-height: 60px;
+        padding: 4px 8px;
+    }
+
+    .two-tone-header .app-icon-container {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        padding: 6px;
+    }
+
+    .two-tone-header-info {
+        gap: 10px;
+        padding: 4px 6px;
+    }
+
+    .two-tone-title {
+        font-size: var(--fs-17);
+        line-height: 1.375rem;
+    }
+
+    .two-tone-subtitle {
+        font-size: var(--fs-13);
+        line-height: 1.125rem;
+    }
+}

@@ -1,8 +1,12 @@
 import TwoToneBase from '../../components/Shared/TwoToneBase';
+import StatusPill from '../../components/Shared/StatusPill';
+import { formatFullTime, formatRelativeTime } from '../../lib/format';
 import Icon from '../../components/Shared/Icon';
 import EmptyState from '../../components/Shared/EmptyState';
 import './GitCard.css';
 import { useGit } from './useGit';
+
+const PR_TONES = { open: 'green', merged: 'purple', review_required: 'orange' };
 
 /**
  * Displays an icon indicating the status of a PR's CI checks.
@@ -34,23 +38,6 @@ const CheckStatus = ({ checks }) => {
 
 
 /**
- * Formats an ISO date string to a localized short string (DD.MM.YYYY HH:MM).
- * @param {string} isoString - The ISO date string.
- * @returns {string} The formatted date string.
- */
-const formatDate = (isoString) => {
-    if (!isoString) return '';
-    const date = new Date(isoString);
-    // Format: dd.mm.yyyy HH:MM
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${day}.${month}.${year} ${hours}:${minutes}`;
-};
-
-/**
  * Renders an individual pull request list item.
  * @param {Object} props
  * @param {Object} props.pr - The pull request data object.
@@ -73,9 +60,9 @@ const PrItem = ({ pr }) => {
                     <span className="pr-repo">{pr.repo} #{pr.number}</span>
                     <span className="pr-title">{pr.title}</span>
                 </div>
-                <span className={`pr-status-badge ${pr.state}`}>
+                <StatusPill tone={PR_TONES[pr.state] || 'gray'}>
                     {pr.state.replace('_', ' ')}
-                </span>
+                </StatusPill>
             </div>
 
             <div className="pr-meta">
@@ -83,7 +70,7 @@ const PrItem = ({ pr }) => {
                     by {authorName}{isBot ? <Icon icon="lu-Bot" size={12} className="bot-icon" /> : ''}
                 </span>
                 <span className="pr-meta-item">
-                    • {formatDate(pr.updatedAt)}
+                    • <span title={formatFullTime(pr.updatedAt)}>{formatRelativeTime(pr.updatedAt)}</span>
                 </span>
                 {pr.comments > 0 && (
                     <span className="pr-meta-item pr-comments">
@@ -116,7 +103,8 @@ const GitCard = ({ config }) => {
 
     const url = (config && config.url) || 'https://github.com/pulls';
     const icon = (config && config.icon) || "sh-github-light";
-    const iconColor = config && config.iconColor;
+    // The default icon is a white file, so without a color it would vanish on a light tile
+    const iconColor = (config && config.iconColor) || (config && config.icon ? undefined : 'currentColor');
     const iconBackground = config && config.iconBackground;
 
     return (

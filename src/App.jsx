@@ -10,6 +10,7 @@ import { pageKey, useDashboardEditing } from './hooks/useDashboardEditing';
 import BentoGrid from './components/Grid/BentoGrid';
 import AddCardDialog from './components/Editor/AddCardDialog';
 import CardEditor from './components/Editor/CardEditor';
+import ConfirmDialog from './components/Editor/ConfirmDialog';
 import HeaderMenuEditor from './components/Editor/HeaderMenuEditor';
 import IframeView from './components/Layout/IframeView';
 import Header from './components/Header/Header';
@@ -58,7 +59,7 @@ function Dashboard({ config }) {
     const onKeyDown = useEffectEvent((e) => {
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
         if (layout.editing) {
-            if (e.key === 'Escape' && !layout.editor && !layout.adding && !layout.editingMenu) layout.finish();
+            if (e.key === 'Escape' && !layout.editor && !layout.adding && !layout.editingMenu && !layout.confirmingReset) layout.finish();
             return;
         }
         if (e.key === 'ArrowRight') next();
@@ -93,7 +94,10 @@ function Dashboard({ config }) {
                     status: layout.status,
                     onStart: layout.start,
                     onDone: layout.finish,
-                    onReset: layout.reset,
+                    onReset: layout.requestReset,
+                    canUndoReset: layout.canUndoReset,
+                    undoFailed: layout.undoFailed,
+                    onUndoReset: layout.undoReset,
                     onAdd: layout.openAdd,
                     onEditMenu: layout.openMenuEditor,
                 }}
@@ -143,6 +147,16 @@ function Dashboard({ config }) {
                     </button>
                 )}
             </div>
+
+            {layout.confirmingReset && (
+                <ConfirmDialog
+                    title="Reset Dashboard?"
+                    message="This removes everything changed in the browser, including cards you added, and goes back to config.yaml."
+                    confirmLabel="Reset Dashboard"
+                    onConfirm={layout.reset}
+                    onCancel={layout.cancelReset}
+                />
+            )}
 
             {layout.adding && activePage && (
                 <AddCardDialog

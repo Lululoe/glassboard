@@ -78,6 +78,14 @@ export function saveLayout(pages, shared = {}) {
 }
 
 /**
+ * Undoes the last reset.
+ * @returns {Promise<*>} The server response.
+ */
+export function restoreLayout() {
+    return send('POST', '/api/config/layout/restore');
+}
+
+/**
  * Removes everything saved from the browser, so the dashboard goes back to config.yaml.
  * @returns {Promise<*>} The server response.
  */

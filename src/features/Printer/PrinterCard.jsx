@@ -72,7 +72,7 @@ const PrinterButtons = ({ printer, run }) => {
                     title={printer.light === 'on' ? 'Turn chamber light off' : 'Turn chamber light on'}
                     onClick={run.toggleLight}
                 >
-                    <Lightbulb size={20} />
+                    <Lightbulb size={20} fill={printer.light === 'on' ? 'currentColor' : 'none'} aria-hidden="true" />
                 </button>
             )}
         </div>
@@ -216,7 +216,6 @@ const PrinterCard = ({ config }) => {
     const printing = info && info.kind !== 'idle' && info.kind !== 'offline';
     const subtitle = info && (
         <>
-            <i className="printer-dot" style={{ background: COLORS[info.kind] }} />
             <span className="printer-status">{joinParts(info.label, half && printing && printer.job)}</span>
         </>
     );

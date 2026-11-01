@@ -17,6 +17,7 @@ services.yaml
 config.yaml
 theme.yaml
 layout.yaml
+layout.yaml.bak
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

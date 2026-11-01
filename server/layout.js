@@ -66,12 +66,40 @@ export function writeLayout(layout) {
 }
 
 /**
- * Removes the layout overlay, so the dashboard goes back to config.yaml.
+ * Path of the copy kept by the last reset, next to the layout overlay.
+ * @returns {string} Absolute path.
+ */
+function getBackupPath() {
+    return `${getLayoutPath()}.bak`;
+}
+
+/**
+ * Puts back the layout overlay as it was before the last reset, and removes the copy.
+ * @returns {boolean} Whether there was a copy to put back.
+ */
+export function restoreLayout() {
+    const backup = getBackupPath();
+    if (!fs.existsSync(backup)) return false;
+    // Overwriting in place keeps a Docker bind mount intact
+    fs.writeFileSync(getLayoutPath(), fs.readFileSync(backup));
+    fs.rmSync(backup);
+    return true;
+}
+
+/**
+ * Removes the layout overlay, so the dashboard goes back to config.yaml. A copy is kept, so
+ * the reset can be undone.
  * @returns {boolean} Whether there was an overlay to remove.
  */
 export function resetLayout() {
     const file = getLayoutPath();
     if (!fs.existsSync(file)) return false;
+    try {
+        fs.copyFileSync(file, getBackupPath());
+    } catch (e) {
+        // A Docker setup may mount only the file itself; resetting still works, without undo
+        logger.warn(`Could not back up ${file}: ${e.message}`);
+    }
     // Emptying instead of deleting keeps a Docker bind mount intact
     fs.writeFileSync(file, HEADER + 'pages: {}\n', 'utf8');
     return true;

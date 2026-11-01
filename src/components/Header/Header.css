@@ -38,18 +38,18 @@
 
 .header-title {
     font-weight: 600;
-    font-size: 19px;
+    font-size: var(--fs-21);
     letter-spacing: -0.2px;
 }
 
 .header-demo-badge {
-    font-size: 12px;
+    font-size: var(--fs-12);
     font-weight: 600;
-    line-height: 16px;
+    line-height: 1rem;
     padding: 2px 8px;
     border-radius: 999px;
     background: var(--bg-fill);
-    color: var(--text-secondary);
+    color: var(--text-primary);
 }
 
 .header-right {
@@ -58,14 +58,20 @@
     gap: 6px;
 }
 
+/* The light toolbar is translucent over a saturated page, so the badge brings its own surface */
+:root[data-theme="light"] .header-demo-badge {
+    background: rgba(255, 255, 255, 0.6);
+}
+
 /* Toolbar buttons get a rounded-square highlight, as on iCloud */
 .icon-button {
+    position: relative;
     width: 32px;
     height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border-radius: 9px;
     cursor: pointer;
     transition: background var(--duration-standard) var(--ease-standard), opacity var(--duration-standard) var(--ease-standard);
 }
@@ -84,6 +90,15 @@
 .icon-button:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
+}
+
+/* A 44pt tap area on touch screens, without changing how the buttons look */
+@media (pointer: coarse) {
+    .icon-button::after {
+        content: '';
+        position: absolute;
+        inset: -6px;
+    }
 }
 
 /* Edit mode controls */
@@ -106,8 +121,8 @@
 }
 
 .header-edit-status {
-    font-size: 13px;
-    line-height: 18px;
+    font-size: var(--fs-13);
+    line-height: 1.125rem;
     color: var(--text-secondary);
     margin-right: 6px;
     overflow: hidden;
@@ -120,16 +135,26 @@
 .header-done-button {
     min-height: 32px;
     padding: 0 14px;
-    border-radius: 16px;
-    font-size: 15px;
+    border-radius: 999px;
+    font-size: var(--fs-15);
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
     transition: background var(--duration-standard) var(--ease-standard), opacity var(--duration-standard) var(--ease-standard);
 }
 
+/* Reset is destructive and stands apart from Done, so it isn't pressed on the way out */
 .header-text-button {
+    color: var(--system-red-text);
+    margin-right: 12px;
+}
+
+.header-undo {
+    font-weight: 600;
     color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
 }
 
 .header-done-button {
@@ -175,7 +200,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9rem;
+    font-size: var(--fs-14);
     font-weight: bold;
     overflow: hidden;
     cursor: pointer;

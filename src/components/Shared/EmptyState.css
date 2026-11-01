@@ -16,6 +16,6 @@
 }
 
 .empty-state-message {
-    font-size: 17px;
-    line-height: 22px;
+    font-size: var(--fs-17);
+    line-height: 1.375rem;
 }

@@ -53,6 +53,12 @@ describe('ServerStatsCard', () => {
 
         expect(screen.getByText('8 / 16 GB')).toBeInTheDocument();
         // Check for new storage format
-        expect(screen.getByText('100GB Used / 400GB Free')).toBeInTheDocument();
+        expect(screen.getByText('100 / 500 GB')).toBeInTheDocument();
+    });
+
+    it('shows usage in one unit and warns when nearly full', () => {
+        render(<ServerStatsCard config={{ colSpan: 1 }} />);
+        expect(screen.getByText('100 / 500 GB')).toBeInTheDocument();
+        expect(screen.getByRole('progressbar', { name: 'CPU Load' })).toHaveAttribute('aria-valuenow', '50');
     });
 });

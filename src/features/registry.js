@@ -169,6 +169,7 @@ export const cardInfo = {
         defaults: { colSpan: 2 },
     },
     serverstats: {
+        headerIcon: true,
         name: 'Server Stats',
         description: 'CPU, memory, storage, network and temperature',
         icon: 'lu-Gauge',

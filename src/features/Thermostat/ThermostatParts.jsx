@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
 import Icon from '../../components/Shared/Icon';
-import { BADGE_ICONS } from './useThermostat';
+import StatusPill from '../../components/Shared/StatusPill';
+import { BADGE_ICONS, formatTemp } from './useThermostat';
+
+const BADGE_TONES = { heating: 'orange', cooling: 'blue' };
 
 /**
  * Heating state as a small badge: icon and word.
@@ -9,10 +12,10 @@ import { BADGE_ICONS } from './useThermostat';
  * @returns {JSX.Element} The badge.
  */
 export const StateBadge = ({ t }) => (
-    <span className={`thermo-badge ${t.action}`}>
+    <StatusPill tone={BADGE_TONES[t.action]} className={`thermo-badge ${t.action}`}>
         <Icon icon={BADGE_ICONS[t.action]} size={13} />
         {t.actionLabel}
-    </span>
+    </StatusPill>
 );
 
 /**
@@ -62,7 +65,7 @@ export const PresetMenu = ({ t, onClose, title }) => {
                 >
                     <Icon icon={p.icon} size={16} />
                     <span>{p.name}</span>
-                    {p.temperature !== undefined && <span className="thermo-menu-temp">{p.temperature}°</span>}
+                    {p.temperature !== undefined && <span className="thermo-menu-temp">{formatTemp(p.temperature, t.step)}°</span>}
                 </button>
             ))}
             <button

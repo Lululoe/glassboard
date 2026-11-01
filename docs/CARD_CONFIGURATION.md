@@ -20,8 +20,8 @@ All cards support these base options:
 ---
 
 ## Card Sizes
-The grid has three columns on wide screens, two on tablets (up to 1024px) and one on phones (up to 768px). Rows
-are as tall as a column is wide, so a one-wide card is always square.
+The grid has three columns from 1000px wide, two from 640px and one below that. Rows are as tall as a column is wide,
+so a one-wide card is square, until rows reach 440px; past that a card would only gain gaps.
 
 | Size | Config | Shape |
 |------|--------|-------|
@@ -75,8 +75,8 @@ While editing, hidden cards stay visible but dimmed, labelled "Hidden on phone" 
 still be moved and edited.
 
 ### Editing icons
-Cards with a header (Weather, Media, Graph, Vacuum, Printer, Proxmox, Transmission, Pull Requests and Multiroom
-Thermostat) show the real card at the top of their editor, with the settings of its icon top left: which icon, its
+Cards with a header (Weather, Media, Graph, Vacuum, Printer, Proxmox, Server Stats, Transmission, Pull Requests and
+Multiroom Thermostat) show the real card at the top of their editor, with the settings of its icon top left: which icon, its
 color and its background. The icons in a card's top right corner belong to the card and aren't configurable.
 
 The **App Grid** and the **header menu** are arranged directly on the preview:
@@ -113,8 +113,9 @@ only stores the page, position, size and visibility, unless the card's options w
 it stores the whole card, and later edits to that card in `config.yaml` are ignored until you reset. Cards added
 in the browser live only in `layout.yaml`, and cards removed in the browser are listed under `removed`. A header menu
 edited in the browser replaces `launcher` from `config.yaml` as a whole, as do `iconBackgrounds`. Cards added
-to `config.yaml` later appear after the saved ones. Deleting `layout.yaml` (or **Reset**) restores the dashboard
-from `config.yaml`.
+to `config.yaml` later appear after the saved ones. Deleting `layout.yaml` (or **Reset…**) restores the dashboard
+from `config.yaml`. **Reset…** asks first and offers **Undo** in the header afterwards, using a copy it keeps as
+`layout.yaml.bak`.
 
 Saving needs an `id` on every card. Secrets such as API keys and passwords are never sent to the browser; when a
 card is saved, the server keeps the values it already has.
@@ -710,7 +711,7 @@ Displays active torrent downloads/seeds.
 ---
 
 ## Weather (`weather`)
-Displays a daily (7 days) or hourly (24 hours) weather forecast from the free [Open-Meteo](https://open-meteo.com) API. No API key or Home Assistant is required. The forecast refreshes every 30 minutes.
+Displays a daily (7 days) or hourly (24 hours) weather forecast, with the other one in a strip underneath when the card has the height for it. It comes from the free [Open-Meteo](https://open-meteo.com) API. No API key or Home Assistant is required. The forecast refreshes every 30 minutes.
 
 ### Configuration
 | Option | Type | Default | Description |

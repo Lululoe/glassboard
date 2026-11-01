@@ -22,7 +22,7 @@ const formatHeader = (date) => {
 
     if (d.getTime() === today.getTime()) return 'Today';
     if (d.getTime() === tomorrow.getTime()) return 'Tomorrow';
-    return d.toLocaleDateString('en-US', { weekday: 'long' });
+    return d.toLocaleDateString(undefined, { weekday: 'long' });
 };
 
 /**

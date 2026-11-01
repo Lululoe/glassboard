@@ -94,12 +94,12 @@ describe('Multiroom thermostat card', () => {
         await screen.findByText('Living Room');
 
         fireEvent.click(screen.getByRole('button', { name: /Living Room preset/ }));
-        expect(screen.getAllByRole('menuitemradio').map(i => i.textContent)).toEqual(['Warm22°', 'Off']);
+        expect(screen.getAllByRole('menuitemradio').map(i => i.textContent)).toEqual(['Warm22.0°', 'Off']);
         fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' });
         expect(screen.getByRole('button', { name: /Living Room preset/ })).toHaveFocus();
 
         fireEvent.click(screen.getByRole('button', { name: /Bedroom preset/ }));
-        expect(screen.getAllByRole('menuitemradio').map(i => i.textContent)).toEqual(['Cool16°', 'Off']);
+        expect(screen.getAllByRole('menuitemradio').map(i => i.textContent)).toEqual(['Cool16.0°', 'Off']);
     });
 
     it('steps the target, and turns an off room back on first', async () => {

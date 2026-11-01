@@ -130,4 +130,15 @@ describe('layout API', () => {
         const res = await request(server).get('/api/icons/mdi').expect(200);
         expect(res.body.names).toContain('lightbulb-off');
     });
+
+    it('undoes a reset', async () => {
+        await put(server, { pages: { home: [{ id: 'a', type: 'x', colSpan: 2 }], admin: [] } }).expect(200);
+        const saved = readLayout();
+        await request(server).delete('/api/config/layout').expect(200);
+        expect(readLayout().pages).toEqual({});
+
+        await request(server).post('/api/config/layout/restore').expect(200);
+        expect(readLayout()).toEqual(saved);
+        await request(server).post('/api/config/layout/restore').expect(404);
+    });
 });

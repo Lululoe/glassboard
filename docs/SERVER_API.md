@@ -259,4 +259,8 @@ the list of icon background presets (CSS strings). Left out, the saved ones are 
 ```
 
 ### `DELETE /api/config/layout`
-Removes everything saved from the browser, so the dashboard goes back to `config.yaml`.
+Removes everything saved from the browser, so the dashboard goes back to `config.yaml`. A copy is kept as
+`layout.yaml.bak`.
+
+### `POST /api/config/layout/restore`
+Undoes the last reset by putting that copy back; `404` when there is none.

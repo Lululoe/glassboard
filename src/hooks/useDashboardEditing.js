@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { getCardInfo } from '../features/registry';
-import { resetLayout, saveLayout } from '../lib/api';
+import { resetLayout, restoreLayout, saveLayout } from '../lib/api';
 
 /**
  * Returns the key a page is saved under: its id, or its index.
@@ -44,6 +44,9 @@ export function useDashboardEditing(config, pages) {
     const [carry, setCarry] = useState(null);
     const [shared, setShared] = useState(/** @type {{launcher?: Object, iconBackgrounds: string[]}|null} */ (null));
     const [editingMenu, setEditingMenu] = useState(false);
+    const [confirmingReset, setConfirmingReset] = useState(false);
+    const [canUndoReset, setCanUndoReset] = useState(false);
+    const [undoFailed, setUndoFailed] = useState(false);
 
     // Drop the drafts once the config they were saved against has been replaced
     if (savedFor && savedFor !== config && !editing) {
@@ -62,6 +65,7 @@ export function useDashboardEditing(config, pages) {
 
     const start = () => {
         setStatus(null);
+        setCanUndoReset(false);
         setDrafts(Object.fromEntries(gridPages.map(({ page, key }) => [key, page.cards || []])));
         setShared(savedShared);
         setEditing(true);
@@ -123,7 +127,7 @@ export function useDashboardEditing(config, pages) {
     };
 
     const finish = async () => {
-        if (saving || editor || adding || editingMenu) return;
+        if (saving || editor || adding || editingMenu || confirmingReset) return;
         const original = Object.fromEntries(gridPages.map(({ page, key }) => [key, page.cards || []]));
         const unchanged = JSON.stringify(drafts) === JSON.stringify(original)
             && JSON.stringify(shared) === JSON.stringify(savedShared);
@@ -161,19 +165,32 @@ export function useDashboardEditing(config, pages) {
     };
 
     const reset = async () => {
-        if (!window.confirm('Reset the dashboard to config.yaml? Changes made in the browser, including cards you added, will be removed.')) return;
+        setConfirmingReset(false);
         try {
             await resetLayout();
             setSavedFor(config);
             setStatus(null);
             setEditing(false);
+            setCanUndoReset(true);
         } catch (err) {
             setStatus(`Couldn't reset: ${err.message}`);
         }
     };
 
+    const undoReset = async () => {
+        setUndoFailed(false);
+        try {
+            await restoreLayout();
+            setCanUndoReset(false);
+        } catch {
+            setUndoFailed(true);
+        }
+    };
+
     return {
         editing, saving, status, cardsOf, start, change, finish, reset, moveToPage,
+        confirmingReset, requestReset: () => setConfirmingReset(true), cancelReset: () => setConfirmingReset(false),
+        canUndoReset, undoFailed, undoReset,
         carry, clearCarry,
         editor, editingCard, openEditor, saveCard, removeCard, cancelEditor,
         adding, openAdd: () => setAdding(true), closeAdd: () => setAdding(false), addCard,

@@ -2,7 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import { getBaseConfig, getConfig, getSanitizedConfig, loadConfig, onConfigChange, restoreSecrets } from '../config.js';
 import { HttpError } from '../errors.js';
-import { buildLayout, deepEqual, gridPages, readLayout, resetLayout, writeLayout } from '../layout.js';
+import { buildLayout, deepEqual, gridPages, readLayout, resetLayout, restoreLayout, writeLayout } from '../layout.js';
 import logger from '../logger.js';
 import { isDemoMode } from '../services/demo.js';
 
@@ -124,6 +124,19 @@ router.delete('/layout', (req, res, next) => {
             logger.info('Reset dashboard layout');
             loadConfig();
         }
+        res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/** Undoes the last reset, by putting back the layout it removed. */
+router.post('/layout/restore', (req, res, next) => {
+    try {
+        assertEditable();
+        if (!restoreLayout()) throw new HttpError(404, 'There is no reset to undo');
+        logger.info('Restored dashboard layout');
+        loadConfig();
         res.json({ ok: true });
     } catch (err) {
         next(err);

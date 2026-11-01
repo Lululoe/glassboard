@@ -39,29 +39,32 @@ export const RobotButtons = ({ robots, onStart, onStop, onDock, suffix = '' }) =
         <div className="vac-buttons">
             <button
                 type="button"
-                className="button-reset vac-round accent"
+                className="button-reset two-tone-header-action"
                 aria-label={label(running ? 'Pause' : 'Start')}
+                title={label(running ? 'Pause' : 'Start')}
                 onClick={() => robots.filter(r => (running ? isRunning(r) : true)).forEach(onStart)}
             >
-                {running ? <Pause size={19} fill="currentColor" aria-hidden="true" /> : <Play size={19} fill="currentColor" aria-hidden="true" />}
+                {running ? <Pause size={20} fill="currentColor" stroke="none" aria-hidden="true" /> : <Play size={20} fill="currentColor" stroke="none" aria-hidden="true" />}
             </button>
             <button
                 type="button"
-                className="button-reset vac-round"
+                className="button-reset two-tone-header-action"
                 aria-label={label('Stop')}
+                title={label('Stop')}
                 disabled={!robots.some(canStop)}
                 onClick={() => robots.filter(canStop).forEach(onStop)}
             >
-                <Square size={17} fill="currentColor" aria-hidden="true" />
+                <Square size={18} fill="currentColor" stroke="none" aria-hidden="true" />
             </button>
             <button
                 type="button"
-                className="button-reset vac-round"
+                className="button-reset two-tone-header-action"
                 aria-label={label('Return to dock')}
+                title={label('Return to dock')}
                 disabled={!robots.some(canDock)}
                 onClick={() => robots.filter(canDock).forEach(onDock)}
             >
-                <House size={19} aria-hidden="true" />
+                <House size={20} aria-hidden="true" />
             </button>
         </div>
     );

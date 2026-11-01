@@ -140,7 +140,7 @@
 }
 
 .nav-zone:focus-visible svg {
-    border-radius: 12px;
+    border-radius: 14px;
     box-shadow: var(--focus-ring);
 }
 
