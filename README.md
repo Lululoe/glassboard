@@ -24,6 +24,7 @@ This project was born out of a desire for a dashboard that didn't just function 
 -   **Multiroom Thermostat**: Up to six rooms in one card, as rows or columns, with per-room presets.
 -   **Media Player**: Cover art, playback controls, seeking, and per-speaker volume and grouping for Home Assistant players.
 -   **Vacuum**: Start, stop and dock, fan speed, mop wetness, room selection, consumables, a Valetudo map and camera, for one robot or several.
+-   **3D Printer**: Progress, time left, temperatures and loaded spools of a Bambu Lab printer, with pause, stop and the chamber light.
 -   **Graph**: History of up to eight sensors as lines, (stacked) bars, or this week against last week.
 
 ### 🎬 Media Center

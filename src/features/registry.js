@@ -8,6 +8,8 @@ import HAControlEditor from './HomeAssistant/HAControlEditor';
 import MediaCard from './Media/MediaCard';
 import MediaPlayerCard from './MediaPlayer/MediaPlayerCard';
 import MediaPlayerEditor from './MediaPlayer/MediaPlayerEditor';
+import PrinterCard from './Printer/PrinterCard';
+import PrinterEditor from './Printer/PrinterEditor';
 import ProxmoxCard from './Proxmox/ProxmoxCard';
 import ServerStatsCard from './ServerStats/ServerStatsCard';
 import SpacerCard from './Spacer/SpacerCard';
@@ -34,6 +36,7 @@ export const cardRegistry = {
     hacontrol: HAControlCard,
     media: MediaCard,
     mediaplayer: MediaPlayerCard,
+    printer: PrinterCard,
     proxmox: ProxmoxCard,
     serverstats: ServerStatsCard,
     spacer: SpacerCard,
@@ -116,6 +119,14 @@ export const cardInfo = {
         icon: 'mdi:robot-vacuum-variant',
         defaults: { robots: [] },
         Editor: VacuumsEditor,
+    },
+    printer: {
+        name: '3D Printer',
+        description: 'Progress, temperatures, spools and controls of a Bambu Lab printer',
+        icon: 'mdi:printer-3d-nozzle',
+        sizes: ['half', '1'],
+        defaults: { printer: '' },
+        Editor: PrinterEditor,
     },
     appgrid: {
         name: 'App Grid',

@@ -1,0 +1,256 @@
+/* 3D printer card: controls in the header; progress, temperatures and spools below */
+.printer-card .two-tone-content {
+    padding: 14px 20px 18px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.printer-card.half .two-tone-content {
+    padding: 10px 20px 12px;
+}
+
+.printer-card .two-tone-header-info {
+    gap: 12px;
+    padding: 8px 4px 8px 10px;
+}
+
+.printer-card .two-tone-header-actions {
+    align-self: center;
+    margin-left: 4px;
+    flex-shrink: 0;
+}
+
+.printer-buttons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.printer-card .two-tone-header-action {
+    color: var(--text-primary);
+}
+
+.printer-card .two-tone-header-action.printer-light-on {
+    color: var(--system-yellow);
+}
+
+.printer-card .two-tone-header-action.printer-confirm {
+    width: auto;
+    padding: 0 10px;
+    background: var(--system-red);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.printer-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: var(--text-tertiary);
+}
+
+.printer-status {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.printer-body {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.printer-card.half .printer-body {
+    justify-content: center;
+    gap: 6px;
+}
+
+.printer-job {
+    min-height: 20px;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.printer-main {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.printer-big {
+    flex-shrink: 0;
+    font-size: 40px;
+    font-weight: 700;
+    line-height: 44px;
+    letter-spacing: -0.5px;
+    font-variant-numeric: tabular-nums;
+}
+
+.printer-time {
+    min-width: 0;
+    text-align: right;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 20px;
+    font-variant-numeric: tabular-nums;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+}
+
+.printer-time small {
+    display: block;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 18px;
+    color: var(--text-secondary);
+}
+
+.printer-bar {
+    flex-shrink: 0;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--bg-fill);
+    overflow: hidden;
+}
+
+.printer-bar i {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    transition: width var(--duration-standard) var(--ease-standard);
+}
+
+.printer-temps {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.printer-tile {
+    min-width: 0;
+    padding: 7px 10px;
+    border-radius: 8px;
+    background: var(--bg-fill);
+}
+
+.printer-tile b {
+    display: block;
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 20px;
+    font-variant-numeric: tabular-nums;
+}
+
+.printer-tile span {
+    display: block;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.printer-foot {
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.printer-spools {
+    display: flex;
+    flex-shrink: 0;
+    gap: 10px;
+    padding: 2px;
+}
+
+.printer-spool {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    /* A real hole, so the card shows through whatever the theme */
+    background: radial-gradient(circle, transparent 30%, var(--spool, var(--bg-fill)) 31%);
+    box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.45);
+}
+
+.printer-spool.active {
+    outline: 2px solid var(--system-green);
+    outline-offset: 2px;
+}
+
+.printer-spool.empty {
+    background: none;
+    box-shadow: none;
+    border: 1px dashed var(--text-tertiary);
+}
+
+/* Half height */
+.printer-half-main {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+}
+
+.printer-half-main b {
+    flex-shrink: 0;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 24px;
+    font-variant-numeric: tabular-nums;
+}
+
+.printer-half-main span,
+.printer-half-foot > span {
+    min-width: 0;
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-variant-numeric: tabular-nums;
+}
+
+.printer-half-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.printer-half-foot .printer-spools {
+    gap: 6px;
+}
+
+.printer-half-foot .printer-spool {
+    width: 14px;
+    height: 14px;
+}
+
+.printer-half-foot .printer-spool.active {
+    outline-width: 1.5px;
+    outline-offset: 1.5px;
+}

@@ -117,6 +117,11 @@ the climate actions below.
   returns `{ "kind": "image" }` for an ordinary camera, or for Valetudo's map data camera
   `{ "kind": "valetudo", "viewBox", "segments": [{ "id", "name", "d", "x", "y" }], "floor", "walls", "path", "robot", "charger" }`,
   with SVG paths in map pixels. The entity must be a `camera` or `map` of the card.
+- **Load a printer card**: `{ "service": "homeassistant", "endpoint": "printer", "card_id": "printer" }` returns
+  `{ "name", "status", "stage", "job", "progress", "layer", "totalLayers", "remaining", "endTime", "changedAt", "weight", "length", "error", "nozzle": { "value", "target" }, "bed": { "value", "target" }, "chamber", "humidity", "spools": [{ "entity_id", "slot", "name", "color", "active", "empty" }], "controls": { "pause", "resume", "stop" }, "light" }`.
+  `remaining` is in minutes, `controls` says which buttons exist, and `light` is `null` without a chamber light.
+- **Control a printer**: `{ "service": "homeassistant", "endpoint": "printer_action", "card_id": "printer", "action": "pause" }`.
+  `action` is `pause`, `resume`, `stop`, `light_on` or `light_off`; `403` for other cards, `409` if the printer has no such button.
 - **Load a control dialog**: `{ "service": "homeassistant", "endpoint": "details", "entity_id": "group.living_room" }`
   returns `{ "entity": { ...state }, "members": { "light.lamp": { ...state } }, "favorites": { "light.lamp": [{ "hs_color": [24, 85] }, { "color_temp_kelvin": 2700 }] } }`.
   The entity must be on an `hacontrol` card; `members` lists the states of a group's `entity_id` attribute (empty for

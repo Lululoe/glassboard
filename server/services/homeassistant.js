@@ -3,6 +3,7 @@ import { HttpError, upstreamError } from '../errors.js';
 import { createHaSocket } from './haSocket.js';
 import { getGraphEntityIds, graphData } from './haGraph.js';
 import { getVacuumEntityIds, vacuumAction, vacuumData, vacuumMap } from './haVacuum.js';
+import { getPrinterEntityIds, printerAction, printerData } from './haPrinter.js';
 
 /**
  * Resolves Home Assistant connection settings.
@@ -392,7 +393,7 @@ export async function fetchArtwork(entityId) {
 }
 
 /**
- * Collects every entity id referenced by hacontrol, thermostat, media player, graph and vacuum cards.
+ * Collects every entity id referenced by hacontrol, thermostat, media player, graph, vacuum and printer cards.
  * Only these entities may be read through the API.
  * @returns {Set<string>} Allowed entity ids.
  */
@@ -407,6 +408,7 @@ export function getValidEntityIds() {
     getMediaEntityIds().forEach(id => entityIds.add(id));
     getGraphEntityIds().forEach(id => entityIds.add(id));
     getVacuumEntityIds().forEach(id => entityIds.add(id));
+    getPrinterEntityIds().forEach(id => entityIds.add(id));
     return entityIds;
 }
 
@@ -614,6 +616,8 @@ export function resetControlCache() {
  * - `endpoint: 'vacuum'` with `card_id` returns a vacuum card's robots (see vacuumData),
  *   `vacuum_action` controls them (see vacuumCall), and `vacuum_map` with `card_id` and
  *   `entity_id` returns a robot's map (see vacuumMap).
+ * - `endpoint: 'printer'` with `card_id` returns a printer card's printer (see printerData), and
+ *   `printer_action` controls it (see printerAction).
  * @param {Object} params - Request parameters.
  * @returns {Promise<Object>} Home Assistant response data.
  */
@@ -677,6 +681,8 @@ export async function handleHaRequest(params) {
     if (endpoint === 'vacuum') return vacuumData(params);
     if (endpoint === 'vacuum_action') return vacuumAction(params);
     if (endpoint === 'vacuum_map') return vacuumMap(params);
+    if (endpoint === 'printer') return printerData(params);
+    if (endpoint === 'printer_action') return printerAction(params);
 
     if (endpoint === 'media') {
         const { service, body } = mediaCall(params);

@@ -40,7 +40,7 @@ layout rather than a squeezed wide one. On tablets later cards move up to fill g
 
 Not every card works at every size. In edit mode each card only offers the sizes its type supports; most cards
 support one to three wide, `hacontrol` and `spacer` also support half and quarter, and `thermostat` and
-`mediaplayer` support quarter, half and one wide, and `vacuum` half and one to three wide. A size set in
+`mediaplayer` support quarter, half and one wide, `vacuum` half and one to three wide, and `printer` half and one wide. A size set in
 `config.yaml` is always used, even if edit mode would not offer it.
 
 ## Editing the Dashboard
@@ -608,6 +608,35 @@ Tapping a robot opens its details, whose controls act on that robot only. One to
         - { area: kitchen, name: Kitchen }
         - { area: office, name: Office }
     - vacuum.s5_max
+```
+
+---
+
+## 3D Printer (`printer`)
+A printer from the [Bambu Lab integration](https://github.com/greghesp/ha-bambulab): progress, time left, nozzle, bed and
+chamber temperatures and the loaded spools by colour, with the one in use ringed. Half height or one wide.
+
+The progress bar stays in place while nothing is printing, empty and grey.
+
+### Configuration
+| Option | Type | Description |
+|--------|------|-------------|
+| `printer` | string | Required. The start of the printer's entity ids: `p2s` for `sensor.p2s_print_status`. |
+| `name` | string | Name to show. Defaults to the printer's name in Home Assistant. |
+| `ams` | string | The start of the AMS's entity ids. Defaults to `ams`, for `sensor.ams_tray_1`. |
+| `trays` | array | Spool entities to show instead, for example with several AMS units. |
+
+Without `trays`, the card shows the AMS's four trays, and the external spool while something is loaded on it.
+
+**Buttons**: pause or resume (`button.<printer>_pause`, `_resume`) and stop (`_stop`) show during a print, and stopping asks
+for a second tap. The chamber light (`light.<printer>_chamber_light`) always shows. A button whose entity is missing or
+unavailable in Home Assistant stays hidden.
+
+### Example
+```yaml
+- id: printer
+  type: printer
+  printer: p2s
 ```
 
 ---

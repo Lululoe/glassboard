@@ -198,6 +198,23 @@ describe('demo mode', () => {
         await expect(demoHandlers.homeassistant({ endpoint: 'graph', card_id: 'g', range: '30d' })).rejects.toMatchObject({ status: 400 });
     });
 
+    it('simulates a printer for printer cards', async () => {
+        setConfig({ demo: true, pages: [{ cards: [{ id: 'p', type: 'printer', printer: 'p2s' }, { id: 'x', type: 'graph' }] }] });
+        const ha = demoHandlers.homeassistant;
+        const printer = await ha({ endpoint: 'printer', card_id: 'p' });
+        expect(printer).toMatchObject({ name: 'P2S', status: 'running', progress: 51, light: 'on', controls: { pause: true } });
+        expect(printer.spools).toHaveLength(4);
+
+        await ha({ endpoint: 'printer_action', card_id: 'p', action: 'pause' });
+        await ha({ endpoint: 'printer_action', card_id: 'p', action: 'light_off' });
+        expect(await ha({ endpoint: 'printer', card_id: 'p' })).toMatchObject({ status: 'pause', light: 'off' });
+        await ha({ endpoint: 'printer_action', card_id: 'p', action: 'stop' });
+        expect((await ha({ endpoint: 'printer', card_id: 'p' })).status).toBe('idle');
+
+        await expect(ha({ endpoint: 'printer', card_id: 'x' })).rejects.toMatchObject({ status: 403 });
+        await expect(ha({ endpoint: 'printer_action', card_id: 'p', action: 'explode' })).rejects.toMatchObject({ status: 400 });
+    });
+
     it('simulates robots for vacuum cards', async () => {
         setConfig({
             demo: true,
