@@ -1,8 +1,9 @@
 // @vitest-environment node
 import request from 'supertest';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vitest';
 import { createApp } from '../app.js';
 import { setConfig } from '../config.js';
+import { listenOnLoopback } from '../testServer.js';
 import { demoHandlers, isDemoMode, resetDemoState } from './demo.js';
 
 const iso = (date) => date.toISOString().slice(0, 10);
@@ -144,13 +145,14 @@ describe('demo mode', () => {
     });
 
     it('routes /api to the simulated handlers and reports demo mode in /api/config', async () => {
-        const app = await createApp({ frontend: false });
+        const server = await listenOnLoopback(await createApp({ frontend: false }));
+        onTestFinished(() => { server.close(); });
 
-        const res = await request(app).post('/api').send({ service: 'serverstats' });
+        const res = await request(server).post('/api').send({ service: 'serverstats' });
         expect(res.status).toBe(200);
         expect(res.body.info.hostname).toBe('homelab');
 
-        const config = await request(app).get('/api/config');
+        const config = await request(server).get('/api/config');
         expect(config.body.demo).toBe(true);
     });
 

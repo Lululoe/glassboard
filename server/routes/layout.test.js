@@ -3,10 +3,11 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import request from 'supertest';
-import { afterEach, beforeAll, beforeEach, describe, it, expect, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it, expect, vi } from 'vitest';
 import { setConfig } from '../config.js';
 import { readLayout } from '../layout.js';
 import { createApp } from '../app.js';
+import { listenOnLoopback } from '../testServer.js';
 
 // Saving reloads the config from disk; keep the test config in memory instead
 vi.mock('../config.js', async (importOriginal) => ({ ...await importOriginal(), loadConfig: vi.fn() }));
@@ -19,14 +20,18 @@ const config = () => ({
     ],
 });
 
-const put = (app, body) => request(app).put('/api/config/layout').send(body);
+const put = (server, body) => request(server).put('/api/config/layout').send(body);
 
 describe('layout API', () => {
-    let app;
+    let server;
     let dir;
 
     beforeAll(async () => {
-        app = await createApp({ frontend: false });
+        server = await listenOnLoopback(await createApp({ frontend: false }));
+    });
+
+    afterAll(() => {
+        server.close();
     });
 
     beforeEach(() => {
@@ -41,7 +46,7 @@ describe('layout API', () => {
     });
 
     it('saves moves between pages, new cards and removals', async () => {
-        const res = await put(app, {
+        const res = await put(server, {
             pages: {
                 home: [{ id: 't', type: 'transmission', url: 'http://t', colSpan: 2 }],
                 admin: [{ id: 'a', type: 'x', tileSize: 'quarter' }, { id: 'n', type: 'spacer', hideOn: ['phone'] }],
@@ -59,7 +64,7 @@ describe('layout API', () => {
     });
 
     it('keeps secrets the browser never received', async () => {
-        await put(app, {
+        await put(server, {
             pages: {
                 home: [{ id: 'a', type: 'x' }, { id: 't', type: 'transmission', url: 'http://new' }],
                 admin: [{ id: 'c', type: 'x' }],
@@ -79,20 +84,20 @@ describe('layout API', () => {
             { pages: { home: [{ id: 'a', type: 'x', colSpan: 7 }], admin: [] } },
         ];
         for (const body of cases) {
-            expect((await put(app, body)).status).toBe(400);
+            expect((await put(server, body)).status).toBe(400);
         }
         expect(readLayout().pages).toEqual({});
     });
 
     it('refuses to save or reset when editing is disabled', async () => {
         setConfig({ ...config(), editable: false });
-        expect((await put(app, { pages: { home: [], admin: [] } })).status).toBe(403);
-        expect((await request(app).delete('/api/config/layout')).status).toBe(403);
+        expect((await put(server, { pages: { home: [], admin: [] } })).status).toBe(403);
+        expect((await request(server).delete('/api/config/layout')).status).toBe(403);
     });
 
     it('resets the layout', async () => {
-        await put(app, { pages: { home: [], admin: [{ id: 'c', type: 'x' }] } });
-        const res = await request(app).delete('/api/config/layout');
+        await put(server, { pages: { home: [], admin: [{ id: 'c', type: 'x' }] } });
+        const res = await request(server).delete('/api/config/layout');
 
         expect(res.status).toBe(200);
         expect(readLayout()).toEqual({ pages: {}, removed: [] });
