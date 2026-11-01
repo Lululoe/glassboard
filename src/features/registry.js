@@ -1,5 +1,6 @@
 import AppGridCard from './AppGrid/AppGridCard';
 import AppGridEditor from './AppGrid/AppGridEditor';
+import { AppGridInspector, AppGridStage } from '../components/Editor/icons/AppGridStage';
 import GitCard from './Git/GitCard';
 import GraphCard from './Graph/GraphCard';
 import GraphEditor from './Graph/GraphEditor';
@@ -60,6 +61,10 @@ const ALL_SIZES = ['quarter', 'half', '1', '2', '3'];
  * @property {Object} [defaults] - Properties of a newly added card, besides `id` and `type`.
  * @property {import('react').ComponentType<{config: Object, onChange: (config: Object) => void}>} [Editor]
  *   - Settings form shown in the card editor. Without one the card is edited as YAML only.
+ * @property {boolean} [headerIcon] - The card has a header whose icon reads `icon`, `iconColor`
+ *   and `iconBackground`. The card editor then shows the real card and edits that icon.
+ * @property {{Stage: import('react').ComponentType<Object>, Inspector: import('react').ComponentType<Object>, split?: boolean}} [stage]
+ *   - Arranges the card's own items directly on it, with the settings of the selected one.
  */
 
 /**
@@ -69,6 +74,7 @@ const ALL_SIZES = ['quarter', 'half', '1', '2', '3'];
  */
 export const cardInfo = {
     weather: {
+        headerIcon: true,
         name: 'Weather',
         description: 'Daily or hourly forecast for a place',
         icon: 'lu-CloudSun',
@@ -92,6 +98,7 @@ export const cardInfo = {
         Editor: ThermostatEditor,
     },
     thermostats: {
+        headerIcon: true,
         name: 'Multiroom Thermostat',
         description: 'Targets, presets and on/off for up to six rooms',
         icon: 'lu-Heater',
@@ -99,6 +106,7 @@ export const cardInfo = {
         Editor: MultiThermostatEditor,
     },
     graph: {
+        headerIcon: true,
         name: 'Graph',
         description: 'History of Home Assistant sensors as lines, bars or this week vs last',
         icon: 'lu-ChartLine',
@@ -106,6 +114,7 @@ export const cardInfo = {
         Editor: GraphEditor,
     },
     vacuum: {
+        headerIcon: true,
         name: 'Vacuum',
         description: 'Start, rooms, fan speed, map, camera and consumables of one robot',
         icon: 'mdi:robot-vacuum',
@@ -114,6 +123,7 @@ export const cardInfo = {
         Editor: VacuumEditor,
     },
     vacuums: {
+        headerIcon: true,
         name: 'Multiple Vacuums',
         description: 'Control all your robots together, with details for each',
         icon: 'mdi:robot-vacuum-variant',
@@ -121,6 +131,7 @@ export const cardInfo = {
         Editor: VacuumsEditor,
     },
     printer: {
+        headerIcon: true,
         name: '3D Printer',
         description: 'Progress, temperatures, spools and controls of a Bambu Lab printer',
         icon: 'mdi:printer-3d-nozzle',
@@ -133,6 +144,7 @@ export const cardInfo = {
         description: 'Shortcuts to your apps with online status',
         icon: 'lu-LayoutGrid',
         Editor: AppGridEditor,
+        stage: { Stage: AppGridStage, Inspector: AppGridInspector, split: true },
     },
     mediaplayer: {
         name: 'Media Player',
@@ -143,12 +155,14 @@ export const cardInfo = {
         Editor: MediaPlayerEditor,
     },
     media: {
+        headerIcon: true,
         name: 'Media Calendar',
         description: 'Upcoming episodes and movies from Sonarr and Radarr',
         icon: 'lu-Tv',
         defaults: { colSpan: 2 },
     },
     transmission: {
+        headerIcon: true,
         name: 'Transmission',
         description: 'Active downloads and transfer speeds',
         icon: 'lu-Download',
@@ -161,11 +175,13 @@ export const cardInfo = {
         defaults: { colSpan: 2, data: { sensors: ['cpu', 'ram', 'storage', 'network', 'temp'] } },
     },
     proxmox: {
+        headerIcon: true,
         name: 'Proxmox',
         description: 'Nodes, VMs and containers of a Proxmox cluster',
         icon: 'lu-Server',
     },
     git: {
+        headerIcon: true,
         name: 'Pull Requests',
         description: 'Open pull requests from GitHub, GitLab or Gitea',
         icon: 'lu-GitPullRequest',

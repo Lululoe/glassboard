@@ -146,6 +146,13 @@ dialog.editor-dialog::backdrop {
     overscroll-behavior: contain;
 }
 
+.editor-dialog-scroll {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
 .editor-section {
     display: flex;
     flex-direction: column;

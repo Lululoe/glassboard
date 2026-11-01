@@ -1,0 +1,587 @@
+/* The icon editor inside the card and header menu editors: the real card on the page
+   background, with the settings of what is selected next to or under it. */
+
+/* A fixed height, so selecting something doesn't resize the dialog under the pointer */
+@media (min-width: 769px) {
+    dialog.editor-dialog.has-stage {
+        height: min(760px, calc(100dvh - 48px));
+    }
+
+    dialog.editor-dialog.is-split {
+        width: min(960px, calc(100vw - 32px));
+    }
+}
+
+.editor-workspace {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overscroll-behavior: contain;
+    margin-top: 12px;
+}
+
+.editor-workspace > .editor-dialog-body {
+    overflow: visible;
+    flex-shrink: 0;
+}
+
+.editor-workspace-stage {
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #003780 var(--bg-page-gradient);
+    color: #fff;
+}
+
+@media (min-width: 769px) {
+    .is-split .editor-workspace {
+        flex-direction: row;
+        overflow: hidden;
+    }
+
+    .is-split .editor-workspace-stage {
+        position: static;
+        width: 44%;
+        min-width: 380px;
+        overflow-y: auto;
+    }
+
+    .is-split .editor-workspace > .editor-dialog-body {
+        flex: 1;
+        flex-shrink: 1;
+        min-width: 0;
+        overflow-y: auto;
+    }
+}
+
+/* A tall preview would leave no room to work under it */
+@media (max-width: 768px) {
+    .is-split .editor-workspace-stage {
+        position: static;
+    }
+}
+
+@media (max-height: 700px) {
+    .editor-workspace-stage {
+        position: static;
+    }
+}
+
+.icon-stage-root {
+    display: contents;
+}
+
+.icon-stage {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.icon-stage-measure {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+}
+
+.icon-stage-canvas {
+    flex-shrink: 0;
+    overflow: visible;
+}
+
+.icon-stage-card {
+    display: flex;
+}
+
+.icon-stage-card > * {
+    width: 100%;
+    height: 100%;
+    flex: 1;
+}
+
+.icon-stage-crop .icon-stage-canvas {
+    overflow: hidden;
+    border-radius: var(--radius-card);
+}
+
+.icon-stage-crop .two-tone-content {
+    mask-image: linear-gradient(#000 20%, transparent 62%);
+    -webkit-mask-image: linear-gradient(#000 20%, transparent 62%);
+}
+
+/* The one thing a header card's stage edits */
+.icon-stage-card .two-tone-header .app-icon-container {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+}
+
+.icon-stage-note {
+    margin: 0;
+    width: 100%;
+    max-width: 420px;
+    font-size: 12px;
+    line-height: 16px;
+    text-align: right;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.icon-stage-source {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(0, 0, 0, 0.28);
+}
+
+.icon-stage-source button {
+    min-height: 34px;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.icon-stage-tools {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.icon-stage-add {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 12px 0 10px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #1c1c1e;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.icon-stage-add:active {
+    opacity: 0.7;
+}
+
+.icon-stage-add:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.icon-stage-hint {
+    flex: 1;
+    min-width: 150px;
+    font-size: 12px;
+    line-height: 16px;
+    text-align: right;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.icon-stage-undo {
+    font-weight: 600;
+    color: #fff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+
+/* Items in a preview. Overlays only: nothing takes space the real card would not give it. */
+.arrange-slot {
+    position: relative;
+    min-width: 0;
+}
+
+.arrange-item {
+    cursor: grab;
+    touch-action: pan-y;
+    -webkit-touch-callout: none;
+    outline-offset: 1px;
+}
+
+.arrange-item.selected {
+    outline: 2px solid var(--color-primary);
+}
+
+.arrange-item:focus-visible {
+    outline: 3px solid rgba(10, 132, 255, 0.7);
+    box-shadow: none;
+}
+
+@media (pointer: fine) {
+    .arrange-item:hover:not(.selected) {
+        outline: 2px solid rgba(10, 132, 255, 0.45);
+        transform: none !important;
+    }
+}
+
+.arrange-item.is-placeholder {
+    opacity: 0.25;
+}
+
+.arrange-remove {
+    position: absolute;
+    top: -9px;
+    left: -7px;
+    z-index: 2;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    color: #1c1c1e;
+    cursor: pointer;
+}
+
+.arrange-remove::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--bg-tile, #fff);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+}
+
+.arrange-remove svg {
+    position: relative;
+}
+
+@media (pointer: fine) {
+    .arrange-remove:hover {
+        color: #fff;
+    }
+
+    .arrange-remove:hover::before {
+        background: var(--system-red);
+    }
+}
+
+.arrange-remove-end {
+    left: auto;
+    top: 1px;
+    right: 0;
+}
+
+.arrange-ghost {
+    position: absolute;
+    z-index: 20;
+    margin: 0;
+    pointer-events: none;
+    outline: none !important;
+    opacity: 1 !important;
+    scale: 1.08;
+    rotate: 3deg;
+    filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.45));
+    --u: 1px;
+    color: var(--text-primary);
+}
+
+.arrange-ghost .app-icon-wrap {
+    width: 100%;
+    filter: none;
+}
+
+.arrange-tray {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.arrange-tray-title {
+    font-size: 13px;
+    line-height: 18px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.arrange-tray-title span {
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.78);
+}
+
+.arrange-tray-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.arrange-tray-item {
+    --u: 1px;
+    --icon: 40;
+    --label: 10;
+    --label-lh: 12;
+    --label-mt: 4;
+    width: 56px;
+    opacity: 0.78;
+}
+
+.arrange-tray-item .app-name {
+    color: #fff;
+}
+
+/* The header menu, drawn as its popover */
+.launcher-preview {
+    width: 323px;
+    padding: 16px 20px;
+    color: var(--text-primary);
+    background: var(--bg-popup);
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    border-radius: 12px;
+    border: 0.5px solid var(--border-popup);
+    box-shadow: var(--shadow-popup);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.launcher-preview .launcher-link {
+    margin: 0 -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-radius: 8px;
+}
+
+/* Settings of the selected icon */
+.icon-inspector {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 20px;
+    border-bottom: 0.5px solid var(--color-separator);
+}
+
+.icon-inspector-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 32px;
+}
+
+.icon-inspector-head .editor-dialog-action,
+.icon-builder-actions .editor-dialog-action {
+    min-height: 32px;
+    font-size: 15px;
+}
+
+.icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 44px);
+    justify-content: space-between;
+    gap: 6px;
+    max-height: 196px;
+    overflow-y: auto;
+    padding: 3px;
+    margin: -3px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--bg-fill-hover) transparent;
+}
+
+.icon-grid > button {
+    width: 44px;
+    height: 44px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    background: var(--bg-fill);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+@media (pointer: fine) {
+    .icon-grid > button:hover {
+        background: var(--bg-fill-hover);
+    }
+}
+
+.icon-grid > button[aria-pressed="true"] {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+.icon-grid > button:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.icon-grid-note {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 8px 0;
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--text-secondary);
+}
+
+.icon-grid-retry {
+    font-weight: 600;
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+
+.icon-grid-count {
+    font-variant-numeric: tabular-nums;
+    margin-top: -8px;
+}
+
+.icon-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--text-secondary);
+    overflow-wrap: anywhere;
+    margin-top: -8px;
+}
+
+.icon-builder .icon-code {
+    margin-top: 0;
+}
+
+.icon-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.icon-swatch {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 22.5%;
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 0 0 0.5px rgba(127, 127, 127, 0.5);
+    cursor: pointer;
+}
+
+.icon-swatch[aria-pressed="true"]::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 28%;
+    border: 2px solid var(--color-primary);
+}
+
+.icon-swatch:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.icon-swatch-glyph {
+    background: var(--bg-fill);
+}
+
+.icon-swatch-add {
+    background: var(--bg-fill);
+    color: var(--text-primary);
+}
+
+@media (pointer: fine) {
+    .icon-swatch-add:hover {
+        background: var(--bg-fill-hover);
+    }
+}
+
+.icon-color-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.icon-color-row .editor-input {
+    flex: 1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+}
+
+.icon-color-well {
+    appearance: none;
+    -webkit-appearance: none;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 9px;
+    background: none;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.icon-color-well::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.icon-color-well::-webkit-color-swatch {
+    border: 0;
+    border-radius: 9px;
+    box-shadow: inset 0 0 0 0.5px rgba(127, 127, 127, 0.5);
+}
+
+.icon-color-well::-moz-color-swatch {
+    border: 0;
+    border-radius: 9px;
+}
+
+.icon-color-well:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.icon-color-remove {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 9px;
+    color: var(--system-red-text, #ff453a);
+    cursor: pointer;
+}
+
+.icon-builder {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 6px;
+    padding: 12px;
+    border-radius: 11px;
+    box-shadow: inset 0 0 0 0.5px var(--color-separator);
+}
+
+.icon-builder-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.icon-slider {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 8px;
+    align-items: center;
+}
+
+.icon-slider input {
+    grid-column: 1 / -1;
+    width: 100%;
+    height: 28px;
+    margin: 0;
+    accent-color: var(--color-primary);
+}
+
+.icon-slider output {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}

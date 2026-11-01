@@ -90,8 +90,8 @@ const VacuumCard = ({ config }) => {
                 title={config.title || robot?.name || 'Vacuum'}
                 subtitle={robot ? statusText(robot) : undefined}
                 icon={config.icon || 'mdi:robot-vacuum'}
-                iconBackground={ICON_BACKGROUND}
-                iconColor="#fff"
+                iconBackground={config.iconBackground || ICON_BACKGROUND}
+                iconColor={config.iconColor || '#fff'}
                 onHeaderClick={robot ? () => setOpen(true) : undefined}
                 headerLabel={robot ? `${robot.name} details` : undefined}
                 actions={robot && <RobotButtons robots={[robot]} onStart={run.startOrPause} onStop={run.stop} onDock={run.dock} />}

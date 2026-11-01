@@ -2,7 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import { getBaseConfig, getConfig, getSanitizedConfig, loadConfig, onConfigChange, restoreSecrets } from '../config.js';
 import { HttpError } from '../errors.js';
-import { buildLayout, gridPages, resetLayout, writeLayout } from '../layout.js';
+import { buildLayout, deepEqual, gridPages, readLayout, resetLayout, writeLayout } from '../layout.js';
 import logger from '../logger.js';
 import { isDemoMode } from '../services/demo.js';
 
@@ -45,8 +45,16 @@ const layoutCard = z.looseObject({
     hideOn: z.array(z.enum(['phone', 'tablet', 'desktop'])).optional(),
 });
 
+const launcherItem = z.looseObject({ name: z.string(), url: z.string() });
+
 const layoutBody = z.object({
     pages: z.record(z.string(), z.array(layoutCard).max(500)),
+    launcher: z.looseObject({
+        apps: z.array(launcherItem).max(500).optional(),
+        links: z.array(launcherItem).max(500).optional(),
+        links_title: z.string().optional(),
+    }).optional(),
+    iconBackgrounds: z.array(z.string().max(2000)).max(200).optional(),
 });
 
 /**
@@ -60,6 +68,7 @@ function assertEditable() {
  * Saves the whole dashboard as edited in the browser: the cards of every grid page, in order,
  * with their full properties. Every grid page must be included and every card id may appear
  * only once. Credential-like keys the browser never received are restored from the server's copy.
+ * The header menu and icon background presets are optional; left out, the saved ones are kept.
  */
 router.put('/layout', (req, res, next) => {
     try {
@@ -90,7 +99,15 @@ router.put('/layout', (req, res, next) => {
             cards.map(card => restoreSecrets(card, current.get(String(card.id)))),
         ]));
 
-        writeLayout(buildLayout(basePages, pages));
+        const previous = readLayout();
+        const launcher = parsed.data.launcher
+            ? restoreSecrets(parsed.data.launcher, getConfig().launcher)
+            : previous.launcher;
+        writeLayout({
+            ...buildLayout(basePages, pages),
+            launcher: deepEqual(launcher, getBaseConfig().launcher) ? undefined : launcher,
+            iconBackgrounds: parsed.data.iconBackgrounds ?? previous.iconBackgrounds,
+        });
         logger.info('Saved dashboard layout');
         loadConfig();
         res.json({ ok: true });

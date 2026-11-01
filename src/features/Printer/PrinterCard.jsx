@@ -227,8 +227,8 @@ const PrinterCard = ({ config }) => {
             title={config.title || printer?.name || '3D Printer'}
             subtitle={subtitle || undefined}
             icon={config.icon || 'mdi:printer-3d-nozzle'}
-            iconBackground={ICON_BACKGROUND}
-            iconColor="#fff"
+            iconBackground={config.iconBackground || ICON_BACKGROUND}
+            iconColor={config.iconColor || '#fff'}
             actions={printer && <PrinterButtons printer={printer} run={run} />}
         >
             {body}

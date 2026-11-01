@@ -6,7 +6,8 @@ import logger from './logger.js';
 const HEADER = [
     '# Written by Glassboard when you edit the dashboard in the browser.',
     '# It takes precedence over config.yaml: card order, sizes and visibility per page, cards',
-    '# added or changed in the browser (under `config`), and config.yaml cards that were removed.',
+    '# added or changed in the browser (under `config`), config.yaml cards that were removed, and',
+    '# the header menu and icon background presets when they were edited in the browser.',
     '# Delete this file to go back to the dashboard in config.yaml.',
     '',
 ].join('\n');
@@ -31,7 +32,7 @@ export function getLayoutPath() {
 
 /**
  * Reads the layout overlay. A missing, empty or invalid file counts as no overrides.
- * @returns {{pages: Object<string, Array<Object>>, removed: Array<string|number>}} The overlay.
+ * @returns {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[]}} The overlay.
  */
 export function readLayout() {
     const file = getLayoutPath();
@@ -42,6 +43,8 @@ export function readLayout() {
         return {
             pages: isPlainObject(data.pages) ? data.pages : {},
             removed: Array.isArray(data.removed) ? data.removed : [],
+            ...(isPlainObject(data.launcher) ? { launcher: data.launcher } : {}),
+            ...(Array.isArray(data.iconBackgrounds) ? { iconBackgrounds: data.iconBackgrounds } : {}),
         };
     } catch (e) {
         logger.warn(`Error reading ${file}: ${e.message}`);
@@ -52,11 +55,13 @@ export function readLayout() {
 /**
  * Writes the layout overlay in place. Renaming a temp file over it would fail when the file
  * is a Docker bind mount, so this overwrites the existing file instead.
- * @param {{pages: Object<string, Array<Object>>, removed: Array<string|number>}} layout - The overlay to store.
+ * @param {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[]}} layout - The overlay to store.
  */
 export function writeLayout(layout) {
     const data = { pages: layout.pages };
     if (layout.removed.length > 0) data.removed = layout.removed;
+    if (layout.launcher) data.launcher = layout.launcher;
+    if (layout.iconBackgrounds?.length > 0) data.iconBackgrounds = layout.iconBackgrounds;
     fs.writeFileSync(getLayoutPath(), HEADER + yaml.dump(data, { lineWidth: -1 }), 'utf8');
 }
 
@@ -128,11 +133,26 @@ function buildCard(entry, base) {
  * Returns a copy of the config with the layout overlay applied. Pages with a saved layout
  * list their cards in saved order (cards may come from other pages); config.yaml cards not
  * mentioned anywhere stay on their own page, after the saved ones. Removed cards are left out.
+ * The header menu and icon background presets saved in the browser replace those of config.yaml.
  * @param {Object} config - The merged configuration.
- * @param {{pages?: Object<string, Array<Object>>, removed?: Array<string|number>}} layout - The overlay.
+ * @param {{pages?: Object<string, Array<Object>>, removed?: Array<string|number>, launcher?: Object, iconBackgrounds?: string[]}} layout - The overlay.
  * @returns {Object} The configuration with the overlay applied.
  */
 export function applyLayout(config, layout) {
+    const shared = {
+        ...(isPlainObject(layout?.launcher) ? { launcher: layout.launcher } : {}),
+        ...(Array.isArray(layout?.iconBackgrounds) ? { iconBackgrounds: layout.iconBackgrounds } : {}),
+    };
+    return { ...applyCards(config, layout), ...shared };
+}
+
+/**
+ * Applies the card part of the layout overlay.
+ * @param {Object} config - The merged configuration.
+ * @param {{pages?: Object<string, Array<Object>>, removed?: Array<string|number>}} layout - The overlay.
+ * @returns {Object} The configuration with saved cards applied.
+ */
+function applyCards(config, layout) {
     const saved = isPlainObject(layout?.pages) ? layout.pages : {};
     const removed = new Set((layout?.removed || []).map(String));
     const pages = gridPages(config);

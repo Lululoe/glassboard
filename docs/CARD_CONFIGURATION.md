@@ -74,12 +74,45 @@ Each card can be hidden on phones, tablets or desktops with the switches in its 
 While editing, hidden cards stay visible but dimmed, labelled "Hidden on phone" (or tablet/desktop), so they can
 still be moved and edited.
 
+### Editing icons
+Cards with a header (Weather, Media, Graph, Vacuum, Printer, Proxmox, Transmission, Pull Requests and Multiroom
+Thermostat) show the real card at the top of their editor, with the settings of its icon top left: which icon, its
+color and its background. The icons in a card's top right corner belong to the card and aren't configurable.
+
+The **App Grid** and the **header menu** are arranged directly on the preview:
+
+- **Select** an app or link to change it, **drag** it to reorder it, and use the minus badge to remove it (with Undo).
+  On a touch screen, hold before dragging.
+- With the keyboard, Enter selects, the arrow keys move between items, Shift and an arrow key moves the item, and
+  Delete removes it. Esc clears the selection.
+- Apps that don't fit appear under **Won't show**, where they can be dragged back up.
+- An App Grid can show **this card's apps** or the **header menu's apps**.
+
+**Icons** can be searched across the complete Lucide, Material and [selfh.st](https://selfh.st/icons/) catalogs, or
+given as an image URL. Selfh.st icons have a **Full color / Monochrome** switch; a few have no monochrome version.
+
+**Icon color** applies to Lucide, Material and monochrome selfh.st icons and SVG images. **Default** follows the text
+color (or the card's own default). Full-color icons and PNGs keep their own colors.
+
+**Backgrounds** offer presets and a **+**, which adds your own preset starting from the current background: solid,
+linear or radial gradient with up to four colors, direction and opacity; plain CSS; or none, for an icon without a
+tile. Your presets are available on every icon and are stored as `iconBackgrounds`. Editing a preset later doesn't
+change icons that already use it. The list can also be set at the top level of `config.yaml`:
+
+```yaml
+iconBackgrounds:
+  - "linear-gradient(135deg, #5e5ce6, #bf5af2)"
+```
+
+The selfh.st catalog and its icons load from jsDelivr, so that tab needs internet access.
+
 ### Where changes are saved
 Changes are saved to `layout.yaml` next to `config.yaml`, never to `config.yaml` itself, so your comments and
 formatting stay untouched. Every device sees the saved dashboard. For cards from `config.yaml`, `layout.yaml`
 only stores the page, position, size and visibility, unless the card's options were changed in the browser; then
 it stores the whole card, and later edits to that card in `config.yaml` are ignored until you reset. Cards added
-in the browser live only in `layout.yaml`, and cards removed in the browser are listed under `removed`. Cards added
+in the browser live only in `layout.yaml`, and cards removed in the browser are listed under `removed`. A header menu
+edited in the browser replaces `launcher` from `config.yaml` as a whole, as do `iconBackgrounds`. Cards added
 to `config.yaml` later appear after the saved ones. Deleting `layout.yaml` (or **Reset**) restores the dashboard
 from `config.yaml`.
 
@@ -119,7 +152,7 @@ Displays a grid of application shortcuts.
 |-------|------|-------------|
 | `name` | string | Display name. |
 | `url` | string | URL to open when clicked. |
-| `icon` | string/object | URL (svg/png), Lucide icon name, or object `{ source, value }`. |
+| `icon` | string/object | URL (svg/png), icon name, or object `{ source, value, color }`, where `source` is `lucide`, `mdi`, `sh`, `local` or `url`. A `color` is only possible in the object form. |
 | `bgColor` | string | Optional CSS background (e.g., gradient). |
 | `statusUrl` | string | Optional. URL the server checks instead of `url` (e.g. an internal address). |
 | `statusCheck` | boolean | Optional. Set to `false` to skip the status check for this app. |

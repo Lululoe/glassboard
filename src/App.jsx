@@ -4,11 +4,13 @@ import { useConfig } from './hooks/useConfig';
 import { usePageNavigation } from './hooks/usePageNavigation';
 import { useSwipe } from './hooks/useSwipe';
 import { ThemeProvider } from './context/ThemeContext';
+import { IconBackgroundsContext } from './context/iconBackgrounds';
 import { PageActiveContext } from './context/pageActive';
 import { pageKey, useDashboardEditing } from './hooks/useDashboardEditing';
 import BentoGrid from './components/Grid/BentoGrid';
 import AddCardDialog from './components/Editor/AddCardDialog';
 import CardEditor from './components/Editor/CardEditor';
+import HeaderMenuEditor from './components/Editor/HeaderMenuEditor';
 import IframeView from './components/Layout/IframeView';
 import Header from './components/Header/Header';
 import ParticlesBackground from './components/Layout/ParticlesBackground';
@@ -33,6 +35,12 @@ function Dashboard({ config }) {
     const swipeHandlers = useSwipe({ onSwipeLeft: next, onSwipeRight: prev, threshold: 75 });
     const contentRef = useRef(null);
 
+    // The header menu being edited shows wherever the saved one would, also in app grids that follow it
+    const liveConfig = useMemo(
+        () => (layout.launcher === config.launcher ? config : { ...config, launcher: layout.launcher }),
+        [config, layout.launcher],
+    );
+
     const activePage = pages[pageIndex];
     const editable = config.editable !== false && !!activePage && activePage.type !== 'iframe';
 
@@ -50,7 +58,7 @@ function Dashboard({ config }) {
     const onKeyDown = useEffectEvent((e) => {
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
         if (layout.editing) {
-            if (e.key === 'Escape' && !layout.editor && !layout.adding) layout.finish();
+            if (e.key === 'Escape' && !layout.editor && !layout.adding && !layout.editingMenu) layout.finish();
             return;
         }
         if (e.key === 'ArrowRight') next();
@@ -77,7 +85,7 @@ function Dashboard({ config }) {
         <div className={`App${layout.editing ? ' is-editing' : ''}`} {...(layout.editing ? {} : swipeHandlers)}>
             <ParticlesBackground />
             <Header
-                config={config}
+                config={liveConfig}
                 edit={{
                     available: editable,
                     active: layout.editing,
@@ -87,6 +95,7 @@ function Dashboard({ config }) {
                     onDone: layout.finish,
                     onReset: layout.reset,
                     onAdd: layout.openAdd,
+                    onEditMenu: layout.openMenuEditor,
                 }}
             />
 
@@ -108,7 +117,7 @@ function Dashboard({ config }) {
                                 : (
                                     <BentoGrid
                                         cards={layout.cardsOf(page, idx)}
-                                        globalConfig={config}
+                                        globalConfig={liveConfig}
                                         editing={layout.editing && idx === pageIndex}
                                         onLayoutChange={(cards) => layout.change(pageKey(page, idx), cards)}
                                         onRequestEdit={config.editable !== false ? layout.start : undefined}
@@ -142,16 +151,27 @@ function Dashboard({ config }) {
                 />
             )}
 
-            {layout.editingCard && (
-                <CardEditor
-                    key={`${layout.editor.key}:${layout.editingCard.id}`}
-                    card={layout.editingCard}
-                    isNew={layout.editor.isNew}
-                    onSave={layout.saveCard}
-                    onCancel={layout.cancelEditor}
-                    onRemove={layout.removeCard}
-                />
-            )}
+            <IconBackgroundsContext value={{ presets: layout.iconBackgrounds, onChange: layout.setIconBackgrounds }}>
+                {layout.editingCard && (
+                    <CardEditor
+                        key={`${layout.editor.key}:${layout.editingCard.id}`}
+                        card={layout.editingCard}
+                        globalConfig={liveConfig}
+                        isNew={layout.editor.isNew}
+                        onSave={layout.saveCard}
+                        onCancel={layout.cancelEditor}
+                        onRemove={layout.removeCard}
+                    />
+                )}
+
+                {layout.editingMenu && (
+                    <HeaderMenuEditor
+                        launcher={layout.launcher}
+                        onSave={layout.saveMenu}
+                        onCancel={layout.closeMenuEditor}
+                    />
+                )}
+            </IconBackgroundsContext>
 
             {pages.length > 1 && (
                 <nav className="page-indicators" aria-label="Pages">

@@ -65,8 +65,8 @@ const VacuumsCard = ({ config }) => {
                 title={config.title || 'Robots'}
                 subtitle={summary || undefined}
                 icon={config.icon || 'mdi:robot-vacuum-variant'}
-                iconBackground={ICON_BACKGROUND}
-                iconColor="#fff"
+                iconBackground={config.iconBackground || ICON_BACKGROUND}
+                iconColor={config.iconColor || '#fff'}
                 actions={robots.length > 0 && <RobotButtons robots={robots} suffix="all robots" onStart={run.startOrPause} onStop={run.stop} onDock={run.dock} />}
             >
                 <div className="vac-body">{body}</div>

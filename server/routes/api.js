@@ -4,7 +4,7 @@ import { demoCameraImage, demoHandlers, isDemoMode } from '../services/demo.js';
 import { fetchArtwork } from '../services/homeassistant.js';
 import { fetchRobotImage } from '../services/haVacuum.js';
 import { serviceHandlers } from '../services/index.js';
-import { mdiSvg } from '../services/mdi.js';
+import { mdiNames, mdiSvg } from '../services/mdi.js';
 
 const router = express.Router();
 
@@ -35,6 +35,15 @@ router.get('/ha/camera', async (req, res, next) => {
         if (!cardId || !entityId) throw new HttpError(400, 'card_id and entity_id are required');
         const image = isDemoMode() ? demoCameraImage(cardId, entityId) : await fetchRobotImage(cardId, entityId);
         res.set({ 'Content-Type': image.contentType, 'Cache-Control': 'no-store' }).send(image.body);
+    } catch (err) {
+        next(err);
+    }
+});
+
+/** The names of all Material Design Icons, for the card editor's icon search. */
+router.get('/icons/mdi', async (req, res, next) => {
+    try {
+        res.set('Cache-Control', 'public, max-age=604800').json({ names: await mdiNames() });
     } catch (err) {
         next(err);
     }

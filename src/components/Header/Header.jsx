@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './Header.css';
-import { LayoutTemplate, Sun, Moon, LayoutGrid, SquarePen, Plus } from 'lucide-react';
+import { LayoutTemplate, Sun, Moon, LayoutGrid, Pencil, SquarePen, Plus } from 'lucide-react';
 import LauncherPopup from './LauncherPopup';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -18,6 +18,7 @@ import { useTheme } from '../../context/ThemeContext';
  * @param {() => void} props.edit.onDone - Saves and leaves edit mode.
  * @param {() => void} props.edit.onReset - Resets the dashboard to config.yaml.
  * @param {() => void} props.edit.onAdd - Opens the list of cards to add.
+ * @param {() => void} [props.edit.onEditMenu] - Opens the editor of the header menu.
  * @returns {JSX.Element} The rendered header.
  */
 const Header = ({ config, edit }) => {
@@ -47,6 +48,19 @@ const Header = ({ config, edit }) => {
                     >
                         <Plus size={22} aria-hidden="true" />
                     </button>
+                    {edit.onEditMenu && (
+                        <button
+                            type="button"
+                            className="button-reset icon-button header-menu-edit"
+                            onClick={edit.onEditMenu}
+                            disabled={edit.saving}
+                            title="Edit header menu"
+                            aria-label="Edit header menu"
+                        >
+                            <LayoutGrid size={20} aria-hidden="true" />
+                            <span className="header-menu-edit-badge"><Pencil size={10} strokeWidth={3} aria-hidden="true" /></span>
+                        </button>
+                    )}
                     <button type="button" className="button-reset header-text-button" onClick={edit.onReset} disabled={edit.saving}>
                         Reset
                     </button>

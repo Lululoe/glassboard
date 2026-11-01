@@ -63,7 +63,7 @@ Renders an icon inside a rounded-square container, resembling a mobile app icon.
 Universal icon component that supports:
 1. Lucide React icons (by name, e.g., "lu-Home").
 2. Material Design Icons, the icons Home Assistant uses (e.g., "mdi:lightbulb").
-3. Simple icons (by name, e.g., "sh-github").
+3. Simple icons (by name, e.g., "sh-github"; monochrome versions end in `-light` or `-dark`).
 4. Image URLs (http/https).
 
 ### Props

@@ -42,12 +42,17 @@ export function useDashboardEditing(config, pages) {
     const [editor, setEditor] = useState(/** @type {{key: string, index: number, isNew: boolean}|null} */ (null));
     const [adding, setAdding] = useState(false);
     const [carry, setCarry] = useState(null);
+    const [shared, setShared] = useState(/** @type {{launcher?: Object, iconBackgrounds: string[]}|null} */ (null));
+    const [editingMenu, setEditingMenu] = useState(false);
 
     // Drop the drafts once the config they were saved against has been replaced
     if (savedFor && savedFor !== config && !editing) {
         setSavedFor(null);
         setDrafts(null);
+        setShared(null);
     }
+
+    const savedShared = { launcher: config.launcher, iconBackgrounds: config.iconBackgrounds || [] };
 
     const gridPages = pages
         .map((page, idx) => ({ page, idx, key: pageKey(page, idx) }))
@@ -58,6 +63,7 @@ export function useDashboardEditing(config, pages) {
     const start = () => {
         setStatus(null);
         setDrafts(Object.fromEntries(gridPages.map(({ page, key }) => [key, page.cards || []])));
+        setShared(savedShared);
         setEditing(true);
     };
 
@@ -117,10 +123,13 @@ export function useDashboardEditing(config, pages) {
     };
 
     const finish = async () => {
-        if (saving || editor || adding) return;
+        if (saving || editor || adding || editingMenu) return;
         const original = Object.fromEntries(gridPages.map(({ page, key }) => [key, page.cards || []]));
-        if (!drafts || JSON.stringify(drafts) === JSON.stringify(original)) {
+        const unchanged = JSON.stringify(drafts) === JSON.stringify(original)
+            && JSON.stringify(shared) === JSON.stringify(savedShared);
+        if (!drafts || unchanged) {
             setDrafts(null);
+            setShared(null);
             setStatus(null);
             setEditing(false);
             return;
@@ -130,6 +139,7 @@ export function useDashboardEditing(config, pages) {
             // The server matches cards by id, so a dashboard with id-less cards cannot be saved
             if (window.confirm('Some cards in config.yaml have no id, so these changes cannot be saved. Discard them?')) {
                 setDrafts(null);
+                setShared(null);
                 setStatus(null);
                 setEditing(false);
             }
@@ -139,7 +149,7 @@ export function useDashboardEditing(config, pages) {
         setSaving(true);
         setStatus('Saving…');
         try {
-            await saveLayout(drafts);
+            await saveLayout(drafts, shared.launcher ? shared : { iconBackgrounds: shared.iconBackgrounds });
             setSavedFor(config);
             setStatus(null);
             setEditing(false);
@@ -167,5 +177,15 @@ export function useDashboardEditing(config, pages) {
         carry, clearCarry,
         editor, editingCard, openEditor, saveCard, removeCard, cancelEditor,
         adding, openAdd: () => setAdding(true), closeAdd: () => setAdding(false), addCard,
+        launcher: shared ? shared.launcher : config.launcher,
+        iconBackgrounds: shared ? shared.iconBackgrounds : savedShared.iconBackgrounds,
+        setIconBackgrounds: (iconBackgrounds) => setShared(prev => ({ ...prev, iconBackgrounds })),
+        editingMenu,
+        openMenuEditor: () => setEditingMenu(true),
+        closeMenuEditor: () => setEditingMenu(false),
+        saveMenu: (launcher) => {
+            setShared(prev => ({ ...prev, launcher }));
+            setEditingMenu(false);
+        },
     };
 }

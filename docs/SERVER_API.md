@@ -199,7 +199,8 @@ the climate actions below.
 ---
 
 ### Material Design Icons
-`GET /api/icons/mdi/<name>.svg` returns a Material Design Icon (the icons Home Assistant uses) as SVG, e.g.
+`GET /api/icons/mdi` returns `{ "names": [...] }` with every Material Design Icon name, for the card editor's icon
+search. `GET /api/icons/mdi/<name>.svg` returns a Material Design Icon (the icons Home Assistant uses) as SVG, e.g.
 `/api/icons/mdi/lightbulb-off.svg`; `404` for unknown names. Responses may be cached for a week.
 
 ### Robot camera
@@ -243,6 +244,10 @@ or `default` for a top-level `cards` list) to its cards in order, with all their
 be included, and every card needs a unique `id` and a `type` (`400` otherwise). Cards from `config.yaml` that are
 missing are stored as removed; cards with unknown ids are stored as new cards. Credential-like keys the browser
 never received are kept from the server's copy of the card.
+
+Optionally, `launcher` saves the header menu (`apps` and `links` need a `name` and `url` string) and `iconBackgrounds`
+the list of icon background presets (CSS strings). Left out, the saved ones are kept. A `launcher` equal to
+`config.yaml` isn't stored.
 
 ```json
 {
