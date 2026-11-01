@@ -197,5 +197,34 @@ describe('demo mode', () => {
         expect(week.times).toHaveLength(14);
         await expect(demoHandlers.homeassistant({ endpoint: 'graph', card_id: 'g', range: '30d' })).rejects.toMatchObject({ status: 400 });
     });
+
+    it('simulates robots for vacuum cards', async () => {
+        setConfig({
+            demo: true,
+            pages: [{
+                cards: [{
+                    id: 'v', type: 'vacuum', entity_id: 'vacuum.robo', map: 'camera.map', camera: 'camera.front',
+                    stats: [{ entity_id: 'sensor.robo_area', name: 'Area' }],
+                    rooms: [{ area: 'kitchen', name: 'Kitchen' }],
+                    consumables: [{ entity_id: 'sensor.brush', percent: 'sensor.brush_pct', reset: 'button.reset' }],
+                }],
+            }],
+        });
+        const ha = demoHandlers.homeassistant;
+        const { robots: [robot] } = await ha({ endpoint: 'vacuum', card_id: 'v' });
+        expect(robot).toMatchObject({ entity_id: 'vacuum.robo', state: 'cleaning', stats: [{ name: 'Area', unit: 'm²' }], rooms: [{ area: 'kitchen' }], wetness: null });
+
+        await ha({ endpoint: 'vacuum_action', card_id: 'v', entity_id: 'vacuum.robo', action: 'stop' });
+        await ha({ endpoint: 'vacuum_action', card_id: 'v', entity_id: 'vacuum.robo', action: 'set_fan', value: 'max' });
+        await ha({ endpoint: 'vacuum_action', card_id: 'v', entity_id: 'vacuum.robo', action: 'reset_consumable', index: 0 });
+        const after = (await ha({ endpoint: 'vacuum', card_id: 'v' })).robots[0];
+        expect(after).toMatchObject({ state: 'idle', fan: { value: 'max' }, consumables: [{ percent: 100, resettable: true }] });
+
+        expect(await ha({ endpoint: 'vacuum_map', card_id: 'v', entity_id: 'camera.front' })).toEqual({ kind: 'image' });
+        const map = await ha({ endpoint: 'vacuum_map', card_id: 'v', entity_id: 'camera.map' });
+        expect(map.kind).toBe('valetudo');
+        expect(map.segments.map(s => s.name)).toContain('Kitchen');
+        await expect(ha({ endpoint: 'vacuum', card_id: 'nope' })).rejects.toMatchObject({ status: 403 });
+    });
 });
 

@@ -23,6 +23,7 @@ This project was born out of a desire for a dashboard that didn't just function 
 -   **Single Thermostat**: Target slider, heating state and presets for one climate entity, as a quarter, half or full tile.
 -   **Multiroom Thermostat**: Up to six rooms in one card, as rows or columns, with per-room presets.
 -   **Media Player**: Cover art, playback controls, seeking, and per-speaker volume and grouping for Home Assistant players.
+-   **Vacuum**: Start, stop and dock, fan speed, mop wetness, room selection, consumables, a Valetudo map and camera, for one robot or several.
 -   **Graph**: History of up to eight sensors as lines, (stacked) bars, or this week against last week.
 
 ### 🎬 Media Center

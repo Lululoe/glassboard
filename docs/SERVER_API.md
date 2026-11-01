@@ -107,6 +107,16 @@ the climate actions below.
   `null` where there is no data. `range` must be one of the card's ranges (the week comparison ignores it and returns
   14 days). `kind` is `mean` (an average) or `change` (what a meter used). Values come from Home Assistant's long-term
   statistics where it keeps them and from the state history otherwise; answers are cached for 30 seconds.
+- **Load a vacuum card**: `{ "service": "homeassistant", "endpoint": "vacuum", "card_id": "robo" }` returns
+  `{ "robots": [{ "entity_id", "name", "state", "battery", "progress", "fan": { "value", "options" }, "wetness", "stats", "rooms", "consumables", "camera", "map" }] }`.
+- **Control a robot**: `{ "service": "homeassistant", "endpoint": "vacuum_action", "card_id": "robo", "entity_id": "vacuum.robo", "action": "start" }`.
+  The robot must be on the card (`403` otherwise). `action` is `start`, `pause`, `stop`, `return_to_base`, `locate`,
+  `clean_rooms` (with `areas`, rooms of the robot), `set_fan` and `set_wetness` (with `value`, one of the options Home
+  Assistant reports) or `reset_consumable` (with `index`, a consumable with a `reset` button).
+- **Load a robot's map**: `{ "service": "homeassistant", "endpoint": "vacuum_map", "card_id": "robo", "entity_id": "camera.robo_map_data" }`
+  returns `{ "kind": "image" }` for an ordinary camera, or for Valetudo's map data camera
+  `{ "kind": "valetudo", "viewBox", "segments": [{ "id", "name", "d", "x", "y" }], "floor", "walls", "path", "robot", "charger" }`,
+  with SVG paths in map pixels. The entity must be a `camera` or `map` of the card.
 - **Load a control dialog**: `{ "service": "homeassistant", "endpoint": "details", "entity_id": "group.living_room" }`
   returns `{ "entity": { ...state }, "members": { "light.lamp": { ...state } }, "favorites": { "light.lamp": [{ "hs_color": [24, 85] }, { "color_temp_kelvin": 2700 }] } }`.
   The entity must be on an `hacontrol` card; `members` lists the states of a group's `entity_id` attribute (empty for
@@ -186,6 +196,10 @@ the climate actions below.
 ### Material Design Icons
 `GET /api/icons/mdi/<name>.svg` returns a Material Design Icon (the icons Home Assistant uses) as SVG, e.g.
 `/api/icons/mdi/lightbulb-off.svg`; `404` for unknown names. Responses may be cached for a week.
+
+### Robot camera
+`GET /api/ha/camera?card_id=robo&entity_id=camera.robo` returns the picture of a robot's `camera` or `map` entity
+(`403` for others), so Home Assistant's token stays on the server.
 
 ### Media player artwork
 **Endpoint**: `GET /api/ha/artwork?entity_id=media_player.living_room`

@@ -1,7 +1,8 @@
 import express from 'express';
 import { HttpError } from '../errors.js';
-import { demoHandlers, isDemoMode } from '../services/demo.js';
+import { demoCameraImage, demoHandlers, isDemoMode } from '../services/demo.js';
 import { fetchArtwork } from '../services/homeassistant.js';
+import { fetchRobotImage } from '../services/haVacuum.js';
 import { serviceHandlers } from '../services/index.js';
 import { mdiSvg } from '../services/mdi.js';
 
@@ -21,6 +22,19 @@ router.get('/ha/artwork', async (req, res, next) => {
             return;
         }
         res.set({ 'Content-Type': art.contentType, 'Cache-Control': 'private, max-age=300' }).send(art.body);
+    } catch (err) {
+        next(err);
+    }
+});
+
+/** The image of a robot's camera or map entity on a vacuum card; the token stays on the server. */
+router.get('/ha/camera', async (req, res, next) => {
+    try {
+        const cardId = String(req.query.card_id || '');
+        const entityId = String(req.query.entity_id || '');
+        if (!cardId || !entityId) throw new HttpError(400, 'card_id and entity_id are required');
+        const image = isDemoMode() ? demoCameraImage(cardId, entityId) : await fetchRobotImage(cardId, entityId);
+        res.set({ 'Content-Type': image.contentType, 'Cache-Control': 'no-store' }).send(image.body);
     } catch (err) {
         next(err);
     }

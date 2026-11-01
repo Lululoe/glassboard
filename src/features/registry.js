@@ -16,6 +16,9 @@ import MultiThermostatEditor from './Thermostat/MultiThermostatEditor';
 import ThermostatCard from './Thermostat/ThermostatCard';
 import ThermostatEditor from './Thermostat/ThermostatEditor';
 import TransmissionCard from './Transmission/TransmissionCard';
+import VacuumCard from './Vacuum/VacuumCard';
+import VacuumsCard from './Vacuum/VacuumsCard';
+import { VacuumEditor, VacuumsEditor } from './Vacuum/VacuumEditor';
 import WeatherCard from './Weather/WeatherCard';
 import WeatherEditor from './Weather/WeatherEditor';
 
@@ -37,6 +40,8 @@ export const cardRegistry = {
     thermostat: ThermostatCard,
     thermostats: MultiThermostatCard,
     transmission: TransmissionCard,
+    vacuum: VacuumCard,
+    vacuums: VacuumsCard,
     weather: WeatherCard,
 };
 
@@ -96,6 +101,21 @@ export const cardInfo = {
         icon: 'lu-ChartLine',
         defaults: { entities: [] },
         Editor: GraphEditor,
+    },
+    vacuum: {
+        name: 'Vacuum',
+        description: 'Start, rooms, fan speed, map, camera and consumables of one robot',
+        icon: 'mdi:robot-vacuum',
+        sizes: ['half', '1', '2', '3'],
+        defaults: { entity_id: '' },
+        Editor: VacuumEditor,
+    },
+    vacuums: {
+        name: 'Multiple Vacuums',
+        description: 'Control all your robots together, with details for each',
+        icon: 'mdi:robot-vacuum-variant',
+        defaults: { robots: [] },
+        Editor: VacuumsEditor,
     },
     appgrid: {
         name: 'App Grid',

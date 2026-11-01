@@ -40,7 +40,7 @@ layout rather than a squeezed wide one. On tablets later cards move up to fill g
 
 Not every card works at every size. In edit mode each card only offers the sizes its type supports; most cards
 support one to three wide, `hacontrol` and `spacer` also support half and quarter, and `thermostat` and
-`mediaplayer` support quarter, half and one wide. A size set in
+`mediaplayer` support quarter, half and one wide, and `vacuum` half and one to three wide. A size set in
 `config.yaml` is always used, even if edit mode would not offer it.
 
 ## Editing the Dashboard
@@ -495,6 +495,119 @@ card's shared values for that room.
         - { name: Sleep, temperature: 17, icon: Moon }
     - entity_id: climate.office
       name: Study
+```
+
+---
+
+## Vacuum (`vacuum`)
+One robot: start (pause while cleaning), stop and return to dock in the header, and its stats and a bar below. The full
+height card adds fan speed, mop wetness and rooms. Tapping the header opens the robot's details. Half height or one to
+three wide; two and three wide cards can also show the map, all stats and the consumables.
+
+### Configuration
+| Option | Type | Description |
+|--------|------|-------------|
+| `entity_id` | string | Required. The `vacuum.*` entity. Its `fan_speed_list` gives the fan speeds. |
+| `name` | string | Name; defaults to Home Assistant's. |
+| `battery` | string | Battery sensor. Defaults to the first battery among `stats`, then the robot's `battery_level` attribute. |
+| `progress` | string | Sensor with the cleaning progress in percent. While cleaning, the bar shows it; otherwise, and without one, it shows the battery. |
+| `wetness` | string | `select.*` entity for mop wetness. Without one, the control is hidden. |
+| `stats` | array | Any number of entities, see below. The first three show on the cards, all of them in the details. |
+| `rooms` | array | Rooms to clean, see below. With fewer than two, the section is hidden. |
+| `consumables` | array | Shown in the details, see below. |
+| `map` | string | Camera entity for the details, see below. |
+| `camera` | string | Camera entity for the details, see below. |
+| `show_map` | boolean | Two and three wide: show the `map` entity on the card. |
+| `show_stats` | boolean | Two and three wide: show all stats on the card. |
+| `show_consumables` | boolean | Two and three wide: show the consumables on the card. |
+
+The `show_` sections sit in columns beside the card's content. Those that don't fit share: on a three wide card the map
+gets a column and the other two stack, and on a two wide card a switch chooses between them. On smaller screens the card
+narrows to one wide without them, and they stay in the robot's details.
+
+**Stats**: each is an entity id, or an object.
+| Field | Description |
+|-------|-------------|
+| `entity_id` | Required. The entity. |
+| `attribute` | Show this attribute instead of the state. |
+| `name` | Label; defaults to the attribute or Home Assistant's name. |
+| `unit` | Unit; defaults to the entity's. |
+
+Values are shown in the units people expect: `720 s` as `12 min`, `8160 min` as `136 h` and `90000 cm²` as `9 m²`.
+
+**Rooms**: rooms are cleaned with `vacuum.clean_area`, so the robot's segments need to be mapped to Home Assistant areas.
+With none picked, `vacuum.start` cleans everything.
+| Field | Description |
+|-------|-------------|
+| `area` | Required. The Home Assistant area id. |
+| `name` | Label; defaults to the area id. |
+| `segment` | Map segment id of this room. Without one, the map matches segments to rooms by name. |
+
+**Consumables**: each is an entity id, or an object.
+| Field | Description |
+|-------|-------------|
+| `entity_id` | Required. How much is left, e.g. a sensor with the remaining minutes. |
+| `attribute` | Read this attribute instead of the state. |
+| `name` | Label; defaults to Home Assistant's name. |
+| `unit` | Unit; defaults to the entity's. |
+| `percent` | Sensor with the percentage left. The bar shows it, orange from 20% and red from 10%, and it's listed beside the value unless they're the same. Without one, the bar is full and green as long as `entity_id` isn't 0. |
+| `reset` | `button.*` entity that resets it. Its Reset button is always available, and asks once more before pressing. |
+
+**Map and camera**: both are optional and take any `camera.*` entity. Valetudo's map data camera (e.g.
+`camera.robo_map_data`) is drawn as a minimal map with rooms, walls, the path, the dock and the robot, where tapping a
+room picks it; any other camera shows its picture, refreshed every two seconds. With both set, a switch chooses between
+them; with neither, the details show only stats, consumables and controls.
+
+### Example
+```yaml
+- id: robo
+  type: vacuum
+  entity_id: vacuum.l10s_ultra
+  battery: sensor.l10s_ultra_battery_level
+  wetness: select.l10s_ultra_water
+  map: camera.l10s_ultra_map_data
+  stats:
+    - { entity_id: sensor.l10s_ultra_battery_level, name: Battery }
+    - { entity_id: sensor.l10s_ultra_current_statistics_area, name: Area }
+    - { entity_id: sensor.l10s_ultra_current_statistics_time, name: Time }
+    - { entity_id: vacuum.l10s_ultra, attribute: fan_speed, name: Fan }
+  rooms:
+    - { area: kitchen, name: Kitchen }
+    - { area: living_room, name: Living Room }
+  consumables:
+    - entity_id: sensor.l10s_ultra_main_brush
+      name: Main brush
+      reset: button.l10s_ultra_reset_main_brush_consumable
+    - entity_id: sensor.l10s_ultra_dock_detergent
+      name: Dock detergent
+      percent: sensor.l10s_ultra_dock_detergent
+```
+
+---
+
+## Multiple Vacuums (`vacuums`)
+Up to six robots: start, stop and return to dock in the header act on all of them. Each robot shows the half height
+content in a row or, when there's a column for each (at most as many robots as columns), the full height content.
+Tapping a robot opens its details, whose controls act on that robot only. One to three wide.
+
+### Configuration
+| Option | Type | Description |
+|--------|------|-------------|
+| `robots` | array | Required. Entity ids, or objects with the options of the `vacuum` card. |
+| `title` | string | Card title; defaults to `Robots`. |
+
+### Example
+```yaml
+- id: robots
+  type: vacuums
+  colSpan: 2
+  robots:
+    - entity_id: vacuum.l10s_ultra
+      wetness: select.l10s_ultra_water
+      rooms:
+        - { area: kitchen, name: Kitchen }
+        - { area: office, name: Office }
+    - vacuum.s5_max
 ```
 
 ---

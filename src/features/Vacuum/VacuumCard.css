@@ -1,0 +1,857 @@
+/* Vacuum cards: start, stop and dock in the header; stats, controls and rooms below */
+.vacuum-card .two-tone-content {
+    padding: 14px 20px 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.vacuum-card.half .two-tone-content {
+    padding: 10px 20px 12px;
+}
+
+.vacuum-card .two-tone-header-actions {
+    align-self: center;
+    margin-left: 4px;
+    flex-shrink: 0;
+}
+
+.vacuum-card .two-tone-header-info {
+    gap: 12px;
+    padding: 8px 6px 8px 10px;
+}
+
+.vac-body {
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.vacuum-card.half .vac-body {
+    gap: 8px;
+    justify-content: center;
+}
+
+.vacuum-card:not(.half):not(.vacuums-card) .vac-body:not(:has(.vac-rooms-section)) {
+    justify-content: center;
+    gap: 16px;
+}
+
+.vac-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+.vac-round {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    background: var(--bg-fill);
+    color: var(--text-primary);
+    transition: background var(--duration-standard) var(--ease-standard), opacity var(--duration-standard) var(--ease-standard), transform var(--duration-standard) var(--ease-standard);
+}
+
+.vac-round.accent {
+    background: var(--system-teal);
+    color: #fff;
+}
+
+.vac-round:active:not(:disabled) {
+    transform: scale(0.94);
+}
+
+.vac-round:disabled,
+.vac-action:disabled {
+    opacity: 0.38;
+    cursor: default;
+}
+
+.vac-round:focus-visible,
+.vac-seg button:focus-visible,
+.vac-room:focus-visible,
+.vac-robot-head:focus-visible,
+.vac-action:focus-visible,
+.vac-reset:focus-visible,
+.vac-select:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* Stats and bar */
+.vac-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.vac-stats > div,
+.vac-detail-stats > div {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.vac-stat-name {
+    font-size: 12px;
+    line-height: 16px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vac-stats b {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 18px;
+    line-height: 23px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vac-stats b svg {
+    color: var(--system-green);
+    flex-shrink: 0;
+}
+
+.vac-stats b svg.vac-battery.low {
+    color: var(--system-orange);
+}
+
+.vac-stats b svg.vac-battery.empty {
+    color: var(--system-red);
+}
+
+.vac-bar,
+.vac-part-bar {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--bg-fill);
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.vac-bar > div,
+.vac-part-bar > div {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--system-green);
+    transition: width 0.5s var(--ease-standard), background var(--duration-standard) var(--ease-standard);
+}
+
+.vac-bar.progress > div {
+    background: var(--system-teal);
+}
+
+/* Fan speed and wetness */
+.vac-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.vac-control > svg {
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.vac-seg {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 2px;
+    padding: 2px;
+    border-radius: 9px;
+    background: var(--bg-fill);
+}
+
+.vac-seg button {
+    min-height: 34px;
+    padding: 0 2px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background var(--duration-standard) var(--ease-standard), color var(--duration-standard) var(--ease-standard);
+}
+
+.vac-seg button[aria-pressed="true"] {
+    background: var(--bg-tile, #fff);
+    color: #1c1c1e;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.vac-select {
+    flex: 1;
+    min-width: 0;
+    min-height: 38px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--bg-fill);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Rooms: one row that scrolls sideways */
+.vac-rooms-section {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+.vac-rooms-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.vac-rooms-head span:last-child {
+    color: var(--text-primary);
+}
+
+.vac-rooms {
+    display: flex;
+    gap: 6px;
+    margin: 0 -20px;
+    padding: 2px 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x;
+    scrollbar-width: none;
+}
+
+.vac-rooms::-webkit-scrollbar {
+    display: none;
+}
+
+.vac-room {
+    flex-shrink: 0;
+    height: 36px;
+    padding: 0 13px;
+    border-radius: 18px;
+    background: var(--bg-fill);
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--text-primary);
+    transition: background var(--duration-standard) var(--ease-standard), box-shadow var(--duration-standard) var(--ease-standard);
+}
+
+.vac-room[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--system-teal) 26%, transparent);
+    box-shadow: inset 0 0 0 1.5px var(--system-teal);
+}
+
+/* Two and three wide: the card's content, then the chosen sections in columns */
+.vac-wide {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    gap: 22px;
+}
+
+.vac-wide .vac-rooms {
+    margin: 0;
+    padding: 2px 0;
+}
+
+.vac-column {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-left: 22px;
+    border-left: 1px solid var(--color-separator);
+}
+
+.vac-column .vac-seg {
+    flex: none;
+}
+
+.vac-column-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.vac-column-scroll > .vac-section:first-child {
+    margin-top: 0;
+}
+
+/* Several robots */
+.vac-robots {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.vac-robot {
+    flex: 1 0 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 0;
+}
+
+.vac-robots:not(.columns) .vac-robot + .vac-robot {
+    border-top: 1px solid var(--color-separator);
+}
+
+.vac-robots.columns {
+    flex-direction: row;
+    gap: 20px;
+    overflow: hidden;
+}
+
+.vac-robots.columns .vac-robot {
+    flex: 1 1 0;
+    justify-content: flex-start;
+    padding: 0;
+    gap: 8px;
+}
+
+.vac-robots.columns .vac-robot + .vac-robot {
+    border-left: 1px solid var(--color-separator);
+    padding-left: 20px;
+}
+
+.vac-robots.columns .vac-rooms {
+    margin: 0;
+    padding: 2px 0;
+}
+
+.vac-robot-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 26px;
+    border-radius: 6px;
+    color: var(--text-tertiary);
+}
+
+.vac-robot-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.vac-robot-state {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vac-robots:not(.columns) .vac-stat-name {
+    display: none;
+}
+
+.vac-robots:not(.columns) .vac-stats b {
+    font-size: 14px;
+    line-height: 18px;
+}
+
+.vac-robots:not(.columns) .vac-bar {
+    height: 6px;
+}
+
+/* ===== Robot details: a flat panel over a dimmed page, a bottom sheet on phones ===== */
+dialog.vac-overlay {
+    --vac-panel-bg: #1c1c1e;
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 24px;
+    border: 0;
+    background: transparent;
+    color: var(--text-primary);
+    font-family: var(--font-family);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+:root[data-theme="light"] dialog.vac-overlay {
+    --vac-panel-bg: #f2f2f7;
+}
+
+dialog.vac-overlay:not([open]) {
+    display: none;
+}
+
+dialog.vac-overlay::backdrop {
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: vac-fade-in 0.2s ease;
+}
+
+html:has(dialog.vac-overlay[open]) {
+    overflow: hidden;
+}
+
+@keyframes vac-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+
+.vac-panel {
+    width: min(920px, 100%);
+    height: min(620px, calc(100dvh - 48px));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: 22px;
+    background: var(--vac-panel-bg);
+    border: 0.5px solid var(--border-popup);
+    box-shadow: var(--shadow-popup);
+    animation: vac-panel-in 0.28s var(--ease-standard);
+}
+
+.vac-panel.single {
+    width: min(480px, 100%);
+}
+
+@keyframes vac-panel-in {
+    from {
+        opacity: 0;
+        transform: scale(0.94) translateY(12px);
+    }
+}
+
+.vac-grabber {
+    display: none;
+}
+
+.vac-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 12px 12px 16px;
+    min-height: 64px;
+    flex-shrink: 0;
+    border-bottom: 0.5px solid var(--color-separator);
+}
+
+.vac-head-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: linear-gradient(180deg, #5fd8ea, #1aa3c0);
+    flex-shrink: 0;
+}
+
+.vac-head-titles {
+    flex: 1;
+    min-width: 0;
+}
+
+.vac-head-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 22px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vac-head-sub {
+    font-size: 13px;
+    line-height: 18px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vac-panes {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+
+.vac-panel.single .vac-panes {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.vac-view-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px 16px;
+    min-height: 0;
+    min-width: 0;
+    border-right: 0.5px solid var(--color-separator);
+}
+
+.vac-view-pane .vac-seg {
+    flex: none;
+}
+
+.vac-view-pane .vac-seg button {
+    min-height: 36px;
+    font-size: 13px;
+}
+
+.vac-viewer {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--bg-fill);
+}
+
+.vac-map,
+.vac-camera,
+.vac-view-message {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.vac-map {
+    padding: 8px;
+}
+
+.vac-camera {
+    object-fit: contain;
+    background: #000;
+}
+
+.vac-view-message {
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.vac-map-floor {
+    fill: var(--bg-fill);
+    shape-rendering: crispEdges;
+}
+
+.vac-map-room {
+    fill: var(--bg-fill-hover);
+    shape-rendering: crispEdges;
+    transition: fill var(--duration-standard) var(--ease-standard);
+}
+
+.vac-map-room.pickable {
+    cursor: pointer;
+}
+
+.vac-map-room.picked {
+    fill: color-mix(in srgb, var(--system-teal) 40%, transparent);
+}
+
+.vac-map-wall {
+    fill: var(--text-secondary);
+    shape-rendering: crispEdges;
+    pointer-events: none;
+}
+
+.vac-map-path {
+    fill: none;
+    stroke: var(--system-teal);
+    stroke-opacity: 0.55;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+}
+
+.vac-map-label {
+    fill: var(--text-primary);
+    font-weight: 600;
+    pointer-events: none;
+    paint-order: stroke;
+}
+
+.vac-map-charger {
+    fill: var(--text-secondary);
+    pointer-events: none;
+}
+
+.vac-map-robot {
+    fill: #fff;
+    stroke: var(--system-teal);
+    pointer-events: none;
+}
+
+.vac-map-pulse {
+    fill: var(--system-teal);
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.vac-side {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+}
+
+.vac-side-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 2px 18px 12px;
+    overscroll-behavior: contain;
+}
+
+.vac-section {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin: 14px 0 8px;
+}
+
+.vac-detail-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 8px;
+}
+
+.vac-detail-stats b {
+    font-size: 17px;
+    line-height: 22px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Consumables */
+.vac-part {
+    padding: 8px 0;
+}
+
+.vac-part + .vac-part {
+    border-top: 0.5px solid var(--color-separator);
+}
+
+.vac-part-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 32px;
+}
+
+.vac-part-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.vac-part-value {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.vac-part-bar {
+    height: 5px;
+    margin-top: 4px;
+}
+
+.vac-part.low .vac-part-bar > div {
+    background: var(--system-orange);
+}
+
+.vac-part.low .vac-part-value {
+    color: var(--system-orange-text, var(--system-orange));
+}
+
+.vac-part.empty .vac-part-bar > div {
+    background: var(--system-red);
+}
+
+.vac-part.empty .vac-part-value {
+    color: var(--system-red-text, var(--system-red));
+}
+
+.vac-reset {
+    min-height: 32px;
+    min-width: 62px;
+    padding: 0 12px;
+    border-radius: 16px;
+    background: var(--bg-fill);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.vac-reset.confirm {
+    background: var(--system-orange);
+    color: #1c1c1e;
+}
+
+.vac-primary {
+    flex-shrink: 0;
+    padding: 12px 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 0.5px solid var(--color-separator);
+}
+
+.vac-primary .vac-rooms {
+    margin: 0 -18px;
+    padding: 2px 18px;
+}
+
+.vac-actions {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 2px;
+}
+
+.vac-action {
+    min-height: 48px;
+    border-radius: 14px;
+    background: var(--bg-fill);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background var(--duration-standard) var(--ease-standard), opacity var(--duration-standard) var(--ease-standard);
+}
+
+.vac-action.accent {
+    background: var(--system-teal);
+    color: #fff;
+}
+
+@media (max-width: 760px) {
+    dialog.vac-overlay {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .vac-panel,
+    .vac-panel.single {
+        width: 100%;
+        height: 82dvh;
+        border-radius: 22px 22px 0 0;
+        border-width: 0.5px 0 0;
+        animation-name: vac-sheet-in;
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .vac-grabber {
+        display: block;
+        width: 36px;
+        height: 5px;
+        border-radius: 3px;
+        background: var(--text-tertiary);
+        margin: 8px auto 0;
+        flex-shrink: 0;
+    }
+
+    .vac-head {
+        min-height: 56px;
+        padding-top: 6px;
+    }
+
+    .vac-panes {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .vac-view-pane {
+        flex: 0 0 216px;
+        padding: 10px 14px 8px;
+        gap: 8px;
+        border-right: 0;
+    }
+
+    .vac-view-pane .vac-seg button {
+        min-height: 32px;
+    }
+
+    .vac-side {
+        flex: 1;
+    }
+}
+
+@keyframes vac-sheet-in {
+    from {
+        transform: translateY(100%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    dialog.vac-overlay::backdrop,
+    .vac-panel {
+        animation: none;
+    }
+
+    .vacuum-card *,
+    dialog.vac-overlay * {
+        transition: none !important;
+    }
+}

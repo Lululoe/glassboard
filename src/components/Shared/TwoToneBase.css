@@ -45,13 +45,15 @@
     -webkit-user-select: none;
 }
 
-a.two-tone-header-info {
+a.two-tone-header-info,
+button.two-tone-header-info {
     cursor: pointer;
     transition: background var(--duration-standard) var(--ease-standard);
 }
 
 @media (pointer: fine) {
-    a.two-tone-header-info:hover {
+    a.two-tone-header-info:hover,
+    button.two-tone-header-info:hover {
         background: var(--bg-fill);
     }
 }
@@ -66,7 +68,8 @@ a.two-tone-header-info:active .app-icon-container {
     opacity: 0.3;
 }
 
-a.two-tone-header-info:focus-visible {
+a.two-tone-header-info:focus-visible,
+button.two-tone-header-info:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
 }
