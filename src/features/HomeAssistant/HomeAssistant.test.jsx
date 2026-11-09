@@ -71,20 +71,21 @@ describe('Home Assistant card', () => {
         console.error.mockRestore();
     });
 
-    it('shows as many entities as fit the tile size', async () => {
-        const entities = ['a', 'b', 'c', 'd', 'e'].map(n => ({ entity_id: `light.${n}`, name: `Light ${n}` }));
+    it('shows its first entity as one tile without a card around it', async () => {
+        const entities = ['a', 'b'].map(n => ({ entity_id: `light.${n}`, name: `Light ${n}` }));
         fetch.mockResolvedValue(jsonResponse({}));
 
-        const { rerender, container } = render(<HAControlCard config={{ id: 'l', tileSize: 'quarter', data: { entities } }} />);
+        const { container } = render(<HAControlCard config={{ id: 'l', tileSize: 'quarter', data: { entities } }} />);
         expect(container.querySelectorAll('.ha-tile')).toHaveLength(1);
-        expect(container.querySelector('.ha-control-card')).toHaveClass('tile-quarter');
-
-        rerender(<HAControlCard config={{ id: 'l', tileSize: 'half', data: { entities } }} />);
-        expect(container.querySelectorAll('.ha-tile')).toHaveLength(2);
-
-        rerender(<HAControlCard config={{ id: 'l', colSpan: 2, data: { entities } }} />);
-        expect(container.querySelectorAll('.ha-tile')).toHaveLength(5);
+        expect(screen.getByText('Light a')).toBeInTheDocument();
+        expect(container.querySelector('.glass-card')).toBeNull();
         await waitFor(() => expect(fetch).toHaveBeenCalled());
+    });
+
+    it('asks for an entity while it has none', () => {
+        render(<HAControlCard config={{ id: 'n', tileSize: 'quarter', data: { entities: [{}] } }} />);
+        expect(screen.getByText('No entity')).toBeInTheDocument();
+        expect(fetch).not.toHaveBeenCalled();
     });
 
     it("shows Home Assistant's icon unless the card sets one", async () => {
@@ -92,8 +93,8 @@ describe('Home Assistant card', () => {
             'light.a': { state: 'on', attributes: {}, icon: 'mdi:ceiling-light' },
             'light.b': { state: 'off', attributes: {}, icon: 'mdi:lightbulb-off' },
         }));
-        const entities = [{ entity_id: 'light.a', name: 'A' }, { entity_id: 'light.b', name: 'B', icon: 'lamp' }];
-        render(<HAControlCard config={{ id: 'i', data: { entities } }} />);
+        render(<HAControlCard config={{ id: 'a', data: { entities: [{ entity_id: 'light.a', name: 'A' }] } }} />);
+        render(<HAControlCard config={{ id: 'b', data: { entities: [{ entity_id: 'light.b', name: 'B', icon: 'lamp' }] } }} />);
 
         expect(await screen.findByRole('img', { name: 'ceiling-light' })).toBeInTheDocument();
         // The configured icon wins

@@ -1,5 +1,6 @@
 // @vitest-environment node
 import fs from 'fs';
+import http from 'http';
 import os from 'os';
 import path from 'path';
 import request from 'supertest';
@@ -140,5 +141,124 @@ describe('layout API', () => {
         await request(server).post('/api/config/layout/restore').expect(200);
         expect(readLayout()).toEqual(saved);
         await request(server).post('/api/config/layout/restore').expect(404);
+    });
+
+    describe('page background', () => {
+        const pages = { home: [{ id: 'a', type: 'x' }, { id: 't', type: 'transmission', url: 'http://t' }], admin: [{ id: 'c', type: 'x' }] };
+        const png = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex');
+
+        it('stores an uploaded picture and serves it', async () => {
+            const upload = await request(server).post('/api/config/background').set('Content-Type', 'image/png').send(png);
+            expect(upload.status).toBe(200);
+            expect(upload.body.url).toMatch(/^\/api\/config\/background\/[a-f0-9]{32}\.png$/);
+
+            const served = await request(server).get(upload.body.url);
+            expect(served.status).toBe(200);
+            expect(served.headers['content-type']).toBe('image/png');
+        });
+
+        it('refuses other files and names', async () => {
+            expect((await request(server).post('/api/config/background').set('Content-Type', 'text/plain').send('hi')).status).toBe(400);
+            expect((await request(server).get('/api/config/background/notes.txt')).status).toBe(404);
+        });
+
+        it('saves a color or a picture, and null goes back to config.yaml', async () => {
+            expect((await put(server, { pages, background: { color: '#7a2bd4' } })).status).toBe(200);
+            expect(readLayout().background).toEqual({ color: '#7a2bd4' });
+
+            expect((await put(server, { pages })).status).toBe(200);
+            expect(readLayout().background).toEqual({ color: '#7a2bd4' });
+
+            expect((await put(server, { pages, background: null })).status).toBe(200);
+            expect(readLayout().background).toBeUndefined();
+
+            expect((await put(server, { pages, background: { color: 'red' } })).status).toBe(400);
+            expect((await put(server, { pages, background: { image: 'javascript:alert(1)' } })).status).toBe(400);
+        });
+
+        it('downloads a picture from the web and serves it from here', async () => {
+            const webp = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBPVP8 ')]);
+            const site = await listenOnLoopback(http.createServer((req, res) => {
+                if (req.url === '/wall.webp') res.writeHead(200, { 'Content-Type': 'application/octet-stream' }).end(webp);
+                else if (req.url === '/page') res.writeHead(200, { 'Content-Type': 'text/html' }).end('<html></html>');
+                else res.writeHead(404).end();
+            }));
+            const base = `http://127.0.0.1:${site.address().port}`;
+            try {
+                const ok = await request(server).post('/api/config/background/download').send({ url: `${base}/wall.webp` });
+                expect(ok.status).toBe(200);
+                expect(ok.body.url).toMatch(/^\/api\/config\/background\/[a-f0-9]{32}\.webp$/);
+                expect((await request(server).get(ok.body.url)).headers['content-type']).toBe('image/webp');
+
+                expect((await request(server).post('/api/config/background/download').send({ url: `${base}/page` })).status).toBe(400);
+                expect((await request(server).post('/api/config/background/download').send({ url: `${base}/missing.jpg` })).status).toBe(502);
+                expect((await request(server).post('/api/config/background/download').send({ url: 'file:///etc/passwd' })).status).toBe(400);
+            } finally {
+                site.close();
+            }
+        });
+
+        it("saves a page's own background, or the theme's on that page", async () => {
+            const res = await put(server, { pages, pageBackgrounds: { home: { color: '#1f8a4c' }, admin: { theme: true } } });
+            expect(res.status).toBe(200);
+            expect(readLayout().pageBackgrounds).toEqual({ home: { color: '#1f8a4c' }, admin: { theme: true } });
+
+            expect((await put(server, { pages, pageBackgrounds: { home: null, admin: null } })).status).toBe(200);
+            expect(readLayout().pageBackgrounds).toBeUndefined();
+
+            expect((await put(server, { pages, pageBackgrounds: { nope: { color: '#000000' } } })).status).toBe(400);
+            expect((await put(server, { pages, pageBackgrounds: { home: { theme: false } } })).status).toBe(400);
+        });
+
+        it('stores null to clear a page background set in config.yaml', async () => {
+            const withBackground = config();
+            withBackground.pages[0].background = { color: '#c2372f' };
+            setConfig(withBackground);
+            expect((await put(server, { pages, pageBackgrounds: { home: null } })).status).toBe(200);
+            expect(readLayout().pageBackgrounds).toEqual({ home: null });
+            expect((await put(server, { pages, pageBackgrounds: { home: { color: '#c2372f' } } })).status).toBe(200);
+            expect(readLayout().pageBackgrounds).toBeUndefined();
+        });
+
+        it('removes pictures no saved background uses', async () => {
+            const first = (await request(server).post('/api/config/background').set('Content-Type', 'image/png').send(png)).body.url;
+            const second = (await request(server).post('/api/config/background').set('Content-Type', 'image/png').send(Buffer.concat([png, Buffer.from([1])]))).body.url;
+
+            await put(server, { pages, background: { image: second, dim: 0.3 } });
+            expect((await request(server).get(first)).status).toBe(404);
+            expect((await request(server).get(second)).status).toBe(200);
+        });
+    });
+
+    describe('added pages', () => {
+        const pages = { home: [{ id: 'a', type: 'x' }, { id: 't', type: 'transmission', url: 'http://t' }], admin: [{ id: 'c', type: 'x' }] };
+
+        it('saves a page added in the browser with its cards', async () => {
+            const res = await put(server, {
+                pages: { ...pages, garden: [{ id: 'g', type: 'spacer', colSpan: 2 }] },
+                addedPages: [{ id: 'garden', name: 'Garden' }],
+            });
+            expect(res.status).toBe(200);
+            const layout = readLayout();
+            expect(layout.addedPages).toEqual([{ id: 'garden', name: 'Garden' }]);
+            expect(layout.pages.garden).toEqual([{ id: 'g', colSpan: 2, config: { type: 'spacer' } }]);
+
+            // Left out, the added pages are kept
+            expect((await put(server, { pages: { ...pages, garden: [] } })).status).toBe(200);
+            expect(readLayout().addedPages).toEqual([{ id: 'garden', name: 'Garden' }]);
+        });
+
+        it('needs every added page and refuses ids that are taken or unknown', async () => {
+            expect((await put(server, { pages, addedPages: [{ id: 'garden' }] })).status).toBe(400);
+            expect((await put(server, { pages: { ...pages, web: [] }, addedPages: [{ id: 'web' }] })).status).toBe(400);
+            expect((await put(server, { pages: { ...pages, x: [] } })).status).toBe(400);
+            expect((await put(server, { pages: { ...pages, 'Bad Id': [] }, addedPages: [{ id: 'Bad Id' }] })).status).toBe(400);
+        });
+
+        it('removes a page that is no longer sent', async () => {
+            await put(server, { pages: { ...pages, garden: [] }, addedPages: [{ id: 'garden' }] });
+            expect((await put(server, { pages, addedPages: [] })).status).toBe(200);
+            expect(readLayout().addedPages).toBeUndefined();
+        });
     });
 });

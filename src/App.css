@@ -85,7 +85,7 @@
     align-items: center;
     height: 100vh;
     color: var(--text-primary);
-    background: var(--bg-page-gradient);
+    background: var(--bg-page-base, #003780) var(--bg-page-custom, var(--bg-page-gradient)) center / cover;
 }
 
 .loading-error {
@@ -215,4 +215,39 @@
     .app-content {
         padding: 0;
     }
+}
+/* In edit mode the page control also adds pages, and edits pages added in the browser */
+.page-indicators.is-editing {
+    align-items: center;
+    padding: 0 4px 0 8px;
+}
+
+.page-indicator-action {
+    width: 32px;
+    height: 32px;
+    margin-left: 2px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: #fff;
+    cursor: pointer;
+}
+
+.page-indicator-action + .page-indicator-action {
+    margin-left: 0;
+}
+
+.page-indicators.is-editing .page-dot + .page-indicator-action {
+    margin-left: 6px;
+}
+
+@media (pointer: fine) {
+    .page-indicator-action:hover {
+        background: rgba(255, 255, 255, 0.18);
+    }
+}
+
+.page-indicator-action:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }

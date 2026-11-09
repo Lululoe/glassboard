@@ -7,7 +7,8 @@ const HEADER = [
     '# Written by Glassboard when you edit the dashboard in the browser.',
     '# It takes precedence over config.yaml: card order, sizes and visibility per page, cards',
     '# added or changed in the browser (under `config`), config.yaml cards that were removed, and',
-    '# the header menu and icon background presets when they were edited in the browser.',
+    '# the header menu, icon background presets and page background when they were edited in the browser,',
+    '# pages added in the browser (`addedPages`) and backgrounds of single pages (`pageBackgrounds`).',
     '# Delete this file to go back to the dashboard in config.yaml.',
     '',
 ].join('\n');
@@ -32,7 +33,7 @@ export function getLayoutPath() {
 
 /**
  * Reads the layout overlay. A missing, empty or invalid file counts as no overrides.
- * @returns {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[]}} The overlay.
+ * @returns {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>}} The overlay.
  */
 export function readLayout() {
     const file = getLayoutPath();
@@ -45,6 +46,9 @@ export function readLayout() {
             removed: Array.isArray(data.removed) ? data.removed : [],
             ...(isPlainObject(data.launcher) ? { launcher: data.launcher } : {}),
             ...(Array.isArray(data.iconBackgrounds) ? { iconBackgrounds: data.iconBackgrounds } : {}),
+            ...(isPlainObject(data.background) ? { background: data.background } : {}),
+            ...(Array.isArray(data.addedPages) ? { addedPages: data.addedPages.filter(p => isPlainObject(p) && typeof p.id === 'string') } : {}),
+            ...(isPlainObject(data.pageBackgrounds) ? { pageBackgrounds: data.pageBackgrounds } : {}),
         };
     } catch (e) {
         logger.warn(`Error reading ${file}: ${e.message}`);
@@ -55,13 +59,16 @@ export function readLayout() {
 /**
  * Writes the layout overlay in place. Renaming a temp file over it would fail when the file
  * is a Docker bind mount, so this overwrites the existing file instead.
- * @param {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[]}} layout - The overlay to store.
+ * @param {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>}} layout - The overlay to store.
  */
 export function writeLayout(layout) {
     const data = { pages: layout.pages };
     if (layout.removed.length > 0) data.removed = layout.removed;
     if (layout.launcher) data.launcher = layout.launcher;
     if (layout.iconBackgrounds?.length > 0) data.iconBackgrounds = layout.iconBackgrounds;
+    if (layout.background) data.background = layout.background;
+    if (layout.addedPages?.length > 0) data.addedPages = layout.addedPages;
+    if (layout.pageBackgrounds && Object.keys(layout.pageBackgrounds).length > 0) data.pageBackgrounds = layout.pageBackgrounds;
     fs.writeFileSync(getLayoutPath(), HEADER + yaml.dump(data, { lineWidth: -1 }), 'utf8');
 }
 
@@ -71,6 +78,21 @@ export function writeLayout(layout) {
  */
 function getBackupPath() {
     return `${getLayoutPath()}.bak`;
+}
+
+/**
+ * Reads the copy of the layout overlay kept by the last reset.
+ * @returns {Object|null} Its contents, or null when there is no readable copy.
+ */
+export function readLayoutBackup() {
+    const file = getBackupPath();
+    try {
+        if (!fs.existsSync(file)) return null;
+        const data = yaml.load(fs.readFileSync(file, 'utf8'));
+        return isPlainObject(data) ? data : null;
+    } catch {
+        return null;
+    }
 }
 
 /**
@@ -161,17 +183,64 @@ function buildCard(entry, base) {
  * Returns a copy of the config with the layout overlay applied. Pages with a saved layout
  * list their cards in saved order (cards may come from other pages); config.yaml cards not
  * mentioned anywhere stay on their own page, after the saved ones. Removed cards are left out.
- * The header menu and icon background presets saved in the browser replace those of config.yaml.
+ * The header menu, icon background presets and page background saved in the browser replace those of config.yaml,
+ * and pages added in the browser follow the pages of config.yaml.
  * @param {Object} config - The merged configuration.
- * @param {{pages?: Object<string, Array<Object>>, removed?: Array<string|number>, launcher?: Object, iconBackgrounds?: string[]}} layout - The overlay.
+ * @param {{pages?: Object<string, Array<Object>>, removed?: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>}} layout - The overlay.
  * @returns {Object} The configuration with the overlay applied.
  */
 export function applyLayout(config, layout) {
+    config = withAddedPages(config, layout?.addedPages);
     const shared = {
         ...(isPlainObject(layout?.launcher) ? { launcher: layout.launcher } : {}),
         ...(Array.isArray(layout?.iconBackgrounds) ? { iconBackgrounds: layout.iconBackgrounds } : {}),
+        ...(isPlainObject(layout?.background) ? { background: layout.background } : {}),
     };
-    return { ...applyCards(config, layout), ...shared };
+    return withPageBackgrounds({ ...applyCards(config, layout), ...shared }, layout?.pageBackgrounds);
+}
+
+/**
+ * Returns the config with the backgrounds of single pages saved in the browser. A background
+ * replaces the page's `background`; `null` removes one set in config.yaml, so the page shows
+ * the dashboard's background again.
+ * @param {Object} config - The configuration.
+ * @param {Object<string, Object|null>|undefined} backgrounds - Backgrounds by page key.
+ * @returns {Object} The configuration; the same object when there are none.
+ */
+function withPageBackgrounds(config, backgrounds) {
+    if (!isPlainObject(backgrounds) || !Array.isArray(config.pages)) return config;
+    return {
+        ...config,
+        pages: config.pages.map((page, index) => {
+            const key = pageKey(page, index);
+            if (!Object.hasOwn(backgrounds, key)) return page;
+            const { background: _background, ...rest } = page;
+            return isPlainObject(backgrounds[key]) ? { ...rest, background: backgrounds[key] } : rest;
+        }),
+    };
+}
+
+/**
+ * Returns the config with the pages added in the browser after its own pages. Each is a grid
+ * page marked `addedInEditor`, without cards of its own; its cards come from the overlay. A
+ * config with top-level `cards` becomes a `default` page followed by the added ones. Pages whose
+ * id is already taken are left out.
+ * @param {Object} config - The configuration.
+ * @param {Array<{id: string, name?: string}>|undefined} added - The added pages, in order.
+ * @returns {Object} The configuration with the pages; the same object when there are none.
+ */
+export function withAddedPages(config, added) {
+    if (!Array.isArray(added) || added.length === 0) return config;
+    const own = Array.isArray(config.pages)
+        ? config.pages
+        : [{ id: 'default', cards: Array.isArray(config.cards) ? config.cards : [] }];
+    const taken = new Set(own.map((page, index) => pageKey(page, index)));
+    const extra = added
+        .filter(p => isPlainObject(p) && typeof p.id === 'string' && p.id && !taken.has(p.id) && taken.add(p.id))
+        .map(p => ({ id: p.id, ...(typeof p.name === 'string' && p.name ? { name: p.name } : {}), cards: [], addedInEditor: true }));
+    if (extra.length === 0) return config;
+    const { cards: _cards, ...rest } = config;
+    return { ...rest, pages: [...own, ...extra] };
 }
 
 /**

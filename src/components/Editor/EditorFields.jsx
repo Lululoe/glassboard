@@ -1,5 +1,5 @@
-import { useId } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { useId, useState } from 'react';
+import { ArrowDown, ArrowUp, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { setIn } from './setIn';
 import './EditorFields.css';
 
@@ -130,59 +130,190 @@ export const ToggleField = ({ label, checked, onChange, hint }) => (
 );
 
 /**
- * Editable list of objects, one row of inputs per item.
+ * A titled group of related fields, drawn as one panel so a form reads in clear sections.
  * @param {Object} props
- * @param {string} props.label - Field label.
- * @param {Array<Object>} props.items - The items.
- * @param {(items: Array<Object>) => void} props.onChange - Receives the new list.
- * @param {Array<{key: string, label: string, placeholder?: string}>} props.columns - Text inputs per row.
- * @param {(item: Object, key: string, value: string|undefined) => Object} [props.onItemChange] - Updates an item; defaults to setting the key.
- * @param {() => Object} [props.newItem] - Creates the item added by "Add".
- * @param {string} [props.addLabel] - Label of the add button.
- * @param {string} [props.hint] - Help text.
+ * @param {string} props.title - Group title.
+ * @param {string} [props.description] - One line about what the group is for.
+ * @param {import('react').ReactNode} props.children - The fields.
+ * @returns {JSX.Element} The group.
+ */
+export const Group = ({ title, description, children }) => (
+    <section className="editor-group">
+        <header className="editor-group-header">
+            <h3 className="editor-group-title">{title}</h3>
+            {description && <p className="editor-group-description">{description}</p>}
+        </header>
+        <div className="editor-group-body">{children}</div>
+    </section>
+);
+
+/**
+ * Text input of one property of a list item, with its own label.
+ * @param {Object} props
+ * @param {{key: string, label: string, placeholder?: string, hint?: string}} props.column - The property.
+ * @param {*} props.value - Current value.
+ * @param {(value: string|undefined) => void} props.onChange - Receives the new value.
  * @returns {JSX.Element} The field.
  */
-export const ListField = ({ label, items, onChange, columns, onItemChange, newItem = () => ({}), addLabel = 'Add', hint }) => {
+const ItemInput = ({ column, value, onChange }) => {
+    const id = useId();
+    return (
+        <Field label={column.label} hint={column.hint} htmlFor={id}>
+            <input
+                id={id}
+                className="editor-input"
+                type="text"
+                placeholder={column.placeholder}
+                value={value ?? ''}
+                onChange={(e) => onChange(e.target.value === '' ? undefined : e.target.value)}
+            />
+        </Field>
+    );
+};
+
+/**
+ * Editable list of objects, such as the sensors of a graph or the rooms of a thermostat. Each
+ * item is a row that names it; opening a row shows its properties as labelled fields. Items
+ * can be reordered and removed, and a new item opens right away.
+ * @param {Object} props
+ * @param {string} props.label - Title of the list.
+ * @param {Array<Object>} props.items - The items.
+ * @param {(items: Array<Object>) => void} props.onChange - Receives the new list.
+ * @param {Array<{key: string, label: string, placeholder?: string, hint?: string}>} props.columns - Properties
+ *   of an item. The first one names the item when it has no `name`.
+ * @param {(item: Object, key: string, value: string|undefined) => Object} [props.onItemChange] - Updates an item; defaults to setting the key.
+ * @param {() => Object} [props.newItem] - Creates the item added by "Add".
+ * @param {string} [props.addLabel] - Label of the add button, such as "Add sensor".
+ * @param {string} [props.hint] - Help text.
+ * @param {number} [props.max] - Most items the card uses; more are marked as not shown.
+ * @returns {JSX.Element} The list.
+ */
+export const ListField = ({
+    label, items, onChange, columns, onItemChange, newItem = () => ({}), addLabel = 'Add', hint, max,
+}) => {
+    const [open, setOpen] = useState(/** @type {number|null} */ (null));
+    const noun = addLabel.replace(/^Add\s+/i, '') || 'item';
+
     const update = (index, key, value) => {
         const item = items[index];
         const next = onItemChange ? onItemChange(item, key, value) : setIn(item, [key], value);
         onChange(items.map((it, i) => (i === index ? next : it)));
     };
+    const move = (index, delta) => {
+        const target = index + delta;
+        if (target < 0 || target >= items.length) return;
+        const next = [...items];
+        [next[index], next[target]] = [next[target], next[index]];
+        onChange(next);
+        if (open === index) setOpen(target);
+        else if (open === target) setOpen(index);
+    };
+    const remove = (index) => {
+        onChange(items.filter((_, i) => i !== index));
+        if (open === index) setOpen(null);
+        else if (open !== null && open > index) setOpen(open - 1);
+    };
+    const add = () => {
+        onChange([...items, newItem()]);
+        setOpen(items.length);
+    };
+
+    /**
+     * Names an item in its row: its name, else its first property, else its position.
+     * @param {Object} item - The item.
+     * @param {number} index - Its position.
+     * @returns {{title: string, detail: string|undefined, empty: boolean}} The row's text.
+     */
+    const describe = (item, index) => {
+        const first = item?.[columns[0].key];
+        const name = columns[0].key !== 'name' ? item?.name : undefined;
+        if (name) return { title: String(name), detail: first !== undefined ? String(first) : undefined, empty: false };
+        if (first !== undefined && first !== '') return { title: String(first), detail: undefined, empty: false };
+        return { title: `New ${noun.toLowerCase()} ${index + 1}`, detail: undefined, empty: true };
+    };
+
     return (
-        <div className="editor-field">
-            <div className="editor-label">{label}</div>
-            <div className="editor-list">
-                {items.map((item, index) => (
-                    <div className="editor-list-row" key={index}>
-                        <div className="editor-list-inputs">
-                            {columns.map(col => (
-                                <input
-                                    key={col.key}
-                                    className="editor-input"
-                                    type="text"
-                                    aria-label={`${col.label} ${index + 1}`}
-                                    placeholder={col.placeholder || col.label}
-                                    value={item?.[col.key] ?? ''}
-                                    onChange={(e) => update(index, col.key, e.target.value === '' ? undefined : e.target.value)}
-                                />
-                            ))}
+        <section className="editor-group">
+            <header className="editor-group-header">
+                <h3 className="editor-group-title">
+                    {label}
+                    {items.length > 0 && <span className="editor-group-count">{items.length}</span>}
+                </h3>
+                {hint && <p className="editor-group-description">{hint}</p>}
+            </header>
+            <div className="editor-group-body editor-items">
+                {items.length === 0 && <p className="editor-items-empty">Nothing added yet.</p>}
+                {items.map((item, index) => {
+                    const { title, detail, empty } = describe(item, index);
+                    const expanded = open === index;
+                    const unused = max !== undefined && index >= max;
+                    return (
+                        <div className={`editor-item${expanded ? ' open' : ''}${unused ? ' unused' : ''}`} key={index}>
+                            <div className="editor-item-head">
+                                <button
+                                    type="button"
+                                    className="button-reset editor-item-toggle"
+                                    aria-expanded={expanded}
+                                    onClick={() => setOpen(expanded ? null : index)}
+                                >
+                                    <span className="editor-item-number" aria-hidden="true">{index + 1}</span>
+                                    <span className="editor-item-text">
+                                        <span className={`editor-item-title${empty ? ' empty' : ''}`}>{title}</span>
+                                        {(detail || unused) && (
+                                            <span className="editor-item-detail">{unused ? 'Not shown, the card has no room for it' : detail}</span>
+                                        )}
+                                    </span>
+                                    <ChevronDown className="editor-item-chevron" size={18} aria-hidden="true" />
+                                </button>
+                                <div className="editor-item-actions">
+                                    <button
+                                        type="button"
+                                        className="button-reset editor-item-action"
+                                        aria-label={`Move ${title} up`}
+                                        disabled={index === 0}
+                                        onClick={() => move(index, -1)}
+                                    >
+                                        <ArrowUp size={16} aria-hidden="true" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="button-reset editor-item-action"
+                                        aria-label={`Move ${title} down`}
+                                        disabled={index === items.length - 1}
+                                        onClick={() => move(index, 1)}
+                                    >
+                                        <ArrowDown size={16} aria-hidden="true" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="button-reset editor-item-action destructive"
+                                        aria-label={`Remove ${title}`}
+                                        onClick={() => remove(index)}
+                                    >
+                                        <Trash2 size={16} aria-hidden="true" />
+                                    </button>
+                                </div>
+                            </div>
+                            {expanded && (
+                                <div className="editor-item-fields">
+                                    {columns.map(col => (
+                                        <ItemInput
+                                            key={col.key}
+                                            column={col}
+                                            value={item?.[col.key]}
+                                            onChange={(value) => update(index, col.key, value)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                        <button
-                            type="button"
-                            className="button-reset editor-icon-button"
-                            aria-label={`Remove ${label.toLowerCase()} ${index + 1}`}
-                            onClick={() => onChange(items.filter((_, i) => i !== index))}
-                        >
-                            <Trash2 size={18} aria-hidden="true" />
-                        </button>
-                    </div>
-                ))}
-                <button type="button" className="button-reset editor-add-button" onClick={() => onChange([...items, newItem()])}>
+                    );
+                })}
+                <button type="button" className="button-reset editor-add-button" onClick={add}>
                     <Plus size={16} aria-hidden="true" />
                     {addLabel}
                 </button>
             </div>
-            {hint && <div className="editor-hint">{hint}</div>}
-        </div>
+        </section>
     );
 };

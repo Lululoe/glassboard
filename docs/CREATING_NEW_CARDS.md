@@ -66,28 +66,38 @@ export const cardInfo = {
 ```
 
 Set `headerIcon` when the card's `TwoToneBase` header reads `config.icon`, `config.iconColor` and
-`config.iconBackground`. The card editor then shows the real card and offers those settings. It draws the card with its
-saved options, inert and with a live icon and size, so the card must also render before it has its data.
+`config.iconBackground`. In edit mode the card's header icon then gets an edit button that opens the icon editor,
+which draws the real card with its saved options, inert and with a live icon and size, so the card must also render
+before it has its data. The card editor shows a live preview of every card, so this applies to all cards.
 
 Without `sizes`, edit mode offers one, two and three columns; list `half` and `quarter` only if the card works at
 those sizes.
 
-The optional `Editor` is a settings form shown in the card editor next to the YAML view. It receives the card's
-config and an `onChange` that takes the updated config. Build it from the controls in
-`src/components/Editor/EditorFields.jsx` (`TextField`, `NumberField`, `SegmentedField`, `ToggleField`, `ListField`)
-and update values with `setIn` from `src/components/Editor/setIn.js`, which drops cleared fields:
+The optional `Editor` is the **Settings** tab of the card editor, next to the Layout and YAML tabs. It receives the
+card's config and an `onChange` that takes the updated config. Build it from the controls in
+`src/components/Editor/EditorFields.jsx` and update values with `setIn` from `src/components/Editor/setIn.js`, which
+drops cleared fields:
+
+- `Group` puts related fields under a title (and an optional `description`), as one panel. Give every field a group,
+  so the form reads in clear sections.
+- `TextField`, `NumberField`, `SegmentedField` and `ToggleField` are single settings.
+- `ListField` edits a list such as sensors or rooms, and is a section of its own. Each item is a row named by its
+  `name` or its first column; opening a row shows every column as a labelled field, and rows can be moved and
+  removed. Pass `max` when the card shows only so many items, to mark the rest as not shown.
 
 ```jsx
-import { TextField } from '../../components/Editor/EditorFields';
+import { Group, TextField } from '../../components/Editor/EditorFields';
 import { setIn } from '../../components/Editor/setIn';
 
 const MyCardEditor = ({ config, onChange }) => (
-    <TextField label="Title" value={config.title} onChange={(v) => onChange(setIn(config, ['title'], v))} />
+    <Group title="General">
+        <TextField label="Title" value={config.title} onChange={(v) => onChange(setIn(config, ['title'], v))} />
+    </Group>
 );
 ```
 
-Cards without an editor can still be edited as YAML. Size and screen-size visibility are part of every editor
-and do not need to be handled by the card.
+Cards without an editor can still be edited as YAML. Size and screen-size visibility are in every editor's
+**Layout** tab and do not need to be handled by the card.
 
 ## 4. Load Data (optional)
 If the card needs data from a backend service, fetch it with `usePolling` and `callService`:

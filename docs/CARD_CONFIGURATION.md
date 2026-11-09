@@ -39,22 +39,34 @@ two- and three-wide cards are one wide on a phone. The card is told its narrower
 layout rather than a squeezed wide one. On tablets later cards move up to fill gaps left by wide cards.
 
 Not every card works at every size. In edit mode each card only offers the sizes its type supports; most cards
-support one to three wide, `hacontrol` and `spacer` also support half and quarter, and `thermostat` and
+support one to three wide, `spacer` also supports half and quarter, `hacontrol` is always a quarter tile, and `thermostat` and
 `mediaplayer` support quarter, half and one wide, `vacuum` half and one to three wide, and `printer` half and one wide. A size set in
 `config.yaml` is always used, even if edit mode would not offer it.
 
 ## Editing the Dashboard
-Long-press a card, or click the pencil button in the header, to edit the dashboard. The cards wiggle and stop
-reacting to taps:
+Long-press a card, or click the pencil button in the header, to edit the dashboard. The cards stop reacting to
+taps, and the grid's tiles are drawn behind them, with one free row below the last card, so you can see where cards
+can go:
 
-- **Move**: drag a card to a new place. On touch screens rest your finger for a moment before dragging, so a
-  quick swipe still scrolls the page.
+- **Move**: drag a card to where it should go. It moves to the place in the order where it lands closest to where you
+  hold it, also into a gap, such as the free tile next to a two-wide card that the next two-wide card didn't fit
+  beside. While dragging, the tile it will land on is outlined. On touch screens rest your finger for a moment before
+  dragging, so a quick swipe still scrolls the page.
 - **Move to another page**: drag a card to the left or right edge of the screen and hold it there. The edge
   lights up, and after a moment the previous or next page opens with the card still under your finger.
 - **Resize**: drag the round handle in a card's bottom-right corner, or tap it to step through the sizes.
-- **Edit**: tap the pencil on a card's top-left corner. **Settings** has the card's size, the screen sizes it is
-  shown on, and a form for the card's options if it has one (Weather, App Grid and HA Control do). **YAML**
-  edits every option of the card, exactly as in `config.yaml`. The card can also be removed here.
+- **Edit**: tap the pencil on a card's top-left corner. The editor shows a live preview of the card next to its
+  settings, in three tabs. **Settings** has the card's options, grouped into sections; lists such as sensors, rooms
+  or presets show one row per item, which opens to edit it and can be moved up or down or removed. **Layout** has the
+  card's size and the screen sizes it is shown on. **YAML** edits every option of the card, exactly as in
+  `config.yaml`. The card can also be removed here.
+- **Change an icon**: tap the icon in a card's header (it has a small pencil badge) to pick its icon, color and
+  background.
+- **Add a page**: the **+** next to the page dots at the bottom adds a page after the others and opens it. Give it a
+  name; its address follows from the name (`Garden` becomes `/garden`).
+- **Edit a page**: the page button in the header (**Edit page**) opens the settings of the page you are on. Pages
+  added in the browser can be renamed and deleted there; deleting a page also deletes its cards. Pages from
+  `config.yaml` can't be renamed or deleted in the browser. **Page background…** opens the page's background.
 - **Add**: the **+** button in the header lists every card type, including **Empty Space** (see below). New cards
   go to the end of the current page and open in the editor.
 - **Keyboard**: Tab to a card, then use the arrow keys to move it and `+` / `-` to resize it.
@@ -76,8 +88,9 @@ still be moved and edited.
 
 ### Editing icons
 Cards with a header (Weather, Media, Graph, Vacuum, Printer, Proxmox, Server Stats, Transmission, Pull Requests and
-Multiroom Thermostat) show the real card at the top of their editor, with the settings of its icon top left: which icon, its
-color and its background. The icons in a card's top right corner belong to the card and aren't configurable.
+Multiroom Thermostat) have an edit button on their header icon in edit mode. It opens the icon editor: the real card's
+header with the settings of its icon top left: which icon, its color and its background. The icons in a card's top
+right corner belong to the card and aren't configurable.
 
 The **App Grid** and the **header menu** are arranged directly on the preview:
 
@@ -106,13 +119,57 @@ iconBackgrounds:
 
 The selfh.st catalog and its icons load from jsDelivr, so that tab needs internet access.
 
+### Page background
+The picture button in the header (**Edit background**) sets the background behind the cards. At the top, choose
+whether it is the background of **All pages** or of **This page** only. A page shows the background of all pages
+unless it has its own; on **This page**, **All pages** goes back to that. Each background can be:
+
+- **Theme**: the active theme's own gradient (`--bg-page-gradient`).
+- **Color**: a gradient made from one color, darker top left and lighter (light mode) or darker (dark mode) bottom
+  right, like the default theme's. Pick a preset or any color with the rainbow swatch.
+- **Picture**: upload a JPEG, PNG, WebP, GIF or AVIF of up to 20 MB, or enter a web address (`https://…`) or a path
+  on the server (`/…`). A web address is downloaded to the server when you save, so the dashboard loads the picture
+  from there, quickly and even if the other site changes or blocks it. **Darken** lays black over it, up to 80%,
+  so the cards stay readable on bright pictures.
+
+A preview shows the result, and the dashboard behind the dialog follows once you save it. **Done** stores it in
+`layout.yaml`: the background of all pages as `background`, those of single pages under `pageBackgrounds` by page
+id. Both can also be set in `config.yaml`, at the top level and on a page; `theme: true` shows the theme's gradient
+on that page:
+
+```yaml
+background:
+  color: "#5e3bd1"
+# or
+background:
+  image: https://example.com/photo.jpg
+  dim: 0.3
+
+pages:
+  - id: garden
+    background:
+      color: "#1f8a4c"
+    cards: []
+  - id: office
+    background:
+      theme: true
+    cards: []
+```
+
+A web address set in `config.yaml` is used as it is, without downloading it.
+
+Uploaded and downloaded pictures are stored in a `backgrounds` folder next to `layout.yaml` (or in `BACKGROUNDS_DIR`), named by
+their content, and removed when no saved background uses them any more.
+
 ### Where changes are saved
 Changes are saved to `layout.yaml` next to `config.yaml`, never to `config.yaml` itself, so your comments and
 formatting stay untouched. Every device sees the saved dashboard. For cards from `config.yaml`, `layout.yaml`
 only stores the page, position, size and visibility, unless the card's options were changed in the browser; then
 it stores the whole card, and later edits to that card in `config.yaml` are ignored until you reset. Cards added
 in the browser live only in `layout.yaml`, and cards removed in the browser are listed under `removed`. A header menu
-edited in the browser replaces `launcher` from `config.yaml` as a whole, as do `iconBackgrounds`. Cards added
+edited in the browser replaces `launcher` from `config.yaml` as a whole, as do `iconBackgrounds` and `background`.
+Pages added in the browser are listed under `addedPages` (id and name) and come after the pages of `config.yaml`;
+their cards are stored like other cards added in the browser. Cards added
 to `config.yaml` later appear after the saved ones. Deleting `layout.yaml` (or **Reset…**) restores the dashboard
 from `config.yaml`. **Reset…** asks first and offers **Undo** in the header afterwards, using a copy it keeps as
 `layout.yaml.bak`.
@@ -130,8 +187,9 @@ Set `editable: false` at the top level of `config.yaml` to turn edit mode off, e
 editable: false
 ```
 
-With Docker, mount a `layout.yaml` so edits survive a container rebuild (see `docker-compose.yml`). The path can
-also be changed with the `LAYOUT_FILE` environment variable.
+With Docker, mount a `layout.yaml` so edits survive a container rebuild (see `docker-compose.yml`), and a
+`backgrounds` folder for uploaded background pictures. The paths can also be changed with the `LAYOUT_FILE` and
+`BACKGROUNDS_DIR` environment variables.
 
 ---
 
@@ -283,12 +341,13 @@ statistics need a `state_class`, and without them the card works out the values 
 ---
 
 ## HA Control (`hacontrol`)
-Control Home Assistant entities (lights, switches, etc.).
+Control a Home Assistant entity (a light, switch, etc.) from a quarter tile, like a tile in Apple Home. The tile is
+the card, without a card around it: white while the entity is on, with the material of the other cards while it is off.
 
 ### Configuration
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `data.entities`| array | required | List of entities to control. |
+| `data.entities`| array | required | The entity to control, as a list with one entity. |
 
 **Entity Object**:
 | Field | Type | Description |
@@ -325,11 +384,14 @@ token can't read Home Assistant's entity settings.
 
 On phones the dialog is a sheet at the bottom of the screen, with the main controls at its bottom edge.
 
-The card shows as many entities as fit its size: one as a quarter tile, two at half height, four per column otherwise.
+The card is always a quarter tile and shows one entity; four of them fill one tile of the grid. A card that lists
+several entities, as cards did before, is shown as one quarter tile per entity, in its place: the first keeps the
+card's id and the others get `<id>-2`, `<id>-3` and so on. Saving the dashboard in edit mode stores them as separate
+cards in `layout.yaml`.
 
 ### Example
 ```yaml
-- id: lights
+- id: office_light
   type: hacontrol
   data:
     entities:
@@ -338,6 +400,10 @@ The card shows as many entities as fit its size: one as a quarter tile, two at h
         icon: "lamp"
         attributes: ["brightness"]
         color: "#f1c40f"
+- id: living_room_lights
+  type: hacontrol
+  data:
+    entities:
       - entity_id: group.living_room_lights
         name: "Living Room"
 ```

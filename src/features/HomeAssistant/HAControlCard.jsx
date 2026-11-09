@@ -1,26 +1,21 @@
 import { useState } from 'react';
 import { isControllable, useHomeAssistant } from './useHomeAssistant';
 import ControlDialog from './controls/ControlDialog';
-import BaseCard from '../../components/Shared/BaseCard';
 import './HAControlCard.css';
 import Icon from '../../components/Shared/Icon';
 
 /**
- * Component displaying a grid of toggleable Home Assistant entities. Tapping a light, group,
- * switch or fan opens its control dialog and tapping its icon switches it; other entities
- * switch with their configured actions.
+ * A Home Assistant entity as a quarter tile, like a tile in Apple Home: the tile is the card,
+ * without a card around it. Tapping a light, group, switch or fan opens its control dialog and
+ * tapping its icon switches it; other entities switch with their configured actions. The card
+ * shows the first entity of `data.entities`; cards with more are split into one card per
+ * entity when the dashboard loads (see `splitControlCards`).
  * @param {Object} props
- * @param {Object} props.config - Card configuration containing the entity list.
+ * @param {Object} props.config - Card configuration containing the entity.
  * @returns {JSX.Element} The rendered HA control card.
  */
 const HAControlCard = ({ config }) => {
-    const { data } = config;
-    const entities = data?.entities || [];
-
-    // Limit based on size: a quarter tile holds 1 item, a half tile 2, and each column 4
-    const tileSize = config.tileSize === 'quarter' || config.tileSize === 'half' ? config.tileSize : null;
-    const maxItems = tileSize === 'quarter' ? 1 : tileSize === 'half' ? 2 : (config.colSpan || 1) * 4;
-    const displayEntities = entities.slice(0, maxItems);
+    const displayEntities = (config.data?.entities || []).slice(0, 1).filter(e => e?.entity_id);
 
     const { entityStates, loading, toggleEntity, refresh } = useHomeAssistant(displayEntities);
     const [openId, setOpenId] = useState(/** @type {string|null} */ (null));
@@ -79,89 +74,98 @@ const HAControlCard = ({ config }) => {
     };
 
     return (
-        <BaseCard className={`ha-control-card ${tileSize ? `tile-${tileSize}` : `col-span-${config.colSpan || 1}`}`} hoverable={false}>
-            <div className="ha-control-grid">
-                {displayEntities.map((entity, idx) => {
-                    // Get live state from HA, fallback to config
-                    const liveState = entityStates[entity.entity_id];
-                    const currentState = liveState?.state || entity.state || 'unknown';
-                    // The card's icon, else the one Home Assistant shows for the entity
-                    const iconString = getIcon(entity.icon || liveState?.icon, entity.entity_id);
+        <div className="ha-control-card">
+            {displayEntities.length === 0 && (
+                <div className="ha-tile off ha-tile-empty">
+                    <div className="ha-icon-circle off" aria-hidden="true">
+                        <Icon icon="lu-Lightbulb" size={20} />
+                    </div>
+                    <div className="ha-tile-content">
+                        <div className="ha-tile-name">No entity</div>
+                        <div className="ha-tile-state">Choose one in edit mode</div>
+                    </div>
+                </div>
+            )}
+            {displayEntities.map((entity, idx) => {
+                // Get live state from HA, fallback to config
+                const liveState = entityStates[entity.entity_id];
+                const currentState = liveState?.state || entity.state || 'unknown';
+                // The card's icon, else the one Home Assistant shows for the entity
+                const iconString = getIcon(entity.icon || liveState?.icon, entity.entity_id);
 
-                    // Determine if "on"
-                    let isOn = false;
-                    if (entity.on_state) isOn = currentState === entity.on_state;
-                    else if (entity.off_state) isOn = currentState !== entity.off_state;
-                    else isOn = currentState !== 'off' && currentState !== 'unavailable' && currentState !== 'unknown';
+                // Determine if "on"
+                let isOn = false;
+                if (entity.on_state) isOn = currentState === entity.on_state;
+                else if (entity.off_state) isOn = currentState !== entity.off_state;
+                else isOn = currentState !== 'off' && currentState !== 'unavailable' && currentState !== 'unknown';
 
-                    // Check if entity has actions (for hover effect)
-                    const hasActions = entity.on_action && entity.off_action;
-                    const hasDialog = isControllable(entity) && entity.dialog !== false;
+                // Check if entity has actions (for hover effect)
+                const hasActions = entity.on_action && entity.off_action;
+                const hasDialog = isControllable(entity) && entity.dialog !== false;
 
-                    const tileClass = `ha-tile ${isOn ? 'on' : 'off'}${hasDialog ? ' has-dialog' : ''}`;
-                    const circleClass = isOn ? 'ha-icon-circle on' : 'ha-icon-circle off';
+                const tileClass = `ha-tile ${isOn ? 'on' : 'off'}${hasDialog ? ' has-dialog' : ''}`;
+                const circleClass = isOn ? 'ha-icon-circle on' : 'ha-icon-circle off';
 
-                    // Dynamic color override if on
-                    const circleStyle = {};
-                    if (isOn && entity.color) {
-                        circleStyle.backgroundColor = entity.color;
-                    }
+                // Dynamic color override if on
+                const circleStyle = {};
+                if (isOn && entity.color) {
+                    circleStyle.backgroundColor = entity.color;
+                }
 
-                    // Get display state from configured attributes
-                    const displayState = getDisplayState(entity, liveState);
-                    const content = (
-                        <div className="ha-tile-content">
-                            <div className="ha-tile-name" title={entity.name}>{entity.name}</div>
-                            <div className="ha-tile-state">{loading ? 'Loading…' : displayState}</div>
+                // Get display state from configured attributes
+                const displayState = getDisplayState(entity, liveState);
+                const content = (
+                    <div className="ha-tile-content">
+                        <div className="ha-tile-name" title={entity.name}>{entity.name}</div>
+                        <div className="ha-tile-state">{loading ? 'Loading…' : displayState}</div>
+                    </div>
+                );
+
+                if (hasDialog) {
+                    // Two sibling buttons: the tile opens the controls, the icon switches
+                    return (
+                        <div key={entity.entity_id ?? idx} className={tileClass}>
+                            <button
+                                type="button"
+                                className="button-reset ha-tile-open"
+                                aria-haspopup="dialog"
+                                aria-label={`${entity.name}, ${loading ? 'loading' : displayState}. Show controls`}
+                                onClick={() => setOpenId(entity.entity_id)}
+                            />
+                            <button
+                                type="button"
+                                className={`button-reset ${circleClass}`}
+                                style={circleStyle}
+                                aria-pressed={isOn}
+                                aria-label={`${entity.name}: ${isOn ? 'On' : 'Off'}`}
+                                onClick={() => toggleEntity(entity, isOn)}
+                            >
+                                <Icon icon={iconString} size={20} />
+                            </button>
+                            {content}
                         </div>
                     );
+                }
 
-                    if (hasDialog) {
-                        // Two sibling buttons: the tile opens the controls, the icon switches
-                        return (
-                            <div key={entity.entity_id ?? idx} className={tileClass}>
-                                <button
-                                    type="button"
-                                    className="button-reset ha-tile-open"
-                                    aria-haspopup="dialog"
-                                    aria-label={`${entity.name}, ${loading ? 'loading' : displayState}. Show controls`}
-                                    onClick={() => setOpenId(entity.entity_id)}
-                                />
-                                <button
-                                    type="button"
-                                    className={`button-reset ${circleClass}`}
-                                    style={circleStyle}
-                                    aria-pressed={isOn}
-                                    aria-label={`${entity.name}: ${isOn ? 'On' : 'Off'}`}
-                                    onClick={() => toggleEntity(entity, isOn)}
-                                >
-                                    <Icon icon={iconString} size={20} />
-                                </button>
-                                {content}
-                            </div>
-                        );
-                    }
-
-                    // Tiles that can be toggled are buttons, so they work with keyboard and screen readers
-                    const Tile = hasActions ? 'button' : 'div';
-                    return (
-                        <Tile
-                            key={entity.entity_id ?? idx}
-                            className={hasActions ? `button-reset ${tileClass}` : tileClass}
-                            {...(hasActions && {
-                                type: 'button',
-                                'aria-pressed': isOn,
-                                onClick: () => toggleEntity(entity, isOn),
-                            })}
-                        >
-                            <div className={circleClass} style={circleStyle} aria-hidden="true">
-                                <Icon icon={iconString} size={20} />
-                            </div>
-                            {content}
-                        </Tile>
-                    );
-                })}
-            </div>
+                // Tiles that can be toggled are buttons, so they work with keyboard and screen readers
+                const Tile = hasActions ? 'button' : 'div';
+                return (
+                    <Tile
+                        key={entity.entity_id ?? idx}
+                        className={hasActions ? `button-reset ${tileClass}` : tileClass}
+                        {...(hasActions && {
+                            type: 'button',
+                            'aria-pressed': isOn,
+                            onClick: () => toggleEntity(entity, isOn),
+                        })}
+                    >
+                        <div className={circleClass} style={circleStyle} aria-hidden="true">
+                            <Icon icon={iconString} size={20} />
+                        </div>
+                        {content}
+                    </Tile>
+                );
+            })}
             {openEntity && (
                 <ControlDialog
                     entity={openEntity}
@@ -170,7 +174,7 @@ const HAControlCard = ({ config }) => {
                     onClose={() => { setOpenId(null); refresh(); }}
                 />
             )}
-        </BaseCard>
+        </div>
     );
 };
 

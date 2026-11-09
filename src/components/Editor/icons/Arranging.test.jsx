@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeAll, describe, it, expect, vi } from 'vitest';
 import CardEditor from '../CardEditor';
+import CardIconEditor from '../CardIconEditor';
 import HeaderMenuEditor from '../HeaderMenuEditor';
 
 beforeAll(() => {
@@ -93,9 +94,9 @@ describe('App grid stage', () => {
 });
 
 describe('Header cards', () => {
-    it('edits only the icon top left and stores its color and background', async () => {
+    it('edits only the icon in its own dialog and stores its color and background', async () => {
         const onSave = vi.fn();
-        render(<CardEditor card={{ id: 'w', type: 'weather', location: 'Berlin' }} onSave={onSave} onCancel={() => {}} onRemove={() => {}} />);
+        render(<CardIconEditor card={{ id: 'w', type: 'weather', location: 'Berlin' }} onSave={onSave} onCancel={() => {}} />);
 
         const inspector = screen.getByRole('region', { name: 'Card icon' });
         fireEvent.change(within(inspector).getByLabelText('Search Lucide icons'), { target: { value: 'zap-off' } });
@@ -104,17 +105,17 @@ describe('Header cards', () => {
         fireEvent.click(within(inspector).getByRole('button', { name: 'Blue background' }));
         fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
-        expect(onSave.mock.calls[0][0]).toMatchObject({ icon: 'lu-ZapOff', iconColor: 'var(--color-primary)', iconBackground: '#0a84ff' });
+        expect(onSave.mock.calls[0][0]).toMatchObject({ icon: 'lu-ZapOff', iconColor: 'var(--color-primary)', iconBackground: '#0a84ff', location: 'Berlin' });
     });
 
     it('keeps the card itself inert and offers nothing to arrange', () => {
-        const { container } = render(<CardEditor card={{ id: 'w', type: 'weather' }} onSave={() => {}} onCancel={() => {}} onRemove={() => {}} />);
+        const { container } = render(<CardIconEditor card={{ id: 'w', type: 'weather' }} onSave={() => {}} onCancel={() => {}} />);
         expect(container.querySelector('.icon-stage-card')).toHaveAttribute('inert');
         expect(container.querySelector('.arrange-item')).toBeNull();
     });
 
-    it('does not show the icon settings on cards without a header', () => {
-        render(<CardEditor card={{ id: 's', type: 'spacer' }} onSave={() => {}} onCancel={() => {}} onRemove={() => {}} />);
+    it('leaves the icon settings out of the card editor', () => {
+        render(<CardEditor card={{ id: 'w', type: 'weather' }} onSave={() => {}} onCancel={() => {}} onRemove={() => {}} />);
         expect(screen.queryByRole('region', { name: 'Card icon' })).not.toBeInTheDocument();
     });
 });

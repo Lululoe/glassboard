@@ -114,9 +114,11 @@
 }
 
 html {
-  background-color: #003780;
-  background-image: var(--bg-page-gradient);
+  background-color: var(--bg-page-base, #003780);
+  background-image: var(--bg-page-custom, var(--bg-page-gradient));
   background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
   min-height: 100vh;
   min-height: -webkit-fill-available;
   overscroll-behavior: none;
@@ -126,9 +128,11 @@ body {
   margin: 0;
   padding: 0;
   font-family: var(--font-family);
-  background-color: #003780;
-  background-image: var(--bg-page-gradient);
+  background-color: var(--bg-page-base, #003780);
+  background-image: var(--bg-page-custom, var(--bg-page-gradient));
   background-attachment: fixed;
+  background-size: cover;
+  background-position: center;
   color: var(--text-primary);
   min-height: 100vh;
   min-height: -webkit-fill-available;
@@ -266,4 +270,14 @@ body {
     --text-tertiary: rgba(60, 60, 67, 0.75) !important;
     --color-separator: rgba(60, 60, 67, 0.45) !important;
   }
+}
+
+/* Darkens a background picture so the cards stay readable; --bg-page-dim is set by PageBackground */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgba(0, 0, 0, var(--bg-page-dim, 0));
+  pointer-events: none;
 }

@@ -38,6 +38,11 @@ export const configSchema = z.looseObject({
         links: z.array(launcherItem).optional(),
         links_title: z.string().optional(),
     }).optional(),
+    background: z.looseObject({
+        color: z.string().optional(),
+        image: z.string().optional(),
+        dim: z.number().min(0).max(1).optional(),
+    }).optional(),
     services: z.record(z.string(), z.unknown()).optional(),
 }).superRefine((config, ctx) => {
     const pages = config.pages || [{ cards: config.cards || [] }];

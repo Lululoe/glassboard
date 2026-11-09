@@ -28,9 +28,10 @@ pages:
         type: appgrid
         colSpan: 1
 
-      - id: lights
+      # Each Home Assistant control is a quarter tile; four fill one tile of the grid
+      - id: living_room_light
         type: hacontrol
-        colSpan: 1
+        tileSize: quarter
         data:
           entities:
             - entity_id: light.living_room
@@ -38,16 +39,34 @@ pages:
               icon: "lamp"
               on_action: { service: light.turn_on }
               off_action: { service: light.turn_off }
+
+      - id: kitchen_light
+        type: hacontrol
+        tileSize: quarter
+        data:
+          entities:
             - entity_id: light.kitchen
               name: "Kitchen"
               icon: "lamp"
               on_action: { service: light.turn_on }
               off_action: { service: light.turn_off }
+
+      - id: coffee_machine
+        type: hacontrol
+        tileSize: quarter
+        data:
+          entities:
             - entity_id: switch.coffee_machine
               name: "Coffee Machine"
               icon: "Coffee"
               on_action: { service: switch.turn_on }
               off_action: { service: switch.turn_off }
+
+      - id: bedroom_fan
+        type: hacontrol
+        tileSize: quarter
+        data:
+          entities:
             - entity_id: fan.bedroom
               name: "Bedroom Fan"
               icon: "Fan"

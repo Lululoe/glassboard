@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-    buildEntries, deviceFor, fitToColumns, isHiddenAt, moveItem, nearestSize, sizeOf, usableSizes, withSize,
+    buildEntries, deviceFor, dropIndex, fitToColumns, isHiddenAt, layoutCards, moveItem, nearestSize, rowCount, sizeOf,
+    usableSizes, withSize,
 } from './gridLayout';
 
 describe('sizeOf / withSize', () => {
@@ -94,5 +95,52 @@ describe('screen sizes', () => {
         expect(isHiddenAt({ hideOn: ['phone'] }, 1)).toBe(true);
         expect(isHiddenAt({ hideOn: ['phone'] }, 3)).toBe(false);
         expect(isHiddenAt({}, 1)).toBe(false);
+    });
+});
+
+describe('placeEntries and layoutCards', () => {
+    const card = (id, colSpan) => ({ id, type: 'x', colSpan });
+
+    it('leaves the gap after a wide card that does not fit, like CSS grid', () => {
+        const cards = [card('a', 2), card('b', 2), card('c', 1)];
+        const areas = layoutCards(cards, 3);
+        expect(areas.get(0)).toEqual({ x: 0, y: 0, w: 2, h: 1 });
+        expect(areas.get(1)).toEqual({ x: 0, y: 1, w: 2, h: 1 });
+        expect(areas.get(2)).toEqual({ x: 2, y: 1, w: 1, h: 1 });
+    });
+
+    it('fills earlier gaps on two columns', () => {
+        const cards = [card('a', 1), card('b', 2), card('c', 1)];
+        const areas = layoutCards(cards, 2);
+        expect(areas.get(2)).toEqual({ x: 1, y: 0, w: 1, h: 1 });
+    });
+
+    it('places half and quarter cards inside their slot', () => {
+        const cards = [card('a', 2), { id: 'q', tileSize: 'quarter' }, { id: 'h', tileSize: 'half' }];
+        const areas = layoutCards(cards, 3);
+        expect(areas.get(1)).toEqual({ x: 2, y: 0, w: 0.5, h: 0.5 });
+        expect(areas.get(2)).toEqual({ x: 2, y: 0.5, w: 1, h: 0.5 });
+        expect(rowCount(cards, 3)).toBe(1);
+    });
+});
+
+describe('dropIndex', () => {
+    const card = (id, colSpan) => ({ id, type: 'x', colSpan });
+
+    it('drops a card into the gap to the right of a wide card', () => {
+        // a a _      the gap at the end of the first row
+        // b b c
+        const cards = [card('a', 2), card('b', 2), card('c', 1)];
+        expect(dropIndex(cards, 2, { x: 2.5, y: 0.5 }, 3)).toBe(1);
+    });
+
+    it('drops a card before another one it is held over', () => {
+        const cards = [card('a', 1), card('b', 1), card('c', 1), card('d', 1)];
+        expect(dropIndex(cards, 3, { x: 0.5, y: 0.5 }, 3)).toBe(0);
+    });
+
+    it('stays put while the card is closest to where it already is', () => {
+        const cards = [card('a', 1), card('b', 1), card('c', 1)];
+        expect(dropIndex(cards, 1, { x: 1.6, y: 0.5 }, 3)).toBe(1);
     });
 });

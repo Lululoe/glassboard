@@ -245,9 +245,23 @@ be included, and every card needs a unique `id` and a `type` (`400` otherwise). 
 missing are stored as removed; cards with unknown ids are stored as new cards. Credential-like keys the browser
 never received are kept from the server's copy of the card.
 
-Optionally, `launcher` saves the header menu (`apps` and `links` need a `name` and `url` string) and `iconBackgrounds`
-the list of icon background presets (CSS strings). Left out, the saved ones are kept. A `launcher` equal to
-`config.yaml` isn't stored.
+Optionally, `launcher` saves the header menu (`apps` and `links` need a `name` and `url` string), `iconBackgrounds`
+the list of icon background presets (CSS strings) and `background` the page background: `{ "color": "#rrggbb" }`
+or `{ "image": "https://…" | "/…", "dim": 0–0.8 }`, or `null` for the one in `config.yaml`. Left out, the saved
+ones are kept. A `launcher` or `background` equal to `config.yaml` isn't stored. After saving, uploaded background
+pictures that neither the saved layout, `config.yaml` nor `layout.yaml.bak` use are deleted.
+
+`pageBackgrounds` maps page keys to a page's own background: the same shapes as `background`, or `{ "theme": true }`
+for the theme's gradient on that page, or `null` for the background of all pages (which also clears one set on the
+page in `config.yaml`). Only backgrounds that differ from `config.yaml` are stored; left out, the saved ones are
+kept.
+
+`addedPages` lists the pages added in the browser, in order, as `{ "id": "garden", "name": "Garden" }`. Ids are
+lowercase letters, digits, `-` and `_` (up to 48 characters) and must not be used by a page of `config.yaml`
+(iframe pages included) or another added page. Every added page must also be in `pages`. Left out, the saved
+list is kept; pages no longer listed are removed along with their cards. In `GET /api/config` these pages follow
+the pages of `config.yaml` and are marked `"addedInEditor": true`; a config with top-level `cards` then gets a
+`default` page for them.
 
 ```json
 {
@@ -264,3 +278,19 @@ Removes everything saved from the browser, so the dashboard goes back to `config
 
 ### `POST /api/config/layout/restore`
 Undoes the last reset by putting that copy back; `404` when there is none.
+
+### `POST /api/config/background`
+Stores a picture for the page background. The body is the picture itself, with its `Content-Type`: `image/jpeg`,
+`image/png`, `image/webp`, `image/gif` or `image/avif`, up to 20 MB (`400` for other types or when the content isn't
+such a picture, `413` when larger,
+`403` when editing is off). Answers `{ "url": "/api/config/background/<hash>.<ext>" }`; the picture is used once a
+layout with that URL as its `background.image` is saved.
+
+### `POST /api/config/background/download`
+Downloads a picture from `{ "url": "https://…" }` and stores it like an uploaded one; answers the same
+`{ "url": … }`. The file must really be a JPEG, PNG, WebP, GIF or AVIF (checked from its content) of up to 20 MB:
+`400` for other addresses or files, `413` when larger, `502` when the site can't be reached or answers with an
+error. Like other edits, this lets anyone who can edit the dashboard make the server fetch an address.
+
+### `GET /api/config/background/:name`
+Serves an uploaded picture, cached for good since its name is a hash of its content; `404` for unknown names.

@@ -1,4 +1,4 @@
-import { ListField, NumberField, SegmentedField, TextField } from '../../components/Editor/EditorFields';
+import { Group, ListField, NumberField, SegmentedField, TextField } from '../../components/Editor/EditorFields';
 import { setIn } from '../../components/Editor/setIn';
 
 /**
@@ -14,19 +14,23 @@ const ThermostatEditor = ({ config, onChange }) => {
     const presets = Array.isArray(config.presets) ? config.presets : [];
     return (
         <>
-            <TextField label="Climate entity" value={config.entity_id} onChange={set('entity_id')} placeholder="climate.living_room" />
-            <TextField label="Name" value={config.name} onChange={set('name')} placeholder="From Home Assistant" />
-            <SegmentedField
-                label="Turn on as"
-                value={config.hvac_mode || 'heat'}
-                options={[{ value: 'heat', label: 'Heat' }, { value: 'cool', label: 'Cool' }, { value: 'heat_cool', label: 'Heat/Cool' }, { value: 'auto', label: 'Auto' }]}
-                onChange={(value) => onChange(setIn(config, ['hvac_mode'], value === 'heat' ? undefined : value))}
-                hint="The mode used when the thermostat is switched on from the card."
-            />
-            <div className="editor-row">
-                <NumberField label="Slider minimum" value={config.min} onChange={set('min')} placeholder="From entity" />
-                <NumberField label="Slider maximum" value={config.max} onChange={set('max')} placeholder="From entity" />
-            </div>
+            <Group title="Thermostat">
+                <TextField label="Climate entity" value={config.entity_id} onChange={set('entity_id')} placeholder="climate.living_room" />
+                <TextField label="Name" value={config.name} onChange={set('name')} placeholder="From Home Assistant" />
+                <SegmentedField
+                    label="Turn on as"
+                    value={config.hvac_mode || 'heat'}
+                    options={[{ value: 'heat', label: 'Heat' }, { value: 'cool', label: 'Cool' }, { value: 'heat_cool', label: 'Heat/Cool' }, { value: 'auto', label: 'Auto' }]}
+                    onChange={(value) => onChange(setIn(config, ['hvac_mode'], value === 'heat' ? undefined : value))}
+                    hint="The mode used when the thermostat is switched on from the card."
+                />
+            </Group>
+            <Group title="Slider" description="Leave empty to use the limits of the entity.">
+                <div className="editor-row">
+                    <NumberField label="Slider minimum" value={config.min} onChange={set('min')} placeholder="From entity" />
+                    <NumberField label="Slider maximum" value={config.max} onChange={set('max')} placeholder="From entity" />
+                </div>
+            </Group>
             <ListField
                 label="Presets"
                 items={presets}

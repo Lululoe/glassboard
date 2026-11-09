@@ -23,7 +23,8 @@
   },
   "include": [
     "src",
-    "server"
+    "server",
+    "shared"
   ],
   "exclude": [
     "**/*.test.js",

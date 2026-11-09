@@ -4,6 +4,10 @@ Glassboard supports a powerful theming system that allows you to customize the l
 
 `theme.yaml` is optional: without it, the default themes from `theme.example.yaml` are used. Themes in `config.yaml` with the same `id` are merged over the theme file, and `theme: <id>` in `config.yaml` selects the active theme.
 
+The page background can also be set without a theme, from edit mode or with `background` in `config.yaml` (a color
+the gradient is made from, or a picture); see [Page background](CARD_CONFIGURATION.md#page-background). It takes the
+place of `--bg-page-gradient`.
+
 ## Custom CSS
 Place a `custom.css` in the project root (or mount it to `/app/custom.css` in Docker) to add your own styles. It is loaded after the built-in styles. Changes apply on page reload.
 

@@ -2,6 +2,8 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 
+import { getConfig } from './config.js';
+import { withInitialHead } from './initialHead.js';
 import logger from './logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import apiRoutes from './routes/api.js';
@@ -39,7 +41,7 @@ async function addFrontend(app) {
         app.use('*', async (req, res, next) => {
             try {
                 const template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
-                const html = await vite.transformIndexHtml(req.originalUrl, template);
+                const html = withInitialHead(await vite.transformIndexHtml(req.originalUrl, template), getConfig(), req.originalUrl);
                 res.status(200).set({ 'Content-Type': 'text/html' }).send(html);
             } catch (e) {
                 vite.ssrFixStacktrace(e);
@@ -53,7 +55,7 @@ async function addFrontend(app) {
     const indexHtml = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8');
     app.get('/custom.css', customCssHandler(distPath));
     app.use(express.static(distPath, { index: false }));
-    app.get('*', (req, res) => res.type('html').send(indexHtml));
+    app.get('*', (req, res) => res.type('html').send(withInitialHead(indexHtml, getConfig(), req.path)));
 }
 
 /**

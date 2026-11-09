@@ -25,12 +25,28 @@ function newCardId(type, drafts) {
 }
 
 /**
+ * Makes a page id from a name: lowercase letters, digits and dashes, unique among `taken`.
+ * @param {string} name - The page name.
+ * @param {Set<string>} taken - Page keys already in use.
+ * @returns {string} The id, such as `garden` or `garden-2`.
+ */
+export function pageIdFor(name, taken) {
+    const base = String(name || '').toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'page';
+    let id = base;
+    for (let n = 2; taken.has(id); n++) id = `${base}-${n}`;
+    return id;
+}
+
+/**
  * Edit mode for the whole dashboard. While editing, every grid page's cards are kept as a
  * draft, so cards can move between pages and be added, changed or removed; "Done" saves the
- * whole draft at once. Drafts stay visible until the reloaded config arrives, so the grid
+ * whole draft at once. Pages can be added too; they follow the pages of config.yaml and can be
+ * renamed and deleted again. Drafts stay visible until the reloaded config arrives, so the grid
  * does not jump back in between.
  * @param {Object} config - The dashboard configuration.
- * @param {Array<Object>} pages - The pages.
+ * @param {Array<Object>} pages - The pages of the config, before any page added while editing;
+ *   `withDraftPages` gives the pages to show.
  * @returns {Object} Edit state and actions.
  */
 export function useDashboardEditing(config, pages) {
@@ -39,10 +55,13 @@ export function useDashboardEditing(config, pages) {
     const [status, setStatus] = useState(null);
     const [saving, setSaving] = useState(false);
     const [savedFor, setSavedFor] = useState(null);
-    const [editor, setEditor] = useState(/** @type {{key: string, index: number, isNew: boolean}|null} */ (null));
+    const [editor, setEditor] = useState(/** @type {{key: string, index: number, isNew: boolean, mode?: 'card'|'icon'}|null} */ (null));
     const [adding, setAdding] = useState(false);
     const [carry, setCarry] = useState(null);
-    const [shared, setShared] = useState(/** @type {{launcher?: Object, iconBackgrounds: string[]}|null} */ (null));
+    const [shared, setShared] = useState(/** @type {{launcher?: Object, iconBackgrounds: string[], background?: Object, pageBackgrounds: Object<string, Object>}|null} */ (null));
+    const [editingBackground, setEditingBackground] = useState(/** @type {false|'all'|'page'} */ (false));
+    const [pageDrafts, setPageDrafts] = useState(/** @type {Array<{id: string, name?: string}>|null} */ (null));
+    const [pageDialog, setPageDialog] = useState(/** @type {{id?: string}|null} */ (null));
     const [editingMenu, setEditingMenu] = useState(false);
     const [confirmingReset, setConfirmingReset] = useState(false);
     const [canUndoReset, setCanUndoReset] = useState(false);
@@ -53,13 +72,21 @@ export function useDashboardEditing(config, pages) {
         setSavedFor(null);
         setDrafts(null);
         setShared(null);
+        setPageDrafts(null);
     }
 
-    const savedShared = { launcher: config.launcher, iconBackgrounds: config.iconBackgrounds || [] };
+    const savedPages = pages.filter(p => p.addedInEditor).map(p => ({ id: String(p.id), ...(p.name ? { name: p.name } : {}) }));
 
     const gridPages = pages
         .map((page, idx) => ({ page, idx, key: pageKey(page, idx) }))
         .filter(({ page }) => page.type !== 'iframe');
+
+    const savedShared = {
+        launcher: config.launcher,
+        iconBackgrounds: config.iconBackgrounds || [],
+        background: config.background,
+        pageBackgrounds: Object.fromEntries(gridPages.filter(({ page }) => page.background).map(({ page, key }) => [key, page.background])),
+    };
 
     const cardsOf = (page, idx) => drafts?.[pageKey(page, idx)] ?? page.cards;
 
@@ -68,7 +95,59 @@ export function useDashboardEditing(config, pages) {
         setCanUndoReset(false);
         setDrafts(Object.fromEntries(gridPages.map(({ page, key }) => [key, page.cards || []])));
         setShared(savedShared);
+        setPageDrafts(savedPages);
         setEditing(true);
+    };
+
+    /**
+     * Returns the pages to show: those of config.yaml, then the pages added in the browser as
+     * they are in the draft, so new, renamed and deleted pages show right away.
+     * @param {Array<Object>} configPages - The pages of the config.
+     * @returns {Array<Object>} The pages.
+     */
+    const withDraftPages = (configPages) => {
+        if (!pageDrafts) return configPages;
+        const byId = new Map(configPages.filter(p => p.addedInEditor).map(p => [String(p.id), p]));
+        return [
+            ...configPages.filter(p => !p.addedInEditor),
+            ...pageDrafts.map(d => ({ ...(byId.get(d.id) || { cards: [] }), id: d.id, name: d.name, addedInEditor: true })),
+        ];
+    };
+
+    /**
+     * Adds an empty page after the others.
+     * @param {string} name - Its name.
+     * @returns {string} Its id, which is also its address.
+     */
+    const addPage = (name) => {
+        const taken = new Set([...pages.map((p, i) => pageKey(p, i)), ...(pageDrafts || []).map(p => p.id)]);
+        const id = pageIdFor(name, taken);
+        setPageDrafts(prev => [...(prev || []), { id, ...(name ? { name } : {}) }]);
+        setDrafts(prev => ({ ...prev, [id]: [] }));
+        setPageDialog(null);
+        return id;
+    };
+
+    const renamePage = (id, name) => {
+        setPageDrafts(prev => prev.map(p => (p.id === id ? { id, ...(name ? { name } : {}) } : p)));
+        setPageDialog(null);
+    };
+
+    /**
+     * Deletes a page added in the browser, with its cards.
+     * @param {string} id - The page's id.
+     */
+    const deletePage = (id) => {
+        setPageDrafts(prev => prev.filter(p => p.id !== id));
+        setDrafts(prev => {
+            const { [id]: _removed, ...rest } = prev;
+            return rest;
+        });
+        setShared(prev => {
+            const { [id]: _removed, ...pageBackgrounds } = prev.pageBackgrounds;
+            return { ...prev, pageBackgrounds };
+        });
+        setPageDialog(null);
     };
 
     const updatePage = (key, update) => setDrafts(prev => ({ ...prev, [key]: update(prev?.[key] || []) }));
@@ -96,7 +175,14 @@ export function useDashboardEditing(config, pages) {
 
     const clearCarry = useCallback(() => setCarry(null), []);
 
-    const openEditor = (key, index) => setEditor({ key, index, isNew: false });
+    const openEditor = (key, index) => setEditor({ key, index, isNew: false, mode: 'card' });
+
+    /**
+     * Opens the icon editor of a card, which changes only its header icon.
+     * @param {string} key - The card's page.
+     * @param {number} index - The card's position there.
+     */
+    const openIconEditor = (key, index) => setEditor({ key, index, isNew: false, mode: 'icon' });
 
     const addCard = (key, type) => {
         const info = getCardInfo(type);
@@ -104,7 +190,7 @@ export function useDashboardEditing(config, pages) {
         const index = (drafts?.[key] || []).length;
         updatePage(key, cards => [...cards, card]);
         setAdding(false);
-        setEditor({ key, index, isNew: true });
+        setEditor({ key, index, isNew: true, mode: 'card' });
     };
 
     const editingCard = editor ? drafts?.[editor.key]?.[editor.index] : null;
@@ -127,13 +213,15 @@ export function useDashboardEditing(config, pages) {
     };
 
     const finish = async () => {
-        if (saving || editor || adding || editingMenu || confirmingReset) return;
+        if (saving || editor || adding || editingMenu || editingBackground || pageDialog || confirmingReset) return;
         const original = Object.fromEntries(gridPages.map(({ page, key }) => [key, page.cards || []]));
         const unchanged = JSON.stringify(drafts) === JSON.stringify(original)
-            && JSON.stringify(shared) === JSON.stringify(savedShared);
+            && JSON.stringify(shared) === JSON.stringify(savedShared)
+            && JSON.stringify(pageDrafts) === JSON.stringify(savedPages);
         if (!drafts || unchanged) {
             setDrafts(null);
             setShared(null);
+            setPageDrafts(null);
             setStatus(null);
             setEditing(false);
             return;
@@ -144,6 +232,7 @@ export function useDashboardEditing(config, pages) {
             if (window.confirm('Some cards in config.yaml have no id, so these changes cannot be saved. Discard them?')) {
                 setDrafts(null);
                 setShared(null);
+                setPageDrafts(null);
                 setStatus(null);
                 setEditing(false);
             }
@@ -153,7 +242,15 @@ export function useDashboardEditing(config, pages) {
         setSaving(true);
         setStatus('Saving…');
         try {
-            await saveLayout(drafts, shared.launcher ? shared : { iconBackgrounds: shared.iconBackgrounds });
+            const { launcher, iconBackgrounds, background, pageBackgrounds } = shared;
+            await saveLayout(drafts, {
+                ...(launcher ? { launcher } : {}),
+                iconBackgrounds,
+                background: background ?? null,
+                addedPages: pageDrafts,
+                // Every page, so a page that follows the others again clears a background set in config.yaml
+                pageBackgrounds: Object.fromEntries(Object.keys(drafts).map(key => [key, pageBackgrounds[key] ?? null])),
+            });
             setSavedFor(config);
             setStatus(null);
             setEditing(false);
@@ -192,7 +289,7 @@ export function useDashboardEditing(config, pages) {
         confirmingReset, requestReset: () => setConfirmingReset(true), cancelReset: () => setConfirmingReset(false),
         canUndoReset, undoFailed, undoReset,
         carry, clearCarry,
-        editor, editingCard, openEditor, saveCard, removeCard, cancelEditor,
+        editor, editingCard, openEditor, openIconEditor, saveCard, removeCard, cancelEditor,
         adding, openAdd: () => setAdding(true), closeAdd: () => setAdding(false), addCard,
         launcher: shared ? shared.launcher : config.launcher,
         iconBackgrounds: shared ? shared.iconBackgrounds : savedShared.iconBackgrounds,
@@ -203,6 +300,42 @@ export function useDashboardEditing(config, pages) {
         saveMenu: (launcher) => {
             setShared(prev => ({ ...prev, launcher }));
             setEditingMenu(false);
+        },
+        withDraftPages, addPage, renamePage, deletePage,
+        pageDialog,
+        openAddPage: () => setPageDialog({}),
+        openPageSettings: (id) => setPageDialog({ id }),
+        closePageDialog: () => setPageDialog(null),
+        background: shared ? shared.background : config.background,
+        editingBackground,
+        /**
+         * Opens the background dialog.
+         * @param {'all'|'page'} [scope] - Which background it starts on; by default the page's, if it has its own.
+         */
+        openBackgroundEditor: (scope) => {
+            setPageDialog(null);
+            setEditingBackground(scope || 'all');
+        },
+        closeBackgroundEditor: () => setEditingBackground(false),
+        /**
+         * Returns a page's own background, as in the draft while editing.
+         * @param {Object} page - The page.
+         * @param {number} idx - Its position.
+         * @returns {Object|undefined} The background, or undefined when it shows that of all pages.
+         */
+        pageBackgroundOf: (page, idx) => (shared ? shared.pageBackgrounds[pageKey(page, idx)] : page?.background),
+        /**
+         * Keeps the background of all pages and of one page in the draft.
+         * @param {{background: Object|undefined, pageBackground: Object|undefined}} saved - The settings.
+         * @param {string} [key] - The page the second one belongs to.
+         */
+        saveBackground: ({ background, pageBackground }, key) => {
+            setShared(prev => {
+                if (key === undefined) return { ...prev, background };
+                const { [key]: _old, ...others } = prev.pageBackgrounds;
+                return { ...prev, background, pageBackgrounds: pageBackground ? { ...others, [key]: pageBackground } : others };
+            });
+            setEditingBackground(false);
         },
     };
 }

@@ -1,49 +1,27 @@
-.ha-control-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 12px;
+/* The card is one tile, like a tile in Apple Home, without a card around it */
+.ha-control-card {
+    width: 100%;
     height: 100%;
-    /* Was 50vh, but card aspect ratio should drive it now */
+    display: flex;
+    min-width: 0;
+    min-height: 0;
 }
 
-/* Ensure specific grid for 2 columns (4 items) */
-.ha-control-card.col-span-2 .ha-control-grid {
-    grid-template-columns: repeat(4, 1fr);
-    /* 2 rows */
-}
-
-/* Ensure specific grid for 3 columns (12 items -> 6x2) */
-.ha-control-card.col-span-3 .ha-control-grid {
-    grid-template-columns: repeat(6, 1fr);
-}
-
-/* Half tile: two items side by side */
-.ha-control-card.tile-half .ha-control-grid {
-    grid-template-rows: 1fr;
-}
-
-/* Quarter tile: one item fills the card */
-.ha-control-card.tile-quarter .ha-control-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-}
-
-/* Small tiles need less padding to leave room for the item */
-.ha-control-card.tile-half,
-.ha-control-card.tile-quarter {
-    padding: 12px;
+.ha-control-card > .ha-tile {
+    flex: 1;
+    min-width: 0;
 }
 
 .ha-tile {
     /* On tiles are solid white with dark text in both modes, like Apple Home */
     background: var(--bg-tile);
-    border-radius: 9px;
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-tile);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: flex-start;
-    padding: 12px;
+    padding: 14px;
     transition: transform var(--duration-standard) var(--ease-standard), background var(--duration-standard) var(--ease-standard);
     color: #1c1c1e;
     position: relative;
@@ -52,8 +30,11 @@
     -webkit-user-select: none;
 }
 
+/* Off tiles have the material of the other cards, so they read as cards on the page */
 .ha-tile.off {
-    background: var(--bg-tile-off);
+    background: var(--bg-card-surface);
+    backdrop-filter: blur(15px) saturate(86%);
+    -webkit-backdrop-filter: blur(15px) saturate(86%);
     color: var(--text-primary);
 }
 
@@ -126,7 +107,7 @@ button.ha-tile:focus-visible {
 }
 
 .ha-tile.off .ha-tile-state {
-    color: var(--text-on-fill);
+    color: var(--text-secondary);
 }
 
 .ha-tile-state::first-letter {
