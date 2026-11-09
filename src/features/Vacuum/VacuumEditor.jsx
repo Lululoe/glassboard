@@ -1,4 +1,4 @@
-import { ListField, TextField, ToggleField } from '../../components/Editor/EditorFields';
+import { Group, ListField, TextField, ToggleField } from '../../components/Editor/EditorFields';
 import { setIn } from '../../components/Editor/setIn';
 import { MAX_ROBOTS } from './vacuumModel';
 
@@ -15,21 +15,27 @@ export const VacuumEditor = ({ config, onChange }) => {
     const set = (key) => (value) => onChange(setIn(config, [key], value));
     return (
         <>
-            <TextField label="Vacuum entity" value={config.entity_id} onChange={set('entity_id')} placeholder="vacuum.robo" />
-            <TextField label="Name" value={config.name} onChange={set('name')} placeholder="From Home Assistant" />
-            <ToggleField
-                label="Show the map"
-                checked={Boolean(config.show_map)}
-                onChange={(on) => set('show_map')(on ? true : undefined)}
-                hint="This and the next two show beside the controls on two and three wide cards, if the robot has them. With more than fit, a switch or stacking makes room. They're always in the robot's details."
-            />
-            <ToggleField label="Show all stats" checked={Boolean(config.show_stats)} onChange={(on) => set('show_stats')(on ? true : undefined)} />
-            <ToggleField label="Show consumables" checked={Boolean(config.show_consumables)} onChange={(on) => set('show_consumables')(on ? true : undefined)} />
-            <TextField label="Battery" value={config.battery} onChange={set('battery')} placeholder="sensor.robo_battery" hint="Shown while the robot has no progress to show." />
-            <TextField label="Progress" value={config.progress} onChange={set('progress')} placeholder="sensor.robo_progress" hint="A percentage. Without one, the bar shows the battery." />
-            <TextField label="Mop wetness" value={config.wetness} onChange={set('wetness')} placeholder="select.robo_water" hint="A select entity. Without one, the wetness control is hidden." />
-            <TextField label="Map" value={config.map} onChange={set('map')} placeholder="camera.robo_map_data" hint="A camera entity. Valetudo's map data camera is drawn as a minimal map." />
-            <TextField label="Camera" value={config.camera} onChange={set('camera')} placeholder="camera.robo" />
+            <Group title="Robot">
+                <TextField label="Vacuum entity" value={config.entity_id} onChange={set('entity_id')} placeholder="vacuum.robo" />
+                <TextField label="Name" value={config.name} onChange={set('name')} placeholder="From Home Assistant" />
+            </Group>
+            <Group title="On the card">
+                <ToggleField
+                    label="Show the map"
+                    checked={Boolean(config.show_map)}
+                    onChange={(on) => set('show_map')(on ? true : undefined)}
+                    hint="This and the next two show beside the controls on two and three wide cards, if the robot has them. With more than fit, a switch or stacking makes room. They're always in the robot's details."
+                />
+                <ToggleField label="Show all stats" checked={Boolean(config.show_stats)} onChange={(on) => set('show_stats')(on ? true : undefined)} />
+                <ToggleField label="Show consumables" checked={Boolean(config.show_consumables)} onChange={(on) => set('show_consumables')(on ? true : undefined)} />
+            </Group>
+            <Group title="Sensors and cameras" description="Optional entities of the robot.">
+                <TextField label="Battery" value={config.battery} onChange={set('battery')} placeholder="sensor.robo_battery" hint="Shown while the robot has no progress to show." />
+                <TextField label="Progress" value={config.progress} onChange={set('progress')} placeholder="sensor.robo_progress" hint="A percentage. Without one, the bar shows the battery." />
+                <TextField label="Mop wetness" value={config.wetness} onChange={set('wetness')} placeholder="select.robo_water" hint="A select entity. Without one, the wetness control is hidden." />
+                <TextField label="Map" value={config.map} onChange={set('map')} placeholder="camera.robo_map_data" hint="A camera entity. Valetudo's map data camera is drawn as a minimal map." />
+                <TextField label="Camera" value={config.camera} onChange={set('camera')} placeholder="camera.robo" />
+            </Group>
             <ListField
                 label="Stats"
                 items={entries(config.stats)}
@@ -80,7 +86,9 @@ export const VacuumEditor = ({ config, onChange }) => {
  */
 export const VacuumsEditor = ({ config, onChange }) => (
     <>
-        <TextField label="Title" value={config.title} onChange={(v) => onChange(setIn(config, ['title'], v))} placeholder="Robots" />
+        <Group title="General">
+            <TextField label="Title" value={config.title} onChange={(v) => onChange(setIn(config, ['title'], v))} placeholder="Robots" />
+        </Group>
         <ListField
             label="Robots"
             items={entries(config.robots)}
@@ -90,6 +98,7 @@ export const VacuumsEditor = ({ config, onChange }) => (
                 { key: 'name', label: 'Name', placeholder: 'From Home Assistant' },
             ]}
             addLabel="Add robot"
+            max={MAX_ROBOTS}
             hint={`Up to ${MAX_ROBOTS} robots. Stats, rooms, consumables, map and camera work as on the single robot card; set them per robot in the YAML view.`}
         />
     </>

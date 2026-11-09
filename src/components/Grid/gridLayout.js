@@ -206,3 +206,105 @@ export function deviceFor(columns) {
 export function isHiddenAt(card, columns) {
     return Array.isArray(card?.hideOn) && card.hideOn.includes(deviceFor(columns));
 }
+
+/**
+ * Works out where every grid entry lands, the way CSS grid auto-placement does: one row
+ * tall entries of their column span, either in order (`dense` off) or each in the first
+ * gap that fits (`dense` on, as on tablets).
+ * @param {ReturnType<typeof buildEntries>} entries - Entries from `buildEntries`.
+ * @param {Array<Object>} cards - The cards the entries refer to.
+ * @param {number} columns - Columns in the grid.
+ * @param {boolean} [dense=false] - Whether later entries fill earlier gaps.
+ * @returns {Array<{col: number, row: number, w: number}>} The tile each entry starts at, and its width.
+ */
+export function placeEntries(entries, cards, columns, dense = false) {
+    const rows = [];
+    const free = (row, col, w) => {
+        for (let x = col; x < col + w; x++) if (rows[row]?.[x]) return false;
+        return true;
+    };
+    let cursor = { row: 0, col: 0 };
+    return entries.map(entry => {
+        const w = entry.kind === 'card' ? Number(sizeOf(fitToColumns(cards[entry.index], columns))) : 1;
+        let { row, col } = dense ? { row: 0, col: 0 } : cursor;
+        while (col + w > columns || !free(row, col, w)) {
+            col += 1;
+            if (col + w > columns) {
+                row += 1;
+                col = 0;
+            }
+        }
+        rows[row] = rows[row] || [];
+        for (let x = col; x < col + w; x++) rows[row][x] = true;
+        cursor = { row, col: col + w };
+        return { col, row, w };
+    });
+}
+
+/**
+ * Returns the area every card covers in the grid, in tiles: a full card covers whole tiles,
+ * a half or quarter card its part of a shared slot.
+ * @param {Array<Object>} cards - The page's cards, in order.
+ * @param {number} columns - Columns in the grid.
+ * @param {(card: Object) => boolean} [include] - Cards for which this returns false are left out.
+ * @returns {Map<number, {x: number, y: number, w: number, h: number}>} Areas by card index.
+ */
+export function layoutCards(cards, columns, include) {
+    const entries = buildEntries(cards, include);
+    const places = placeEntries(entries, cards, columns, columns === 2);
+    const areas = new Map();
+    entries.forEach((entry, i) => {
+        const { col, row, w } = places[i];
+        if (entry.kind === 'card') {
+            areas.set(entry.index, { x: col, y: row, w, h: 1 });
+            return;
+        }
+        entry.items.forEach(item => {
+            areas.set(item.index, { x: col + item.col / 2, y: row + item.row / 2, w: item.w / 2, h: item.h / 2 });
+        });
+    });
+    return areas;
+}
+
+/**
+ * Number of tile rows the cards take up.
+ * @param {Array<Object>} cards - The page's cards, in order.
+ * @param {number} columns - Columns in the grid.
+ * @returns {number} Rows used.
+ */
+export function rowCount(cards, columns) {
+    let rows = 0;
+    layoutCards(cards, columns).forEach(a => { rows = Math.max(rows, Math.ceil(a.y + a.h - 1e-6)); });
+    return rows;
+}
+
+/**
+ * Finds the position a dragged card should move to: the order in which the card lands
+ * closest to a point, such as the centre of the card under the pointer. Every position is
+ * tried, so a card can be dropped into a gap left by wider cards, not only onto another card.
+ * @param {Array<Object>} cards - The page's cards, in order.
+ * @param {number} from - Current index of the dragged card.
+ * @param {{x: number, y: number}} point - The point, in tiles from the grid's top left.
+ * @param {number} columns - Columns in the grid.
+ * @param {number} [stickiness=0.2] - How much closer, in tiles, another position has to be
+ *   than the current one before the card moves, so it doesn't flip between two positions.
+ * @returns {number} The index to move the card to; `from` when it should stay.
+ */
+export function dropIndex(cards, from, point, columns, stickiness = 0.2) {
+    const distance = (order, index) => {
+        const a = layoutCards(order, columns).get(index);
+        return Math.hypot(a.x + a.w / 2 - point.x, a.y + a.h / 2 - point.y);
+    };
+    const current = distance(cards, from);
+    let best = from;
+    let bestDistance = current;
+    for (let to = 0; to < cards.length; to++) {
+        if (to === from) continue;
+        const d = distance(moveItem(cards, from, to), to);
+        if (d < bestDistance) {
+            best = to;
+            bestDistance = d;
+        }
+    }
+    return best !== from && current - bestDistance > stickiness ? best : from;
+}

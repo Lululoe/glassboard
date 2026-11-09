@@ -17,6 +17,7 @@ describe('CardEditor', () => {
 
         fireEvent.change(screen.getByLabelText('Location'), { target: { value: 'Hamburg' } });
         fireEvent.click(screen.getByRole('radio', { name: '°F' }));
+        fireEvent.click(screen.getByRole('tab', { name: 'Layout' }));
         fireEvent.click(screen.getByRole('radio', { name: '1 wide' }));
         fireEvent.click(screen.getByRole('switch', { name: 'Show on phone' }));
         fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -67,8 +68,7 @@ describe('CardEditor', () => {
         const onSave = vi.fn();
         render(<CardEditor card={{ id: 'h', type: 'hacontrol', data: { entities: [] } }} onSave={onSave} onCancel={() => {}} onRemove={() => {}} />);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Add entity' }));
-        fireEvent.change(screen.getByLabelText('Entity id 1'), { target: { value: 'cover.garage' } });
+        fireEvent.change(screen.getByLabelText('Entity id'), { target: { value: 'cover.garage' } });
         fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
         expect(onSave.mock.calls[0][0].data.entities).toEqual([{
@@ -79,13 +79,47 @@ describe('CardEditor', () => {
     });
 });
 
+describe('List fields', () => {
+    const graph = {
+        id: 'g',
+        type: 'graph',
+        entities: [{ entity_id: 'sensor.a', name: 'Living Room' }, { entity_id: 'sensor.b' }],
+    };
+
+    it('names each item and opens one at a time to edit it', () => {
+        const onSave = vi.fn();
+        render(<CardEditor card={graph} onSave={onSave} onCancel={() => {}} onRemove={() => {}} />);
+
+        const living = screen.getByRole('button', { name: /Living Room/, expanded: false });
+        expect(screen.getByRole('button', { name: /sensor\.b/, expanded: false })).toBeInTheDocument();
+        fireEvent.click(living);
+        expect(living).toHaveAttribute('aria-expanded', 'true');
+        fireEvent.change(screen.getByLabelText('Color'), { target: { value: 'teal' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+        expect(onSave.mock.calls[0][0].entities[0]).toEqual({ entity_id: 'sensor.a', name: 'Living Room', color: 'teal' });
+    });
+
+    it('adds an item open for editing, and moves and removes items', () => {
+        const onSave = vi.fn();
+        render(<CardEditor card={graph} onSave={onSave} onCancel={() => {}} onRemove={() => {}} />);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Add sensor' }));
+        fireEvent.change(screen.getByLabelText('Entity'), { target: { value: 'sensor.c' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Move sensor.c up' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Remove Living Room' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+        expect(onSave.mock.calls[0][0].entities.map(e => e.entity_id)).toEqual(['sensor.c', 'sensor.b']);
+    });
+});
+
 describe('HA control editor', () => {
     it('fills in generic actions for group entities', () => {
         const onSave = vi.fn();
         render(<CardEditor card={{ id: 'h', type: 'hacontrol', data: { entities: [] } }} onSave={onSave} onCancel={() => {}} onRemove={() => {}} />);
 
-        fireEvent.click(screen.getByRole('button', { name: 'Add entity' }));
-        fireEvent.change(screen.getByLabelText('Entity id 1'), { target: { value: 'group.living_room_lights' } });
+        fireEvent.change(screen.getByLabelText('Entity id'), { target: { value: 'group.living_room_lights' } });
         fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
         expect(onSave.mock.calls[0][0].data.entities[0]).toEqual({

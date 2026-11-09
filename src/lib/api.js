@@ -70,11 +70,41 @@ async function send(method, url, body) {
  * Saves the dashboard as edited in the browser: every grid page's cards, in order, with their
  * full properties. The server stores what differs from config.yaml in layout.yaml.
  * @param {Object<string, Array<Object>>} pages - Cards per page key (page id, or index without one).
- * @param {{launcher?: Object, iconBackgrounds?: string[]}} [shared] - Header menu and icon background presets.
+ * @param {{launcher?: Object, iconBackgrounds?: string[], background?: Object|null, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>}} [shared]
+ *   - Header menu, icon background presets, page background (`null` for the one in config.yaml), the pages
+ *   added in the browser, in order, and each page's own background (`null` to show that of all pages).
  * @returns {Promise<*>} The server response.
  */
 export function saveLayout(pages, shared = {}) {
     return send('PUT', '/api/config/layout', { pages, ...shared });
+}
+
+/**
+ * Uploads a picture for the page background. It is used once a layout that refers to it is saved.
+ * @param {Blob} file - A JPEG, PNG, WebP, GIF or AVIF picture.
+ * @returns {Promise<string>} The URL the picture is served at.
+ */
+export async function uploadBackground(file) {
+    const res = await fetch('/api/config/background', {
+        method: 'POST',
+        headers: { 'Content-Type': file.type },
+        body: file,
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+        const message = res.status === 413 ? 'The picture is larger than 20 MB.' : data?.error || `Upload failed (${res.status})`;
+        throw new ApiError(message, res.status);
+    }
+    return data.url;
+}
+
+/**
+ * Has the server download a picture from the web and keep it like an uploaded one.
+ * @param {string} url - The picture's http(s) address.
+ * @returns {Promise<string>} The URL the stored picture is served at.
+ */
+export async function downloadBackground(url) {
+    return (await send('POST', '/api/config/background/download', { url })).url;
 }
 
 /**

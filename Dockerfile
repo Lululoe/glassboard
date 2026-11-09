@@ -22,6 +22,7 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 COPY server ./server
+COPY shared ./shared
 # Default themes; mount a theme.yaml to override them.
 COPY theme.example.yaml ./theme.example.yaml
 

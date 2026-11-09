@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { EyeOff, Pencil } from 'lucide-react';
-import { getCardComponent, getCardSizes } from '../../features/registry';
+import { getCardComponent, getCardInfo, getCardSizes } from '../../features/registry';
 import { useGridColumns } from '../../hooks/useGridColumns';
 import CardErrorBoundary from './CardErrorBoundary';
 import {
-    DEVICES, buildEntries, deviceFor, fitToColumns, isHiddenAt, isSubTile, moveItem, nearestSize, sizeLabel, sizeOf,
-    usableSizes, withSize,
+    DEVICES, buildEntries, deviceFor, dropIndex, fitToColumns, isHiddenAt, isSubTile, layoutCards, moveItem, nearestSize,
+    rowCount, sizeLabel, sizeOf, usableSizes, withSize,
 } from './gridLayout';
 import './BentoGrid.css';
 
@@ -74,12 +74,39 @@ function scrollParent(el) {
 }
 
 /**
+ * The tiles of the grid, drawn behind the cards in edit mode with one free row below them,
+ * so it is clear where cards can go. While a card is dragged, the place it will land is marked.
+ * @param {Object} props
+ * @param {Array<Object>} props.cards - The page's cards.
+ * @param {number} props.columns - Columns in the grid.
+ * @param {{x: number, y: number, w: number, h: number}|null|undefined} [props.target] - Where the
+ *   dragged card lands, in tiles.
+ * @returns {JSX.Element} The guide.
+ */
+const GridGuide = ({ cards, columns, target }) => {
+    const rows = rowCount(cards, columns) + 1;
+    /** @type {import('react').CSSProperties & Object<string, number>} */
+    const style = { '--rows': rows };
+    return (
+        <div className="grid-guide" style={style} aria-hidden="true">
+            {Array.from({ length: rows * columns }, (_, i) => <div key={i} className="grid-guide-tile" />)}
+            {target && (
+                <div
+                    className="grid-guide-target"
+                    style={/** @type {import('react').CSSProperties} */ ({ '--x': target.x, '--y': target.y, '--w': target.w, '--h': target.h })}
+                />
+            )}
+        </div>
+    );
+};
+
+/**
  * Renders a grid of dashboard cards. Full-height cards span one to three columns; half and
  * quarter cards share square slots. On narrow screens the grid drops to two or one columns
  * and wide cards are narrowed to fit.
  *
- * In edit mode the cards wiggle and can be dragged to a new position, resized with the
- * corner handle, or moved and resized from the keyboard. Every change is reported through
+ * In edit mode a guide shows the grid's tiles behind the cards, and the cards can be dragged
+ * to a new position, resized with the corner handle, or moved and resized from the keyboard. Every change is reported through
  * `onLayoutChange`; the caller decides when to save.
  * @param {Object} props
  * @param {Array<Object>} [props.cards] - Card configs for this page.
@@ -89,6 +116,8 @@ function scrollParent(el) {
  * @param {() => void} [props.onRequestEdit] - Called on a long press; omit to disable entering edit mode that way.
  * @param {() => void} [props.onExitEdit] - Called when the user taps the background or presses Escape in edit mode.
  * @param {(index: number) => void} [props.onEditCard] - Opens the editor for a card; shows an edit button on each card.
+ * @param {(index: number) => void} [props.onEditIcon] - Opens the icon editor of a card; shows an edit button on the
+ *   header icon of cards that have one.
  * @param {(direction: -1|1) => boolean} [props.canMoveToPage] - Whether a dragged card can go to the previous/next page.
  * @param {(direction: -1|1, index: number, carry: Object) => void} [props.onMoveToPage] - Moves the dragged card to
  *   the previous/next page when it is held at the screen edge. `carry` lets that page's grid continue the drag.
@@ -97,7 +126,7 @@ function scrollParent(el) {
  * @returns {JSX.Element|null} The rendered grid, or null when there are no cards.
  */
 const BentoGrid = ({
-    cards, globalConfig, editing = false, onLayoutChange, onRequestEdit, onExitEdit, onEditCard,
+    cards, globalConfig, editing = false, onLayoutChange, onRequestEdit, onExitEdit, onEditCard, onEditIcon,
     canMoveToPage, onMoveToPage, incomingDrag, onIncomingDragTaken,
 }) => {
     const gridRef = useRef(null);
@@ -171,6 +200,42 @@ const BentoGrid = ({
         }
     });
 
+    // Puts each icon edit button over its card's header icon; cards without a header at their
+    // size have none to edit. Offsets are used rather than rects, so move animations don't skew them.
+    useLayoutEffect(() => {
+        const grid = gridRef.current;
+        if (!grid || !editing) return undefined;
+        const place = () => {
+            grid.querySelectorAll('.grid-icon-button').forEach((button) => {
+                const el = /** @type {HTMLElement} */ (button);
+                const item = el.closest('[data-key]');
+                const icon = /** @type {HTMLElement|null} */ (item?.querySelector('.two-tone-header .app-icon-container'));
+                if (!icon) {
+                    el.style.display = 'none';
+                    return;
+                }
+                let left = 0;
+                let top = 0;
+                for (let node = icon; node && node !== item; node = /** @type {HTMLElement} */ (node.offsetParent)) {
+                    left += node.offsetLeft;
+                    top += node.offsetTop;
+                }
+                Object.assign(el.style, {
+                    display: '',
+                    left: `${left}px`,
+                    top: `${top}px`,
+                    width: `${icon.offsetWidth}px`,
+                    height: `${icon.offsetHeight}px`,
+                });
+            });
+        };
+        place();
+        if (typeof ResizeObserver === 'undefined') return undefined;
+        const observer = new ResizeObserver(place);
+        observer.observe(grid);
+        return () => observer.disconnect();
+    });
+
     // Stop a drag cleanly when edit mode ends underneath it.
     useEffect(() => {
         if (!editing) {
@@ -224,34 +289,28 @@ const BentoGrid = ({
         if (next) resizeTo(index, next);
     };
 
-    /** Swaps the dragged card with the card under the pointer, or moves it to the end. */
+    /**
+     * Moves the dragged card to the place in the order where it lands closest to where it is
+     * held. Every place is tried, so a card also drops into a gap next to a wider card.
+     */
     const hitTest = () => {
         const d = dragRef.current;
         const grid = gridRef.current;
         if (!d?.started || !grid || now() - d.lastSwap < SWAP_COOLDOWN_MS) return;
         const list = cardsRef.current;
-        const hit = /** @type {HTMLElement|null} */ (document.elementFromPoint(d.x, d.y)?.closest?.('[data-grid-index]'));
-        let target = null;
-
-        if (hit && grid.contains(hit)) {
-            const r = hit.getBoundingClientRect();
-            const inset = Math.min(r.width, r.height) * 0.15;
-            const inside = d.x > r.left + inset && d.x < r.right - inset && d.y > r.top + inset && d.y < r.bottom - inset;
-            if (inside) target = Number(hit.dataset.gridIndex);
-        } else {
-            const items = [...grid.querySelectorAll('[data-grid-index]')];
-            const last = items.reduce((a, el) => {
-                const r = el.getBoundingClientRect();
-                return !a || r.bottom > a.bottom || (r.bottom === a.bottom && r.right > a.right) ? r : a;
-            }, null);
-            const gridRect = grid.getBoundingClientRect();
-            if (last && d.x >= gridRect.left && d.x <= gridRect.right
-                && (d.y > last.bottom || (d.y > last.top && d.x > last.right))) {
-                target = list.length - 1;
-            }
-        }
-
-        if (target === null || target === d.index) return;
+        const rect = grid.getBoundingClientRect();
+        const styles = getComputedStyle(grid);
+        const gap = parseFloat(styles.columnGap) || 0;
+        const rowHeight = parseFloat(styles.gridAutoRows) || d.anchor.height;
+        const colPitch = (rect.width + gap) / columns;
+        const rowPitch = rowHeight + gap;
+        // The centre of the card as it is drawn under the pointer
+        const center = {
+            x: (d.x - d.grabX + d.anchor.width / 2 - rect.left) / colPitch,
+            y: (d.y - d.grabY + d.anchor.height / 2 - rect.top) / rowPitch,
+        };
+        const target = dropIndex(list, d.index, center, columns);
+        if (target === d.index) return;
         d.lastSwap = now();
         commit(moveItem(list, d.index, target));
         d.index = target;
@@ -576,6 +635,19 @@ const BentoGrid = ({
                                 <Pencil size={14} strokeWidth={2.5} aria-hidden="true" />
                             </button>
                         )}
+                        {onEditIcon && getCardInfo(card.type)?.headerIcon && (
+                            <button
+                                type="button"
+                                className="button-reset grid-icon-button"
+                                aria-label={`Change the icon of ${nameOf(card)}`}
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={() => onEditIcon(index)}
+                            >
+                                <span className="grid-icon-badge" aria-hidden="true">
+                                    <Pencil size={10} strokeWidth={3} />
+                                </span>
+                            </button>
+                        )}
                         {hiddenHere && (
                             <span className="grid-hidden-badge">
                                 <EyeOff size={13} aria-hidden="true" />
@@ -604,8 +676,13 @@ const BentoGrid = ({
 
     if (!Array.isArray(cards)) return null;
 
+    const dragIndex = dragKey ? list.findIndex((c, i) => keyOf(c, i) === dragKey) : -1;
+    const dragTarget = dragIndex >= 0 ? layoutCards(list, columns).get(dragIndex) : null;
+
     return (
         <div className={`bento-grid${editing ? ' editing' : ''}${settled && !editing ? ' settled' : ''}${dragKey ? ' is-dragging' : ''}`}>
+            <div className="bento-grid-stage">
+            {editing && <GridGuide cards={list} columns={columns} target={dragTarget} />}
             <div
                 ref={gridRef}
                 className="bento-grid-container"
@@ -621,6 +698,7 @@ const BentoGrid = ({
                             {entry.items.map(item => renderItem(item.index, item))}
                         </div>
                     )))}
+            </div>
             </div>
             {dragKey && /** @type {Array<-1|1>} */ ([-1, 1]).filter(dir => canMoveToPage?.(dir)).map(dir => (
                 <div

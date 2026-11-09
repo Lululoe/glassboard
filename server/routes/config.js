@@ -1,8 +1,15 @@
 import express from 'express';
+import fs from 'fs';
 import { z } from 'zod';
 import { getBaseConfig, getConfig, getSanitizedConfig, loadConfig, onConfigChange, restoreSecrets } from '../config.js';
 import { HttpError } from '../errors.js';
-import { buildLayout, deepEqual, gridPages, readLayout, resetLayout, restoreLayout, writeLayout } from '../layout.js';
+import {
+    IMAGE_TYPES, MAX_IMAGE_BYTES, backgroundImagePath, downloadBackgroundImage, pruneBackgroundImages,
+    saveBackgroundImage, sniffImageType,
+} from '../backgrounds.js';
+import {
+    buildLayout, deepEqual, gridPages, pageKey, readLayout, readLayoutBackup, resetLayout, restoreLayout, writeLayout,
+} from '../layout.js';
 import logger from '../logger.js';
 import { isDemoMode } from '../services/demo.js';
 
@@ -47,6 +54,16 @@ const layoutCard = z.looseObject({
 
 const launcherItem = z.looseObject({ name: z.string(), url: z.string() });
 
+/** A page background: a color its gradient is made from, or a picture (a web or uploaded URL). */
+const background = z.object({
+    color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
+    image: z.string().max(2000).regex(/^(https?:\/\/|\/)/).optional(),
+    dim: z.number().min(0).max(0.8).optional(),
+}).refine(b => Boolean(b.color) !== Boolean(b.image), 'needs either a color or a picture');
+
+/** A single page's background: its own, or `{ theme: true }` for the theme's gradient on that page. */
+const pageBackground = z.union([background, z.object({ theme: z.literal(true) })]);
+
 const layoutBody = z.object({
     pages: z.record(z.string(), z.array(layoutCard).max(500)),
     launcher: z.looseObject({
@@ -55,6 +72,12 @@ const layoutBody = z.object({
         links_title: z.string().optional(),
     }).optional(),
     iconBackgrounds: z.array(z.string().max(2000)).max(200).optional(),
+    background: background.nullable().optional(),
+    addedPages: z.array(z.object({
+        id: z.string().regex(/^[a-z0-9][a-z0-9_-]{0,47}$/),
+        name: z.string().trim().min(1).max(60).optional(),
+    })).max(50).optional(),
+    pageBackgrounds: z.record(z.string(), pageBackground.nullable()).optional(),
 });
 
 /**
@@ -68,7 +91,8 @@ function assertEditable() {
  * Saves the whole dashboard as edited in the browser: the cards of every grid page, in order,
  * with their full properties. Every grid page must be included and every card id may appear
  * only once. Credential-like keys the browser never received are restored from the server's copy.
- * The header menu and icon background presets are optional; left out, the saved ones are kept.
+ * The header menu, icon background presets and page background are optional; left out, the saved
+ * ones are kept. A `null` background goes back to the one in config.yaml.
  */
 router.put('/layout', (req, res, next) => {
     try {
@@ -81,9 +105,21 @@ router.put('/layout', (req, res, next) => {
 
         const basePages = gridPages(getBaseConfig());
         const sent = parsed.data.pages;
-        const missing = basePages.find(p => !Object.hasOwn(sent, p.key));
-        if (missing) throw new HttpError(400, `Missing page: ${missing.key}`);
-        const unknown = Object.keys(sent).find(key => !basePages.some(p => p.key === key));
+        const previous = readLayout();
+        const addedPages = parsed.data.addedPages ?? previous.addedPages ?? [];
+
+        // Added pages need ids that no page of config.yaml (iframe pages included) or other added page uses
+        const baseKeys = new Set((Array.isArray(getBaseConfig().pages) ? getBaseConfig().pages : [{ id: 'default' }])
+            .map((page, index) => pageKey(page, index)));
+        const addedKeys = new Set();
+        addedPages.forEach(page => {
+            if (baseKeys.has(page.id) || addedKeys.has(page.id)) throw new HttpError(400, `Page id "${page.id}" is already used`);
+            addedKeys.add(page.id);
+        });
+
+        const missing = [...basePages.map(p => p.key), ...addedKeys].find(key => !Object.hasOwn(sent, key));
+        if (missing) throw new HttpError(400, `Missing page: ${missing}`);
+        const unknown = Object.keys(sent).find(key => !basePages.some(p => p.key === key) && !addedKeys.has(key));
         if (unknown) throw new HttpError(400, `Unknown page: ${unknown}`);
 
         const seen = new Set();
@@ -99,21 +135,89 @@ router.put('/layout', (req, res, next) => {
             cards.map(card => restoreSecrets(card, current.get(String(card.id)))),
         ]));
 
-        const previous = readLayout();
         const launcher = parsed.data.launcher
             ? restoreSecrets(parsed.data.launcher, getConfig().launcher)
             : previous.launcher;
+        // Page backgrounds are stored where they differ from config.yaml; null clears one set there
+        const baseBackgrounds = new Map(gridPages(getBaseConfig()).map(p => [p.key, getBaseConfig().pages?.[p.index]?.background]));
+        const pageKeys = new Set([...basePages.map(p => p.key), ...addedKeys]);
+        const sentPageBackgrounds = parsed.data.pageBackgrounds ?? previous.pageBackgrounds ?? {};
+        const unknownBackground = Object.keys(sentPageBackgrounds).find(key => !pageKeys.has(key));
+        if (parsed.data.pageBackgrounds && unknownBackground) throw new HttpError(400, `Unknown page: ${unknownBackground}`);
+        const pageBackgrounds = Object.fromEntries(Object.entries(sentPageBackgrounds)
+            .filter(([key]) => pageKeys.has(key))
+            .filter(([key, value]) => !deepEqual(value ?? undefined, baseBackgrounds.get(key)))
+            .filter(([key, value]) => value !== null || baseBackgrounds.get(key) !== undefined));
+
+        const sentBackground = parsed.data.background;
+        const pageBackground = sentBackground === undefined ? previous.background : sentBackground ?? undefined;
         writeLayout({
             ...buildLayout(basePages, pages),
             launcher: deepEqual(launcher, getBaseConfig().launcher) ? undefined : launcher,
             iconBackgrounds: parsed.data.iconBackgrounds ?? previous.iconBackgrounds,
+            background: pageBackground && !deepEqual(pageBackground, getBaseConfig().background) ? pageBackground : undefined,
+            addedPages,
+            pageBackgrounds,
         });
+        // A reset keeps a copy of the layout it removed, so its pictures stay until that copy is gone
+        const backup = readLayoutBackup();
+        pruneBackgroundImages([
+            pageBackground, getBaseConfig().background, backup?.background,
+            ...Object.values(pageBackgrounds), ...baseBackgrounds.values(), ...Object.values(backup?.pageBackgrounds || {}),
+        ].map(b => b?.image));
         logger.info('Saved dashboard layout');
         loadConfig();
         res.json({ ok: true });
     } catch (err) {
         next(err);
     }
+});
+
+/**
+ * Stores a picture for the page background, sent as the raw request body. The picture is only
+ * used once a layout that refers to its URL is saved; unused pictures are removed on the next save.
+ */
+router.post(
+    '/background',
+    express.raw({ type: Object.keys(IMAGE_TYPES), limit: MAX_IMAGE_BYTES }),
+    (req, res, next) => {
+        try {
+            assertEditable();
+            const type = Buffer.isBuffer(req.body) ? sniffImageType(req.body) : null;
+            if (!type) throw new HttpError(400, 'Send a JPEG, PNG, WebP, GIF or AVIF picture');
+            const url = saveBackgroundImage(req.body, type);
+            logger.info('Stored a background picture');
+            res.json({ url });
+        } catch (err) {
+            next(err);
+        }
+    },
+);
+
+/**
+ * Downloads a picture from a web address (`{ url }`) and stores it like an uploaded one, so the
+ * dashboard doesn't depend on the other site. Answers the URL it is served at.
+ */
+router.post('/background/download', async (req, res, next) => {
+    try {
+        assertEditable();
+        const url = typeof req.body?.url === 'string' ? req.body.url : '';
+        try {
+            res.json({ url: await downloadBackgroundImage(url) });
+            logger.info('Downloaded a background picture');
+        } catch (err) {
+            throw new HttpError(err.status || 502, err.message);
+        }
+    } catch (err) {
+        next(err);
+    }
+});
+
+/** Serves an uploaded background picture. Names are content hashes, so they can be cached for good. */
+router.get('/background/:name', (req, res) => {
+    const file = backgroundImagePath(req.params.name);
+    if (!file || !fs.existsSync(file)) return res.status(404).end();
+    res.set('Cache-Control', 'public, max-age=31536000, immutable').sendFile(file);
 });
 
 /** Removes everything saved from the browser, so the dashboard goes back to config.yaml. */

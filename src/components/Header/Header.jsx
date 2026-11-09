@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './Header.css';
-import { LayoutTemplate, Sun, Moon, LayoutGrid, Pencil, SquarePen, Plus } from 'lucide-react';
+import { LayoutTemplate, Sun, Moon, LayoutGrid, Pencil, SquarePen, Plus, Wallpaper, FilePen } from 'lucide-react';
 import LauncherPopup from './LauncherPopup';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -22,6 +22,8 @@ import { useTheme } from '../../context/ThemeContext';
  * @param {() => void} [props.edit.onUndoReset] - Undoes it.
  * @param {() => void} props.edit.onAdd - Opens the list of cards to add.
  * @param {() => void} [props.edit.onEditMenu] - Opens the editor of the header menu.
+ * @param {() => void} [props.edit.onEditBackground] - Opens the editor of the page background.
+ * @param {() => void} [props.edit.onEditPage] - Opens the settings of the page being shown.
  * @returns {JSX.Element} The rendered header.
  */
 const Header = ({ config, edit }) => {
@@ -51,6 +53,30 @@ const Header = ({ config, edit }) => {
                     >
                         <Plus size={22} aria-hidden="true" />
                     </button>
+                    {edit.onEditPage && (
+                        <button
+                            type="button"
+                            className="button-reset icon-button"
+                            onClick={edit.onEditPage}
+                            disabled={edit.saving}
+                            title="Edit page"
+                            aria-label="Edit page"
+                        >
+                            <FilePen size={20} aria-hidden="true" />
+                        </button>
+                    )}
+                    {edit.onEditBackground && (
+                        <button
+                            type="button"
+                            className="button-reset icon-button"
+                            onClick={edit.onEditBackground}
+                            disabled={edit.saving}
+                            title="Edit background"
+                            aria-label="Edit background"
+                        >
+                            <Wallpaper size={20} aria-hidden="true" />
+                        </button>
+                    )}
                     {edit.onEditMenu && (
                         <button
                             type="button"

@@ -5,9 +5,11 @@ import BentoGrid from './BentoGrid';
 vi.mock('../../features/registry', () => ({
     getCardComponent: (type) => ({
         ok: ({ config }) => <div>ok card {config.id} span {config.colSpan ?? 1}</div>,
+        header: () => <div className="two-tone-header"><span className="app-icon-container" /></div>,
         crash: () => { throw new Error('kaboom'); },
     })[type] || null,
     getCardSizes: (type) => (type === 'ok' ? ['quarter', 'half', '1', '2', '3'] : undefined),
+    getCardInfo: (type) => (type === 'header' ? { headerIcon: true } : undefined),
 }));
 
 /**
@@ -163,6 +165,22 @@ describe('BentoGrid', () => {
 
             fireEvent.click(screen.getByRole('button', { name: 'Edit b' }));
             expect(onEditCard).toHaveBeenCalledWith(1);
+        });
+
+        it('opens the icon editor from the button on a header icon', () => {
+            const onEditIcon = vi.fn();
+            render(<BentoGrid cards={[{ id: 'a', type: 'ok' }, { id: 'b', type: 'header' }]} editing onEditIcon={onEditIcon} onEditCard={() => {}} />);
+            expect(screen.getAllByRole('button', { name: /Change the icon/ })).toHaveLength(1);
+            fireEvent.click(screen.getByRole('button', { name: 'Change the icon of b' }));
+            expect(onEditIcon).toHaveBeenCalledWith(1);
+        });
+
+        it('draws the grid behind the cards with a free row', () => {
+            setWidth(1200);
+            const { container, rerender } = render(<BentoGrid cards={[{ id: 'a', type: 'ok', colSpan: 2 }]} editing />);
+            expect(container.querySelectorAll('.grid-guide-tile')).toHaveLength(6);
+            rerender(<BentoGrid cards={[{ id: 'a', type: 'ok', colSpan: 2 }]} />);
+            expect(container.querySelector('.grid-guide')).toBeNull();
         });
 
         it('cancels the long press when the pointer moves', () => {

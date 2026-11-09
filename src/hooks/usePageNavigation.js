@@ -34,7 +34,7 @@ function findVisible(pages, from, step) {
  * pages are known, so deep links work even though the config loads asynchronously.
  * Hidden pages are skipped by next/prev but can still be opened by URL.
  * @param {Array<Object>} pages - Page configs.
- * @returns {{pageIndex: number, goTo: (idx: number) => void, next: () => void, prev: () => void, hasNext: boolean, hasPrev: boolean}}
+ * @returns {{pageIndex: number, goTo: (idx: number) => void, goToKey: (key: string) => void, next: () => void, prev: () => void, hasNext: boolean, hasPrev: boolean}}
  */
 export function usePageNavigation(pages) {
     const [requestedKey, setRequestedKey] = useState(keyFromLocation);
@@ -61,12 +61,19 @@ export function usePageNavigation(pages) {
         window.history.pushState(null, '', `/${encodeURIComponent(keys[idx])}`);
     }, [keys, pageIndex]);
 
+    // A page that is about to exist, like one just added in edit mode, can be opened by its key
+    const goToKey = useCallback((key) => {
+        setRequestedKey(key);
+        window.history.pushState(null, '', `/${encodeURIComponent(key)}`);
+    }, []);
+
     const nextIndex = findVisible(pages, pageIndex, 1);
     const prevIndex = findVisible(pages, pageIndex, -1);
 
     return {
         pageIndex,
         goTo,
+        goToKey,
         next: () => goTo(nextIndex),
         prev: () => goTo(prevIndex),
         hasNext: nextIndex !== -1,

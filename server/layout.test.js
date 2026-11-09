@@ -3,7 +3,9 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import { afterEach, beforeEach, describe, it, expect } from 'vitest';
-import { applyLayout, buildLayout, gridPages, readLayout, resetLayout, writeLayout } from './layout.js';
+import {
+    applyLayout, buildLayout, gridPages, readLayout, resetLayout, withAddedPages, writeLayout,
+} from './layout.js';
 
 const base = () => ({
     pages: [
@@ -129,3 +131,37 @@ describe('shared settings in the layout overlay', () => {
         expect(applyLayout(config, { pages: {} })).toEqual(config);
     });
 });
+
+describe('withAddedPages', () => {
+    it('adds the pages after those of config.yaml, marked as added in the editor', () => {
+        const config = { pages: [{ id: 'home', cards: [] }, { id: 'web', type: 'iframe', url: 'http://x' }] };
+        expect(withAddedPages(config, [{ id: 'garden', name: 'Garden' }, { id: 'web' }]).pages).toEqual([
+            { id: 'home', cards: [] },
+            { id: 'web', type: 'iframe', url: 'http://x' },
+            { id: 'garden', name: 'Garden', cards: [], addedInEditor: true },
+        ]);
+    });
+
+    it('turns top-level cards into a default page first', () => {
+        const config = { cards: [{ id: 'a', type: 'x' }] };
+        expect(withAddedPages(config, [{ id: 'more' }])).toEqual({
+            pages: [{ id: 'default', cards: [{ id: 'a', type: 'x' }] }, { id: 'more', cards: [], addedInEditor: true }],
+        });
+        expect(withAddedPages(config, [])).toBe(config);
+    });
+
+    it('puts saved cards on an added page', () => {
+        const config = { pages: [{ id: 'home', cards: [{ id: 'a', type: 'x' }] }] };
+        const applied = applyLayout(config, { pages: { home: [], more: [{ id: 'a' }] }, addedPages: [{ id: 'more' }] });
+        expect(applied.pages.map(p => [p.id, p.cards.map(c => c.id)])).toEqual([['home', []], ['more', ['a']]]);
+    });
+});
+
+describe('page backgrounds', () => {
+    it("sets, keeps and clears pages' own backgrounds", () => {
+        const config = { pages: [{ id: 'a', background: { color: '#111111' }, cards: [] }, { id: 'b', cards: [] }, { id: 'c', cards: [] }] };
+        const applied = applyLayout(config, { pages: {}, pageBackgrounds: { a: null, b: { theme: true } } });
+        expect(applied.pages.map(p => p.background)).toEqual([undefined, { theme: true }, undefined]);
+    });
+});
+

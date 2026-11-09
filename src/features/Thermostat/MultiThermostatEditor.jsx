@@ -1,4 +1,4 @@
-import { ListField, SegmentedField, TextField } from '../../components/Editor/EditorFields';
+import { Group, ListField, SegmentedField, TextField } from '../../components/Editor/EditorFields';
 import { setIn } from '../../components/Editor/setIn';
 import { MAX_ROOMS } from './useThermostat';
 
@@ -15,7 +15,15 @@ const MultiThermostatEditor = ({ config, onChange }) => {
     const presets = Array.isArray(config.presets) ? config.presets : [];
     return (
         <>
-            <TextField label="Title" value={config.title} onChange={(v) => onChange(setIn(config, ['title'], v))} placeholder="Climate" />
+            <Group title="General">
+                <TextField label="Title" value={config.title} onChange={(v) => onChange(setIn(config, ['title'], v))} placeholder="Climate" />
+                <SegmentedField
+                    label="Turn on as"
+                    value={config.hvac_mode || 'heat'}
+                    options={[{ value: 'heat', label: 'Heat' }, { value: 'cool', label: 'Cool' }, { value: 'heat_cool', label: 'Heat/Cool' }, { value: 'auto', label: 'Auto' }]}
+                    onChange={(value) => onChange(setIn(config, ['hvac_mode'], value === 'heat' ? undefined : value))}
+                />
+            </Group>
             <ListField
                 label="Rooms"
                 items={rooms}
@@ -25,13 +33,8 @@ const MultiThermostatEditor = ({ config, onChange }) => {
                     { key: 'name', label: 'Name', placeholder: 'From Home Assistant' },
                 ]}
                 addLabel="Add room"
+                max={MAX_ROOMS}
                 hint={`Up to ${MAX_ROOMS} rooms are shown${rooms.length > MAX_ROOMS ? `; the last ${rooms.length - MAX_ROOMS} are hidden` : ''}. One wide shows them as rows, two and three wide as columns.`}
-            />
-            <SegmentedField
-                label="Turn on as"
-                value={config.hvac_mode || 'heat'}
-                options={[{ value: 'heat', label: 'Heat' }, { value: 'cool', label: 'Cool' }, { value: 'heat_cool', label: 'Heat/Cool' }, { value: 'auto', label: 'Auto' }]}
-                onChange={(value) => onChange(setIn(config, ['hvac_mode'], value === 'heat' ? undefined : value))}
             />
             <ListField
                 label="Presets for all rooms"

@@ -32,7 +32,9 @@
     position: sticky;
     top: 0;
     z-index: 5;
-    background: #003780 var(--bg-page-gradient);
+    /* The page background, dimmed like the page when it is a picture */
+    background: linear-gradient(rgba(0, 0, 0, var(--bg-page-dim, 0)), rgba(0, 0, 0, var(--bg-page-dim, 0))),
+        #003780 var(--bg-page-custom, var(--bg-page-gradient)) center / cover;
     color: #fff;
 }
 

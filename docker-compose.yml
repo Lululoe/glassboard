@@ -10,6 +10,8 @@ services:
       # Optional: keep layout changes made in edit mode. Create the file first (touch layout.yaml),
       # otherwise Docker mounts a directory.
       # - ./layout.yaml:/app/layout.yaml
+      # Optional: keep background pictures uploaded in edit mode.
+      # - ./backgrounds:/app/backgrounds
       # Optional: override the default themes or add custom styles.
       # - ./theme.yaml:/app/theme.yaml
       # - ./custom.css:/app/custom.css

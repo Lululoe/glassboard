@@ -1,4 +1,4 @@
-import { ListField, TextField } from '../../components/Editor/EditorFields';
+import { Group, ListField, TextField } from '../../components/Editor/EditorFields';
 import { setIn } from '../../components/Editor/setIn';
 
 const entries = (list) => (Array.isArray(list) ? list : []).map(e => (typeof e === 'string' ? { entity_id: e } : e));
@@ -14,21 +14,23 @@ const PrinterEditor = ({ config, onChange }) => {
     const set = (key) => (value) => onChange(setIn(config, [key], value));
     return (
         <>
-            <TextField
-                label="Printer"
-                value={config.printer}
-                onChange={set('printer')}
-                placeholder="p2s"
-                hint="The start of its entity ids: p2s for sensor.p2s_print_status."
-            />
-            <TextField label="Name" value={config.name} onChange={set('name')} placeholder="From Home Assistant" />
-            <TextField
-                label="AMS"
-                value={config.ams}
-                onChange={set('ams')}
-                placeholder="ams"
-                hint="The start of its entity ids: ams for sensor.ams_tray_1."
-            />
+            <Group title="Printer">
+                <TextField
+                    label="Printer"
+                    value={config.printer}
+                    onChange={set('printer')}
+                    placeholder="p2s"
+                    hint="The start of its entity ids: p2s for sensor.p2s_print_status."
+                />
+                <TextField label="Name" value={config.name} onChange={set('name')} placeholder="From Home Assistant" />
+                <TextField
+                    label="AMS"
+                    value={config.ams}
+                    onChange={set('ams')}
+                    placeholder="ams"
+                    hint="The start of its entity ids: ams for sensor.ams_tray_1."
+                />
+            </Group>
             <ListField
                 label="Spools"
                 items={entries(config.trays)}

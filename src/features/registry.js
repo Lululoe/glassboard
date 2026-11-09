@@ -83,10 +83,10 @@ export const cardInfo = {
     },
     hacontrol: {
         name: 'Home Assistant',
-        description: 'Switch lights, plugs, fans and covers',
+        description: 'A light, plug, fan or cover as a quarter tile',
         icon: 'lu-Lightbulb',
-        sizes: ALL_SIZES,
-        defaults: { data: { entities: [] } },
+        sizes: ['quarter'],
+        defaults: { tileSize: 'quarter', data: { entities: [{}] } },
         Editor: HAControlEditor,
     },
     thermostat: {
