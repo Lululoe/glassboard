@@ -8,8 +8,13 @@ import {
     saveBackgroundImage, sniffImageType,
 } from '../backgrounds.js';
 import {
-    buildLayout, deepEqual, gridPages, pageKey, readLayout, readLayoutBackup, resetLayout, restoreLayout, writeLayout,
+    buildLayout, deepEqual, gridPages, pageKey, readLayout, readLayoutBackup, resetLayout, restoreLayout, stripTemplates,
+    writeLayout,
 } from '../layout.js';
+import {
+    ALIGNMENTS, CONDITION_OPERATORS, HEADER_AUTO_HIDE, ENTITY_ID, LAYOUTS, LINE_TYPES, MAX_TEXT_LENGTH, MAX_WIDGETS, MIN_TEMPLATE_REFRESH, STYLES,
+    WIDGET_TYPES, isHeaderColor,
+} from '../../shared/pageHeader.js';
 import logger from '../logger.js';
 import { isDemoMode } from '../services/demo.js';
 
@@ -64,6 +69,51 @@ const background = z.object({
 /** A single page's background: its own, or `{ theme: true }` for the theme's gradient on that page. */
 const pageBackground = z.union([background, z.object({ theme: z.literal(true) })]);
 
+/**
+ * A line of the page header as the browser saves it. There is no `template`: the object drops
+ * unknown keys, so template texts sent by the browser are never stored. A template line keeps
+ * the template written for it in config.yaml.
+ */
+const headerLine = z.union([z.literal(false), z.object({
+    type: z.enum(LINE_TYPES),
+    format: z.string().max(100).optional(),
+    text: z.string().max(MAX_TEXT_LENGTH).optional(),
+    refresh: z.number().min(MIN_TEMPLATE_REFRESH).max(86400).optional(),
+    color: z.string().max(100).refine(isHeaderColor, 'is not a color').optional(),
+})]);
+
+/**
+ * A page header widget as the browser saves it. Its entities become readable by the browser,
+ * like those of cards added in the browser.
+ */
+const headerWidget = z.object({
+    id: z.string().regex(/^[a-z0-9_-]{1,40}$/i),
+    type: z.enum(WIDGET_TYPES),
+    entity_id: z.string().regex(ENTITY_ID).max(255),
+    entity_id2: z.string().regex(ENTITY_ID).max(255).optional(),
+    name: z.string().trim().max(60).optional(),
+    icon: z.string().max(500).optional(),
+    color: z.string().max(100).refine(isHeaderColor, 'is not a color').optional(),
+    min: z.number().finite().optional(),
+    max: z.number().finite().optional(),
+    condition: z.object({
+        operator: z.enum(CONDITION_OPERATORS),
+        value: z.union([z.string().max(100), z.number().finite()]),
+    }).optional(),
+});
+
+/** A page header as the browser saves it: on with the defaults, off, or its options. */
+const pageHeader = z.union([z.boolean(), z.object({
+    enabled: z.boolean().optional(),
+    align: z.enum(ALIGNMENTS).optional(),
+    layout: z.enum(LAYOUTS).optional(),
+    style: z.enum(STYLES).optional(),
+    locale: z.string().trim().min(1).max(35).optional(),
+    title: headerLine.optional(),
+    subtitle: headerLine.optional(),
+    widgets: z.array(headerWidget).max(MAX_WIDGETS).optional(),
+})]);
+
 const layoutBody = z.object({
     pages: z.record(z.string(), z.array(layoutCard).max(500)),
     launcher: z.looseObject({
@@ -78,6 +128,9 @@ const layoutBody = z.object({
         name: z.string().trim().min(1).max(60).optional(),
     })).max(50).optional(),
     pageBackgrounds: z.record(z.string(), pageBackground.nullable()).optional(),
+    pageHeader: pageHeader.nullable().optional(),
+    pageHeaders: z.record(z.string(), pageHeader.nullable()).optional(),
+    headerAutoHide: z.enum(HEADER_AUTO_HIDE).nullable().optional(),
 });
 
 /**
@@ -91,8 +144,9 @@ function assertEditable() {
  * Saves the whole dashboard as edited in the browser: the cards of every grid page, in order,
  * with their full properties. Every grid page must be included and every card id may appear
  * only once. Credential-like keys the browser never received are restored from the server's copy.
- * The header menu, icon background presets and page background are optional; left out, the saved
- * ones are kept. A `null` background goes back to the one in config.yaml.
+ * The header menu, icon background presets, page background and page header are optional; left out,
+ * the saved ones are kept. A `null` background or page header goes back to the one in config.yaml.
+ * Page header templates are never taken from the browser, only from config.yaml.
  */
 router.put('/layout', (req, res, next) => {
     try {
@@ -149,6 +203,23 @@ router.put('/layout', (req, res, next) => {
             .filter(([key, value]) => !deepEqual(value ?? undefined, baseBackgrounds.get(key)))
             .filter(([key, value]) => value !== null || baseBackgrounds.get(key) !== undefined));
 
+        // Page headers too, compared without templates, which only config.yaml has
+        const baseHeaders = new Map(gridPages(getBaseConfig()).map(p => [p.key, stripTemplates(getBaseConfig().pages?.[p.index]?.pageHeader)]));
+        const sentPageHeaders = parsed.data.pageHeaders ?? previous.pageHeaders ?? {};
+        const unknownHeader = Object.keys(sentPageHeaders).find(key => !pageKeys.has(key));
+        if (parsed.data.pageHeaders && unknownHeader) throw new HttpError(400, `Unknown page: ${unknownHeader}`);
+        const pageHeaders = Object.fromEntries(Object.entries(sentPageHeaders)
+            .filter(([key]) => pageKeys.has(key))
+            .filter(([key, value]) => !deepEqual(value ?? undefined, baseHeaders.get(key)))
+            .filter(([key, value]) => value !== null || baseHeaders.get(key) !== undefined));
+        const sentHeader = parsed.data.pageHeader;
+        const header = sentHeader === undefined ? previous.pageHeader : sentHeader ?? undefined;
+        const baseHeader = stripTemplates(getBaseConfig().pageHeader);
+
+        // When the header bar hides itself; null goes back to config.yaml
+        const sentAutoHide = parsed.data.headerAutoHide;
+        const autoHide = sentAutoHide === undefined ? previous.headerAutoHide : sentAutoHide ?? undefined;
+
         const sentBackground = parsed.data.background;
         const pageBackground = sentBackground === undefined ? previous.background : sentBackground ?? undefined;
         writeLayout({
@@ -158,6 +229,9 @@ router.put('/layout', (req, res, next) => {
             background: pageBackground && !deepEqual(pageBackground, getBaseConfig().background) ? pageBackground : undefined,
             addedPages,
             pageBackgrounds,
+            pageHeader: header === undefined || deepEqual(header, baseHeader) ? undefined : header,
+            pageHeaders,
+            headerAutoHide: autoHide === (getBaseConfig().headerAutoHide ?? 'never') ? undefined : autoHide,
         });
         // A reset keeps a copy of the layout it removed, so its pictures stay until that copy is gone
         const backup = readLayoutBackup();

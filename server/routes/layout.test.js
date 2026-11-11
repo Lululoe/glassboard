@@ -230,6 +230,79 @@ describe('layout API', () => {
         });
     });
 
+    describe('page header', () => {
+        const pages = { home: [{ id: 'a', type: 'x' }, { id: 't', type: 'transmission', url: 'http://t' }], admin: [{ id: 'c', type: 'x' }] };
+
+        it('saves the header of all pages and of single pages', async () => {
+            const res = await put(server, {
+                pages,
+                pageHeader: { align: 'center', title: { type: 'greeting', color: 'teal' } },
+                pageHeaders: { home: { subtitle: false }, admin: false },
+            });
+            expect(res.status).toBe(200);
+            expect(readLayout()).toMatchObject({
+                pageHeader: { align: 'center', title: { type: 'greeting', color: 'teal' } },
+                pageHeaders: { home: { subtitle: false }, admin: false },
+            });
+
+            expect((await put(server, { pages, pageHeader: null, pageHeaders: { home: null, admin: null } })).status).toBe(200);
+            expect(readLayout().pageHeader).toBeUndefined();
+            expect(readLayout().pageHeaders).toBeUndefined();
+        });
+
+        it('saves the style of all pages and of a page', async () => {
+            const res = await put(server, {
+                pages,
+                pageHeader: { style: 'monochrome' },
+                pageHeaders: { home: { align: 'left', layout: 'auto', style: 'monochrome' } },
+            });
+            expect(res.status).toBe(200);
+            expect(readLayout().pageHeader).toEqual({ style: 'monochrome' });
+            expect(readLayout().pageHeaders).toEqual({ home: { align: 'left', layout: 'auto', style: 'monochrome' } });
+            expect((await put(server, { pages, pageHeader: { style: 'sepia' } })).status).toBe(400);
+        });
+
+        it('saves widgets and lets the browser read their entities', async () => {
+            const widget = { id: 'w-1', type: 'gauge', entity_id: 'sensor.outside', min: -10, max: 35, condition: { operator: 'above', value: 0 } };
+            expect((await put(server, { pages, pageHeader: { widgets: [widget] } })).status).toBe(200);
+            expect(readLayout().pageHeader).toEqual({ widgets: [widget] });
+
+            expect((await put(server, { pages, pageHeader: { widgets: [{ ...widget, entity_id: 'sensor.x; rm' }] } })).status).toBe(400);
+            expect((await put(server, { pages, pageHeader: { widgets: [{ ...widget, type: 'rocket' }] } })).status).toBe(400);
+        });
+
+        it('saves when the header bar hides itself, unless it matches config.yaml', async () => {
+            expect((await put(server, { pages, headerAutoHide: 'with-page-header' })).status).toBe(200);
+            expect(readLayout().headerAutoHide).toBe('with-page-header');
+            expect((await put(server, { pages, headerAutoHide: 'never' })).status).toBe(200);
+            expect(readLayout().headerAutoHide).toBeUndefined();
+            expect((await put(server, { pages, headerAutoHide: 'sometimes' })).status).toBe(400);
+        });
+
+        it('never stores a template sent by the browser', async () => {
+            const res = await put(server, {
+                pages,
+                pageHeader: { title: { type: 'template', template: '{{ states.lock }}', refresh: 30 } },
+                pageHeaders: { home: { subtitle: { type: 'template', template: '{{ x }}' } } },
+            });
+            expect(res.status).toBe(200);
+            expect(readLayout().pageHeader).toEqual({ title: { type: 'template', refresh: 30 } });
+            expect(readLayout().pageHeaders).toEqual({ home: { subtitle: { type: 'template' } } });
+        });
+
+        it("doesn't store what matches config.yaml, ignoring its templates", async () => {
+            setConfig({ ...config(), pageHeader: { title: { type: 'template', template: '{{ 1 }}' } } });
+            expect((await put(server, { pages, pageHeader: { title: { type: 'template', template: '{{ 1 }}' } } })).status).toBe(200);
+            expect(readLayout().pageHeader).toBeUndefined();
+        });
+
+        it('rejects invalid headers and unknown pages', async () => {
+            expect((await put(server, { pages, pageHeader: { align: 'middle' } })).status).toBe(400);
+            expect((await put(server, { pages, pageHeader: { title: { type: 'clock', color: 'red; top: 0' } } })).status).toBe(400);
+            expect((await put(server, { pages, pageHeaders: { nope: false } })).status).toBe(400);
+        });
+    });
+
     describe('added pages', () => {
         const pages = { home: [{ id: 'a', type: 'x' }, { id: 't', type: 'transmission', url: 'http://t' }], admin: [{ id: 'c', type: 'x' }] };
 

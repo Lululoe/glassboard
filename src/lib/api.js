@@ -70,9 +70,10 @@ async function send(method, url, body) {
  * Saves the dashboard as edited in the browser: every grid page's cards, in order, with their
  * full properties. The server stores what differs from config.yaml in layout.yaml.
  * @param {Object<string, Array<Object>>} pages - Cards per page key (page id, or index without one).
- * @param {{launcher?: Object, iconBackgrounds?: string[], background?: Object|null, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>}} [shared]
+ * @param {{launcher?: Object, iconBackgrounds?: string[], background?: Object|null, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>, pageHeader?: *, pageHeaders?: Object<string, *>, headerAutoHide?: string|null}} [shared]
  *   - Header menu, icon background presets, page background (`null` for the one in config.yaml), the pages
- *   added in the browser, in order, and each page's own background (`null` to show that of all pages).
+ *   added in the browser, in order, each page's own background (`null` to show that of all pages), and the page
+ *   header of all pages and of each page (`null` for the one in config.yaml).
  * @returns {Promise<*>} The server response.
  */
 export function saveLayout(pages, shared = {}) {

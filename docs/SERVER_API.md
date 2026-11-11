@@ -79,7 +79,8 @@ for missing parameters. Home Assistant actions change the simulated state in mem
 States are answered from a live copy that the server keeps over Home Assistant's websocket API, or fetched over
 REST while that connection is down, so polling is cheap.
 Only entities that appear on an `hacontrol` card, as the `entity_id` of a `thermostat` card, in the first six
-`rooms` of a `thermostats` card or as a player or speaker of a `mediaplayer` card can be read. Of
+`rooms` of a `thermostats` card, as a player or speaker of a `mediaplayer` card, or in a page header widget
+(`entity_id` and `entity_id2`, for all pages or a single page) can be read. Of
 `hacontrol` entities only the configured `on_action` / `off_action` and the control dialog actions below can be called; thermostat entities only accept
 the climate actions below.
 
@@ -133,6 +134,12 @@ the climate actions below.
   `403` otherwise); 1–50 entities. `action` is `turn_on` or `turn_off`. Lights are called with `light.turn_on` /
   `light.turn_off` and, for `turn_on`, optional `brightness_pct` (1–100), `color_temp_kelvin` (1000–12000) or
   `hs_color` (`[hue 0–360, saturation 0–100]`); other entities with `homeassistant.turn_on` / `turn_off`.
+- **Render a page header template**: `{ "service": "homeassistant", "endpoint": "template", "page": "home", "line": "title" }`
+  returns `{ "text": "21.5 °C" }`. `page` is the page key (its id, or its position without one, `default` for
+  top-level `cards`) and `line` is `title` or `subtitle`. Only the template that line has in the config is rendered,
+  never one sent with the request; `404` when the line has none. Each template is rendered at most once every 10
+  seconds, and the result is cut to one line of plain text of at most 200 characters. In demo mode `{{ … }}` parts
+  are replaced with a simulated number. See [Page Header](HEADER_CONFIGURATION#page-header).
 
 ### `weather`
 - **Parameters**:

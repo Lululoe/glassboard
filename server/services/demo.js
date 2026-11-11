@@ -4,6 +4,7 @@ import { getGridApps } from './appstatus.js';
 import { graphSettings, hoursOf, makeBuckets, slotsFor } from './haGraph.js';
 import { robotsOf, simplifyValetudoMap } from './haVacuum.js';
 import { printerOf } from './haPrinter.js';
+import { cleanTemplateOutput, findHeaderTemplate, headerWidgetEntityIds } from '../../shared/pageHeader.js';
 import {
     climateCall, controlCalls, fallbackIcon, getClimateConfigs, getControlEntityIds, getMediaEntityIds, mediaCall,
 } from './homeassistant.js';
@@ -792,7 +793,40 @@ function control(params) {
     return [];
 }
 
+/**
+ * Simulated sensors for page header widgets, guessed from the entity's name: [pattern, min, max, unit, device class].
+ * @type {Array<[RegExp, number, number, string, string|undefined]>}
+ */
+const WIDGET_SENSORS = [
+    [/humid/, 35, 65, '%', 'humidity'],
+    [/batter/, 20, 100, '%', 'battery'],
+    [/cpu|load|usage/, 5, 60, '%', undefined],
+    [/temp|outside|inside|indoor|outdoor/, 8, 24, '°C', 'temperature'],
+    [/power|watt|consumption/, 200, 3200, 'W', 'power'],
+    [/energy|kwh/, 2, 18, 'kWh', 'energy'],
+    [/co2/, 420, 1100, 'ppm', 'carbon_dioxide'],
+];
+
+/**
+ * A slowly changing sensor state for an entity shown by a page header widget.
+ * @param {string} entityId - The entity.
+ * @returns {Object} Its state.
+ */
+function headerSensorState(entityId) {
+    const [, min, max, unit, deviceClass] = WIDGET_SENSORS.find(([pattern]) => pattern.test(entityId)) ?? [/./, 0, 100, '%', undefined];
+    const phase = [...entityId].reduce((sum, ch) => sum + ch.charCodeAt(0), 0);
+    const value = drift(min, max, 600, phase);
+    return {
+        entity_id: entityId,
+        state: String(round(value, max > 100 ? 0 : 1)),
+        attributes: { unit_of_measurement: unit, friendly_name: titleOf(entityId), ...(deviceClass ? { device_class: deviceClass } : {}) },
+    };
+}
+
 function entityState(entityId, index) {
+    if (/^(sensor|number|input_number)\./.test(entityId) && headerWidgetEntityIds(getConfig()).has(entityId)) {
+        return headerSensorState(entityId);
+    }
     if (thermostatCards().some(card => card.entity_id === entityId)) return climateState(entityId);
     if (getMediaEntityIds().has(entityId)) return mediaState(entityId);
     if (entityId.startsWith('group.')) return groupState(entityId);
@@ -809,6 +843,17 @@ function entityState(entityId, index) {
     return { entity_id: entityId, state: haStates.get(entityId), attributes: {} };
 }
 
+/**
+ * A page header template in demo mode: the template's text, with every `{{ … }}` shown as a
+ * simulated number and `{% … %}` blocks left out.
+ */
+function demoTemplate(params) {
+    const found = findHeaderTemplate(getConfig(), String(params.page ?? ''), String(params.line ?? ''));
+    if (!found) throw new HttpError(404, 'No template for this header line');
+    const value = String(round(drift(18, 24, 300), 1));
+    return { text: cleanTemplateOutput(found.template.replace(/{%[\s\S]*?%}/g, '').replace(/{{[\s\S]*?}}/g, value)) };
+}
+
 function homeassistant(params) {
     const { endpoint } = params;
     if (!endpoint) throw new HttpError(400, 'Home Assistant service requires endpoint parameter');
@@ -820,6 +865,7 @@ function homeassistant(params) {
     if (endpoint.startsWith('states/')) {
         return entityState(endpoint.slice('states/'.length), 0);
     }
+    if (endpoint === 'template') return demoTemplate(params);
     if (endpoint === 'graph') return demoGraph(params);
     if (endpoint === 'vacuum') return demoVacuums(params);
     if (endpoint === 'vacuum_action') return demoVacuumAction(params);
