@@ -242,4 +242,17 @@ describe('Home Assistant control dialogs', () => {
             expect(() => controlCalls(withId, allowed)).toThrow(expect.objectContaining({ status: 400 }));
         });
     });
+
+    it('lets the browser read the entities of page header widgets, and no others', async () => {
+        setConfig({
+            services: { homeassistant: { url: 'http://ha.local/', token: 'tkn' } },
+            pageHeader: { widgets: [{ entity_id: 'sensor.outside' }] },
+            pages: [{ id: 'home', pageHeader: { widgets: [{ type: 'rectangle', entity_id: 'sensor.power', entity_id2: 'sensor.energy' }] }, cards: [] }],
+        });
+        vi.stubGlobal('fetch', vi.fn(async (url) => okResponse({ entity_id: String(url).split('/').pop(), state: '1' })));
+        const states = await handleHaRequest({ endpoint: 'states', entity_ids: ['sensor.outside', 'sensor.power', 'sensor.energy'] });
+        expect(Object.keys(states)).toEqual(['sensor.outside', 'sensor.power', 'sensor.energy']);
+        await expect(handleHaRequest({ endpoint: 'states', entity_ids: ['lock.front_door'] })).rejects.toMatchObject({ status: 403 });
+    });
 });
+

@@ -39,7 +39,8 @@
     display: none;
 }
 
-.scroll-content.page-active {
+/* The page's content fades in; its header plays its own entrance, or stays still when it is the same as before */
+.scroll-content.page-active > :not(.page-header) {
     animation: page-fade-in 0.3s ease-out;
 }
 
@@ -250,4 +251,9 @@
 .page-indicator-action:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
+}
+
+/* While the header bar hides itself, the page starts at the top, clear of the notch */
+.App.has-hidden-header-bar .app-content {
+    padding-top: env(safe-area-inset-top);
 }

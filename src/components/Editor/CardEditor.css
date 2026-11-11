@@ -758,3 +758,76 @@ dialog.editor-dialog.page-dialog {
     border-color: transparent;
     background: var(--bg-fill);
 }
+
+/* ===== Page header editors ===== */
+
+/* The header laid out at full width and scaled into a small page, with a few cards under it */
+.header-preview {
+    aspect-ratio: 16 / 6;
+}
+
+.header-preview-stage {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform-origin: 0 0;
+    pointer-events: none;
+}
+
+.header-preview-stage .page-header {
+    animation: none;
+}
+
+.header-preview-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    padding: 36px 30px 0;
+}
+
+.header-preview-cards span {
+    height: 220px;
+    border-radius: var(--radius-card);
+    background: var(--bg-card-surface);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+}
+
+.header-preview-cards span.wide {
+    grid-column: span 2;
+}
+
+.header-preview-off {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    font-size: var(--fs-15);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Format examples can be long, so they wrap into rows instead of squeezing */
+.header-formats {
+    flex-wrap: wrap;
+}
+
+.header-formats button {
+    flex: 1 1 auto;
+}
+
+.header-swatches .background-swatch {
+    width: 36px;
+    height: 36px;
+}
+
+.header-template {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--bg-fill);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: var(--fs-13);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+

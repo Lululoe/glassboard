@@ -123,6 +123,15 @@ describe('Header cards', () => {
 describe('HeaderMenuEditor', () => {
     const launcher = { apps: [app('One'), app('Two')], links: [{ name: 'Docs', url: 'http://docs', icon: 'lu-Book' }], links_title: 'More' };
 
+    it('sets when the header bar hides itself', () => {
+        const onSave = vi.fn();
+        render(<HeaderMenuEditor launcher={launcher} headerAutoHide="always" onSave={onSave} onCancel={() => {}} />);
+        expect(screen.getByRole('radio', { name: 'Always' })).toHaveAttribute('aria-checked', 'true');
+        fireEvent.click(screen.getByRole('radio', { name: 'With Page Header' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+        expect(onSave.mock.calls[0][1]).toBe('with-page-header');
+    });
+
     it('arranges apps, adds links and saves', () => {
         const onSave = vi.fn();
         render(<HeaderMenuEditor launcher={launcher} onSave={onSave} onCancel={() => {}} />);

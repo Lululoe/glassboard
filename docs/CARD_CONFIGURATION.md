@@ -67,6 +67,13 @@ can go:
 - **Edit a page**: the page button in the header (**Edit page**) opens the settings of the page you are on. Pages
   added in the browser can be renamed and deleted there; deleting a page also deletes its cards. Pages from
   `config.yaml` can't be renamed or deleted in the browser. **Page background…** opens the page's background.
+- **Page header**: the header above the cards has its own editors. The pencil on its corner opens **Header**:
+  show or hide it, its style (colored or monochrome), alignment, where the widgets go and the language of names. Tap the title or the
+  subtitle (they have a pencil badge) to change what it shows, its format and its color, or to hide it; a hidden
+  line can be added back from its dashed button. Each widget has a pencil to edit it, and **+** adds one. A page
+  without a header shows **Add Header** in its place. Each
+  editor has a tab for all pages and one for the page you are on, which can follow all pages or use its own
+  settings. See [Page Header](HEADER_CONFIGURATION#page-header).
 - **Add**: the **+** button in the header lists every card type, including **Empty Space** (see below). New cards
   go to the end of the current page and open in the editor.
 - **Keyboard**: Tab to a card, then use the arrow keys to move it and `+` / `-` to resize it.

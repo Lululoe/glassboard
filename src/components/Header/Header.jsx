@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useAutoHide } from '../../hooks/useAutoHide';
 import './Header.css';
-import { LayoutTemplate, Sun, Moon, LayoutGrid, Pencil, SquarePen, Plus, Wallpaper, FilePen } from 'lucide-react';
+import { LayoutTemplate, Sun, Moon, LayoutGrid, Pencil, SquarePen, Plus, Wallpaper, FilePen, RotateCcw } from 'lucide-react';
 import LauncherPopup from './LauncherPopup';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -24,132 +25,179 @@ import { useTheme } from '../../context/ThemeContext';
  * @param {() => void} [props.edit.onEditMenu] - Opens the editor of the header menu.
  * @param {() => void} [props.edit.onEditBackground] - Opens the editor of the page background.
  * @param {() => void} [props.edit.onEditPage] - Opens the settings of the page being shown.
+ * @param {boolean} [props.autoHide] - Hides the bar until it is pointed at, tapped at the top of the
+ *   screen or reached with the keyboard. It stays while it is used and while its menu is open.
  * @returns {JSX.Element} The rendered header.
  */
-const Header = ({ config, edit }) => {
+const Header = ({ config, edit, autoHide = false }) => {
     const [isLauncherOpen, setIsLauncherOpen] = useState(false);
     const { mode, toggleMode } = useTheme();
+    const { hidden, reveal, hideSoon } = useAutoHide(autoHide, isLauncherOpen);
+    // On touch screens there is no pointer leaving the bar, so it hides a few seconds after the last tap
+    const TOUCH_DELAY = 4000;
+
+    const autoHideHandlers = autoHide ? {
+        onPointerEnter: (e) => { if (e.pointerType === 'mouse') reveal(); },
+        onPointerLeave: (e) => { if (e.pointerType === 'mouse') hideSoon(); },
+        onPointerDown: (e) => {
+            if (e.pointerType === 'mouse') return;
+            reveal();
+            hideSoon(TOUCH_DELAY);
+        },
+        onFocus: reveal,
+        onBlur: (e) => { if (!e.currentTarget.contains(/** @type {Node|null} */ (e.relatedTarget))) hideSoon(); },
+    } : {};
 
     return (
-        <header className="app-header">
-            <div className="header-left">
-                <LayoutTemplate className="header-logo-icon" size={24} />
-                <span className="header-title">Glassboard</span>
-                {config?.demo && (
-                    <span className="header-demo-badge" title="Cards show simulated data">Demo</span>
-                )}
-            </div>
+        <>
+            {autoHide && (
+                <div
+                    className="header-reveal"
+                    aria-hidden="true"
+                    onPointerEnter={(e) => { if (e.pointerType === 'mouse') reveal(); }}
+                    onClick={() => {
+                        reveal();
+                        hideSoon(TOUCH_DELAY);
+                    }}
+                >
+                    <span className="header-reveal-handle" />
+                </div>
+            )}
+            <header
+                className={`app-header${edit?.active ? ' is-editing' : ''}${autoHide ? ' is-auto-hide' : ''}${hidden ? ' is-hidden' : ''}`}
+                {...autoHideHandlers}
+            >
+                <div className="header-left">
+                    <LayoutTemplate className="header-logo-icon" size={24} />
+                    <span className="header-title">Glassboard</span>
+                    {config?.demo && (
+                        <span className="header-demo-badge" title="Cards show simulated data">Demo</span>
+                    )}
+                </div>
 
-            {edit?.active ? (
+                {edit?.active ? (
+                    <div className="header-right">
+                        {edit.status && <span className="header-edit-status" role="status">{edit.status}</span>}
+                        <button
+                            type="button"
+                            className="button-reset icon-button"
+                            onClick={edit.onAdd}
+                            disabled={edit.saving}
+                            title="Add card"
+                            aria-label="Add card"
+                        >
+                            <Plus size={22} aria-hidden="true" />
+                        </button>
+                        {edit.onEditPage && (
+                            <button
+                                type="button"
+                                className="button-reset icon-button"
+                                onClick={edit.onEditPage}
+                                disabled={edit.saving}
+                                title="Edit page"
+                                aria-label="Edit page"
+                            >
+                                <FilePen size={20} aria-hidden="true" />
+                            </button>
+                        )}
+                        {edit.onEditBackground && (
+                            <button
+                                type="button"
+                                className="button-reset icon-button"
+                                onClick={edit.onEditBackground}
+                                disabled={edit.saving}
+                                title="Edit background"
+                                aria-label="Edit background"
+                            >
+                                <Wallpaper size={20} aria-hidden="true" />
+                            </button>
+                        )}
+                        {edit.onEditMenu && (
+                            <button
+                                type="button"
+                                className="button-reset icon-button header-menu-edit"
+                                onClick={edit.onEditMenu}
+                                disabled={edit.saving}
+                                title="Edit header menu"
+                                aria-label="Edit header menu"
+                            >
+                                <LayoutGrid size={20} aria-hidden="true" />
+                                <span className="header-menu-edit-badge"><Pencil size={10} strokeWidth={3} aria-hidden="true" /></span>
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            className="button-reset header-text-button header-reset-button"
+                            onClick={edit.onReset}
+                            disabled={edit.saving}
+                            aria-label="Reset…"
+                            title="Reset…"
+                        >
+                            {/* On narrow screens only the icon shows, so Done always fits */}
+                            <RotateCcw className="header-reset-icon" size={18} aria-hidden="true" />
+                            <span className="header-reset-label">Reset…</span>
+                        </button>
+                        <button type="button" className="button-reset header-done-button" onClick={edit.onDone} disabled={edit.saving}>
+                            Done
+                        </button>
+                    </div>
+                ) : (
                 <div className="header-right">
-                    {edit.status && <span className="header-edit-status" role="status">{edit.status}</span>}
+                    {edit?.canUndoReset && (
+                        <span className="header-edit-status" role="status">
+                            {edit.undoFailed ? "Couldn't undo the reset." : 'Dashboard reset.'}{' '}
+                            <button type="button" className="button-reset header-undo" onClick={edit.onUndoReset}>
+                                {edit.undoFailed ? 'Try Again' : 'Undo'}
+                            </button>
+                        </span>
+                    )}
+                    {edit?.available && (
+                        <button
+                            type="button"
+                            className="button-reset icon-button"
+                            onClick={edit.onStart}
+                            title="Edit layout"
+                            aria-label="Edit layout"
+                        >
+                            <SquarePen size={20} aria-hidden="true" />
+                        </button>
+                    )}
+                    {config?.themeToggle !== false && (
+                        <button
+                            type="button"
+                            className="button-reset icon-button"
+                            onClick={toggleMode}
+                            title={mode === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+                            aria-label={mode === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+                        >
+                            {mode === 'dark' ? <Sun size={20} aria-hidden="true" /> : <Moon size={20} aria-hidden="true" />}
+                        </button>
+                    )}
                     <button
                         type="button"
-                        className="button-reset icon-button"
-                        onClick={edit.onAdd}
-                        disabled={edit.saving}
-                        title="Add card"
-                        aria-label="Add card"
+                        className={`button-reset icon-button${isLauncherOpen ? ' active' : ''}`}
+                        onClick={() => setIsLauncherOpen(!isLauncherOpen)}
+                        title="Apps"
+                        aria-label="Apps"
+                        aria-haspopup="dialog"
+                        aria-expanded={isLauncherOpen}
                     >
-                        <Plus size={22} aria-hidden="true" />
-                    </button>
-                    {edit.onEditPage && (
-                        <button
-                            type="button"
-                            className="button-reset icon-button"
-                            onClick={edit.onEditPage}
-                            disabled={edit.saving}
-                            title="Edit page"
-                            aria-label="Edit page"
-                        >
-                            <FilePen size={20} aria-hidden="true" />
-                        </button>
-                    )}
-                    {edit.onEditBackground && (
-                        <button
-                            type="button"
-                            className="button-reset icon-button"
-                            onClick={edit.onEditBackground}
-                            disabled={edit.saving}
-                            title="Edit background"
-                            aria-label="Edit background"
-                        >
-                            <Wallpaper size={20} aria-hidden="true" />
-                        </button>
-                    )}
-                    {edit.onEditMenu && (
-                        <button
-                            type="button"
-                            className="button-reset icon-button header-menu-edit"
-                            onClick={edit.onEditMenu}
-                            disabled={edit.saving}
-                            title="Edit header menu"
-                            aria-label="Edit header menu"
-                        >
-                            <LayoutGrid size={20} aria-hidden="true" />
-                            <span className="header-menu-edit-badge"><Pencil size={10} strokeWidth={3} aria-hidden="true" /></span>
-                        </button>
-                    )}
-                    <button type="button" className="button-reset header-text-button" onClick={edit.onReset} disabled={edit.saving}>
-                        Reset…
-                    </button>
-                    <button type="button" className="button-reset header-done-button" onClick={edit.onDone} disabled={edit.saving}>
-                        Done
+                        <LayoutGrid size={20} aria-hidden="true" />
                     </button>
                 </div>
-            ) : (
-            <div className="header-right">
-                {edit?.canUndoReset && (
-                    <span className="header-edit-status" role="status">
-                        {edit.undoFailed ? "Couldn't undo the reset." : 'Dashboard reset.'}{' '}
-                        <button type="button" className="button-reset header-undo" onClick={edit.onUndoReset}>
-                            {edit.undoFailed ? 'Try Again' : 'Undo'}
-                        </button>
-                    </span>
                 )}
-                {edit?.available && (
-                    <button
-                        type="button"
-                        className="button-reset icon-button"
-                        onClick={edit.onStart}
-                        title="Edit layout"
-                        aria-label="Edit layout"
-                    >
-                        <SquarePen size={20} aria-hidden="true" />
-                    </button>
-                )}
-                {config?.themeToggle !== false && (
-                    <button
-                        type="button"
-                        className="button-reset icon-button"
-                        onClick={toggleMode}
-                        title={mode === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
-                        aria-label={mode === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
-                    >
-                        {mode === 'dark' ? <Sun size={20} aria-hidden="true" /> : <Moon size={20} aria-hidden="true" />}
-                    </button>
-                )}
-                <button
-                    type="button"
-                    className={`button-reset icon-button${isLauncherOpen ? ' active' : ''}`}
-                    onClick={() => setIsLauncherOpen(!isLauncherOpen)}
-                    title="Apps"
-                    aria-label="Apps"
-                    aria-haspopup="dialog"
-                    aria-expanded={isLauncherOpen}
-                >
-                    <LayoutGrid size={20} aria-hidden="true" />
-                </button>
-            </div>
-            )}
 
-            {isLauncherOpen && (
-                <LauncherPopup
-                    config={config}
-                    onClose={() => setIsLauncherOpen(false)}
-                />
-            )}
-        </header>
+                {isLauncherOpen && (
+                    <LauncherPopup
+                        config={config}
+                        onClose={() => {
+                            setIsLauncherOpen(false);
+                            if (autoHide) hideSoon();
+                        }}
+                    />
+                )}
+            </header>
+        </>
     );
 };
 
