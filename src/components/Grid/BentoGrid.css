@@ -161,6 +161,51 @@
     box-shadow: var(--focus-ring);
 }
 
+/* Cards inside a container can be grabbed on their own and dragged out; the container's edges
+   still move the container. BentoGrid places these over the cards. */
+.grid-child-surface {
+    position: absolute;
+    z-index: 3;
+    border-radius: var(--radius-card);
+    cursor: grab;
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3);
+    transition: box-shadow var(--duration-standard) var(--ease-standard);
+}
+
+@media (pointer: fine) {
+    .grid-child-surface:hover {
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+    }
+}
+
+.grid-child-surface:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* A container the dragged card will drop into */
+.grid-item .container-card {
+    transition: box-shadow var(--duration-standard) var(--ease-standard), background-color var(--duration-standard) var(--ease-standard);
+}
+
+.grid-item.drop-target .container-card {
+    background-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 0 28px rgba(255, 255, 255, 0.35);
+}
+
+.bento-grid.editing .grid-item.dragging.over-container {
+    rotate: none;
+    opacity: 0.92;
+}
+
+.grid-item.dragging .grid-child-surface,
+.bento-grid.is-dragging .grid-child-surface {
+    display: none !important;
+}
+
 .bento-grid.editing .grid-item.dragging {
     z-index: 20;
     pointer-events: none;

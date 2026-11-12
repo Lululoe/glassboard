@@ -3,9 +3,10 @@ import { EyeOff, Pencil } from 'lucide-react';
 import { getCardComponent, getCardInfo, getCardSizes } from '../../features/registry';
 import { useGridColumns } from '../../hooks/useGridColumns';
 import CardErrorBoundary from './CardErrorBoundary';
+import { childCardsOf, isContainer } from '../../../shared/containerCards';
 import {
-    DEVICES, buildEntries, deviceFor, dropIndex, fitToColumns, isHiddenAt, isSubTile, layoutCards, moveItem, nearestSize,
-    rowCount, sizeLabel, sizeOf, usableSizes, withSize,
+    DEVICES, MAX_ROWS, buildEntries, deviceFor, dropIndex, fitToColumns, isHiddenAt, isSubTile, layoutCards, moveItem, nearestSize,
+    rowCount, rowSpanOf, sizeLabel, sizeOf, usableSizes, withRows, withSize,
 } from './gridLayout';
 import './BentoGrid.css';
 
@@ -74,6 +75,27 @@ function scrollParent(el) {
 }
 
 /**
+ * Returns where an element is inside a grid item, from layout offsets rather than rects, so move
+ * animations don't skew it. Scrolled ancestors inside the item are taken into account.
+ * @param {HTMLElement} el - The element.
+ * @param {HTMLElement} item - The grid item it is in.
+ * @returns {{left: number, top: number, width: number, height: number}} Its box in the item.
+ */
+function boxInItem(el, item) {
+    let left = 0;
+    let top = 0;
+    for (let node = el; node && node !== item; node = /** @type {HTMLElement} */ (node.offsetParent)) {
+        left += node.offsetLeft;
+        top += node.offsetTop;
+    }
+    for (let node = el.parentElement; node && node !== item; node = node.parentElement) {
+        left -= node.scrollLeft;
+        top -= node.scrollTop;
+    }
+    return { left, top, width: el.offsetWidth, height: el.offsetHeight };
+}
+
+/**
  * The tiles of the grid, drawn behind the cards in edit mode with one free row below them,
  * so it is clear where cards can go. While a card is dragged, the place it will land is marked.
  * @param {Object} props
@@ -138,7 +160,11 @@ const BentoGrid = ({
     const pressRef = useRef(null);
     const dragEndedRef = useRef(0);
     const beginRef = useRef(null);
+    const placeRef = useRef(null);
+    const pendingRef = useRef(null);
     const [dragKey, setDragKey] = useState(null);
+    const [intoKey, setIntoKey] = useState(/** @type {string|null} */ (null));
+    const [pickup, setPickup] = useState(/** @type {{key: string}|null} */ (null));
     const [edgeHint, setEdgeHint] = useState(0);
     const [announcement, setAnnouncement] = useState('');
     const [settled, setSettled] = useState(false);
@@ -165,7 +191,10 @@ const BentoGrid = ({
         if (!el) return;
         el.style.transform = 'none';
         const r = el.getBoundingClientRect();
-        el.style.transform = `translate(${d.x - d.grabX - r.left}px, ${d.y - d.grabY - r.top}px) scale(1.04)`;
+        // Over a container the card shrinks toward the pointer, the way it will look inside
+        const scale = d.into ? 0.85 : 1.04;
+        el.style.transformOrigin = d.into ? `${d.grabX}px ${d.grabY}px` : '';
+        el.style.transform = `translate(${d.x - d.grabX - r.left}px, ${d.y - d.grabY - r.top}px) scale(${scale})`;
     };
 
     // After each render: animate cards to their new places, keep the dragged card under
@@ -202,10 +231,38 @@ const BentoGrid = ({
 
     // Puts each icon edit button over its card's header icon; cards without a header at their
     // size have none to edit. Offsets are used rather than rects, so move animations don't skew them.
+    // The grab areas of cards inside containers go over those cards, clipped to what is in view.
     useLayoutEffect(() => {
         const grid = gridRef.current;
         if (!grid || !editing) return undefined;
         const place = () => {
+            grid.querySelectorAll('.grid-child-surface').forEach((surface) => {
+                const el = /** @type {HTMLElement} */ (surface);
+                const item = /** @type {HTMLElement|null} */ (el.closest('[data-key]'));
+                const child = /** @type {HTMLElement|null} */ (item?.querySelector(`[data-child-index="${el.dataset.child}"]`));
+                const body = /** @type {HTMLElement|null} */ (item?.querySelector('.container-card-body'));
+                if (!child || !body) {
+                    el.style.display = 'none';
+                    return;
+                }
+                const box = boxInItem(child, item);
+                const view = boxInItem(body, item);
+                const left = Math.max(box.left, view.left);
+                const top = Math.max(box.top, view.top);
+                const right = Math.min(box.left + box.width, view.left + view.width);
+                const bottom = Math.min(box.top + box.height, view.top + view.height);
+                if (right - left < 12 || bottom - top < 12) {
+                    el.style.display = 'none';
+                    return;
+                }
+                Object.assign(el.style, {
+                    display: '',
+                    left: `${left}px`,
+                    top: `${top}px`,
+                    width: `${right - left}px`,
+                    height: `${bottom - top}px`,
+                });
+            });
             grid.querySelectorAll('.grid-icon-button').forEach((button) => {
                 const el = /** @type {HTMLElement} */ (button);
                 const item = el.closest('[data-key]');
@@ -230,6 +287,7 @@ const BentoGrid = ({
             });
         };
         place();
+        placeRef.current = place;
         if (typeof ResizeObserver === 'undefined') return undefined;
         const observer = new ResizeObserver(place);
         observer.observe(grid);
@@ -290,13 +348,65 @@ const BentoGrid = ({
     };
 
     /**
+     * Finds the container card under the pointer that the dragged card can be dropped into.
+     * Containers don't go into containers.
+     * @param {{key: string, index: number, x: number, y: number}} d - The drag.
+     * @returns {string|null} The container's key, or null.
+     */
+    const containerUnder = (d) => {
+        const list = cardsRef.current;
+        const grid = gridRef.current;
+        if (!grid || isContainer(list[d.index])) return null;
+        for (const el of grid.querySelectorAll('[data-key]')) {
+            const item = /** @type {HTMLElement} */ (el);
+            if (item.dataset.key === d.key || !isContainer(list[Number(item.dataset.gridIndex)])) continue;
+            const box = item.querySelector('.container-card')?.getBoundingClientRect();
+            if (box && d.x >= box.left && d.x <= box.right && d.y >= box.top && d.y <= box.bottom) return item.dataset.key;
+        }
+        return null;
+    };
+
+    /**
+     * Puts a page card into a container, before the card inside it under the point, or last.
+     * @param {number} index - Position of the card on the page.
+     * @param {string} key - Key of the container.
+     * @param {number} x - Pointer x where the card was dropped.
+     * @param {number} y - Pointer y where the card was dropped.
+     */
+    const dropInto = (index, key, x, y) => {
+        const list = cardsRef.current;
+        const target = list.findIndex((c, i) => keyOf(c, i) === key);
+        const card = list[index];
+        if (target < 0 || !card) return;
+        const container = list[target];
+        const children = childCardsOf(container);
+        let at = children.length;
+        gridRef.current?.querySelector(byKey(key))?.querySelectorAll('[data-child-index]').forEach((el) => {
+            const r = el.getBoundingClientRect();
+            if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) at = Number(/** @type {HTMLElement} */ (el).dataset.childIndex);
+        });
+        const filled = { ...container, cards: [...children.slice(0, at), card, ...children.slice(at)] };
+        commit(list.map((c, i) => (i === target ? filled : c)).filter((_, i) => i !== index));
+        announce(`${nameOf(card)} moved into ${nameOf(container)}`);
+    };
+
+    /**
      * Moves the dragged card to the place in the order where it lands closest to where it is
-     * held. Every place is tried, so a card also drops into a gap next to a wider card.
+     * held. Every place is tried, so a card also drops into a gap next to a wider card. While
+     * the pointer is over a container the order stays put, so the card can be dropped into it.
      */
     const hitTest = () => {
         const d = dragRef.current;
         const grid = gridRef.current;
-        if (!d?.started || !grid || now() - d.lastSwap < SWAP_COOLDOWN_MS) return;
+        if (!d?.started || !grid || d.mode !== 'move') return;
+        const into = containerUnder(d);
+        if (into !== d.into) {
+            d.into = into;
+            setIntoKey(into);
+            positionDragged();
+            if (into) announce(`Release to put ${nameOf(cardsRef.current[d.index])} into this container`);
+        }
+        if (into || now() - d.lastSwap < SWAP_COOLDOWN_MS) return;
         const list = cardsRef.current;
         const rect = grid.getBoundingClientRect();
         const styles = getComputedStyle(grid);
@@ -427,6 +537,7 @@ const BentoGrid = ({
             frame: 0,
             edge: 0,
             edgeSince: 0,
+            into: null,
             handedOff: false,
             cleanup: () => {},
         };
@@ -459,13 +570,17 @@ const BentoGrid = ({
                 hitTest();
             } else {
                 const list = cardsRef.current;
-                const sizes = usableSizes(getCardSizes(list[d.index].type), columns);
+                const card = list[d.index];
+                const sizes = usableSizes(getCardSizes(card.type), columns);
                 const w = (d.x - d.anchor.left + d.gap) / d.pitch;
                 const h = (d.y - d.anchor.top + d.gap) / d.pitch;
-                const size = nearestSize(sizes, w, h);
-                if (size !== sizeOf(fitToColumns(list[d.index], columns))) {
-                    commit(list.map((c, i) => (i === d.index ? withSize(c, size) : c)));
-                    announce(`${nameOf(list[d.index])} is now ${sizeLabel(size)}`);
+                // Cards that can be taller take a row for every two cells dragged below the first row
+                const tall = getCardInfo(card.type)?.rows;
+                const size = nearestSize(sizes, w, tall ? Math.min(h, 2) : h);
+                const rows = tall && !isSubTile(size) ? Math.min(MAX_ROWS, Math.max(1, Math.round(h / 2))) : 1;
+                if (size !== sizeOf(fitToColumns(card, columns)) || rows !== rowSpanOf(card)) {
+                    commit(list.map((c, i) => (i === d.index ? withRows(withSize(c, size), rows) : c)));
+                    announce(`${nameOf(card)} is now ${sizeLabel(size)}${rows > 1 ? `, ${rows} rows tall` : ''}`);
                 }
             }
         };
@@ -478,8 +593,12 @@ const BentoGrid = ({
         const onUp = (ev) => {
             if (ev.pointerId !== d.pointerId) return;
             const tapped = !d.started && ev.type === 'pointerup';
+            const into = d.started && mode === 'move' && ev.type === 'pointerup' ? d.into : null;
+            // A card dropped into a container leaves the page, so it doesn't fly back to its place
+            if (into) d.handedOff = true;
             cleanup();
             if (tapped && mode === 'resize') stepSize(d.index, 1);
+            if (into) dropInto(d.index, into, ev.clientX, ev.clientY);
         };
 
         function cleanup() {
@@ -493,12 +612,14 @@ const BentoGrid = ({
                 if (el) {
                     const from = el.style.transform;
                     el.style.transform = '';
+                    el.style.transformOrigin = '';
                     if (!d.handedOff && from && from !== 'none' && typeof el.animate === 'function' && !prefersReducedMotion()) {
                         el.animate([{ transform: from }, { transform: 'none' }], { duration: 220, easing: 'cubic-bezier(0.32, 0.08, 0.24, 1)' });
                     }
                 }
                 setDragKey(null);
                 setEdgeHint(0);
+                setIntoKey(null);
             }
             if (d.started) dragEndedRef.current = now();
             if (dragRef.current === d) dragRef.current = null;
@@ -528,6 +649,110 @@ const BentoGrid = ({
         onIncomingDragTaken?.();
         beginRef.current?.({ ...incomingDrag, index, mode: 'move', started: true });
     }, [incomingDrag, editing, onIncomingDragTaken]);
+
+    // Continue dragging a card taken out of a container, once it is on the page
+    useLayoutEffect(() => {
+        const p = pendingRef.current;
+        if (!pickup || !p || p.key !== pickup.key || !editing || dragRef.current) return;
+        const index = (cardsRef.current || []).findIndex((c, i) => keyOf(c, i) === pickup.key);
+        const el = gridRef.current?.querySelector(byKey(pickup.key));
+        if (index < 0 || !el) return;
+        p.cleanup();
+        const rect = el.getBoundingClientRect();
+        beginRef.current?.({
+            mode: 'move', index, pointerId: p.pointerId, x: p.x, y: p.y,
+            grabX: p.fx * rect.width, grabY: p.fy * rect.height, started: true,
+        });
+    }, [pickup, cards, editing]);
+
+    /**
+     * Takes a card out of a container and puts it on the page right after the container.
+     * @param {number} index - Position of the container.
+     * @param {number} childIndex - Position of the card in the container.
+     * @returns {string|null} The key the card has on the page, or null when there is no such card.
+     */
+    const takeOut = (index, childIndex) => {
+        const list = cardsRef.current;
+        const container = list[index];
+        const children = childCardsOf(container);
+        const child = children[childIndex];
+        if (!child) return null;
+        const next = [...list];
+        next[index] = { ...container, cards: children.filter((_, i) => i !== childIndex) };
+        next.splice(index + 1, 0, child);
+        commit(next);
+        announce(`${nameOf(child)} moved out of ${nameOf(container)}, to position ${index + 2} of ${next.length}`);
+        return keyOf(child, index + 1);
+    };
+
+    /**
+     * Starts tracking a pointer on a card inside a container. Once it moves, the card is taken
+     * out onto the page and dragged from there like any card; a tap leaves it where it is.
+     * @param {import('react').PointerEvent<HTMLElement>} e - The pointerdown event.
+     * @param {number} index - Position of the container.
+     * @param {number} childIndex - Position of the card in the container.
+     */
+    const startChildGesture = (e, index, childIndex) => {
+        if (e.button !== 0 || dragRef.current || pendingRef.current) return;
+        e.stopPropagation();
+        const rect = e.currentTarget.getBoundingClientRect();
+        const p = {
+            key: null,
+            pointerId: e.pointerId,
+            startX: e.clientX,
+            startY: e.clientY,
+            x: e.clientX,
+            y: e.clientY,
+            fx: rect.width ? (e.clientX - rect.left) / rect.width : 0.5,
+            fy: rect.height ? (e.clientY - rect.top) / rect.height : 0.5,
+            liftAt: e.pointerType === 'touch' ? now() + TOUCH_LIFT_MS : 0,
+            cleanup: () => {},
+        };
+        const onMove = (ev) => {
+            if (ev.pointerId !== p.pointerId) return;
+            p.x = ev.clientX;
+            p.y = ev.clientY;
+            if (p.key || Math.hypot(p.x - p.startX, p.y - p.startY) <= DRAG_THRESHOLD) return;
+            if (p.liftAt && now() < p.liftAt) {
+                cleanup();
+                return;
+            }
+            p.key = takeOut(index, childIndex);
+            if (!p.key) cleanup();
+            else setPickup({ key: p.key });
+        };
+        const onTouchMove = (ev) => {
+            if (p.key || (p.liftAt && now() >= p.liftAt)) ev.preventDefault();
+        };
+        const onUp = (ev) => {
+            if (ev.pointerId === p.pointerId) cleanup();
+        };
+        function cleanup() {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointercancel', onUp);
+            window.removeEventListener('touchmove', onTouchMove);
+            if (pendingRef.current === p) pendingRef.current = null;
+        }
+        p.cleanup = cleanup;
+        pendingRef.current = p;
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
+        window.addEventListener('touchmove', onTouchMove, { passive: false });
+    };
+
+    /**
+     * Scrolls a container's cards while editing, where the card itself does not take input.
+     * @param {import('react').WheelEvent<HTMLElement>} e - The wheel event.
+     */
+    const scrollContainer = (e) => {
+        const body = e.currentTarget.closest('[data-key]')?.querySelector('.container-card-body');
+        if (!body || body.scrollHeight <= body.clientHeight) return;
+        const before = body.scrollTop;
+        body.scrollTop += e.deltaY;
+        if (body.scrollTop !== before) placeRef.current?.();
+    };
 
     const onSurfaceKeyDown = (e, index) => {
         const keys = {
@@ -585,14 +810,19 @@ const BentoGrid = ({
         if (place) {
             style.gridColumn = `${place.col + 1} / span ${place.w}`;
             style.gridRow = `${place.row + 1} / span ${place.h}`;
+        } else if (rowSpanOf(shown) > 1) {
+            style.gridRow = `span ${rowSpanOf(shown)}`;
         }
 
         const hiddenHere = isHiddenAt(card, columns);
+        const container = isContainer(card);
         const className = [
             'grid-item',
             `col-span-${isSubTile(size) ? 1 : size}`,
             isSubTile(size) && `tile-${size}`,
             dragKey === key && 'dragging',
+            dragKey === key && intoKey && 'over-container',
+            intoKey === key && 'drop-target',
             hiddenHere && 'hidden-here',
         ].filter(Boolean).join(' ');
 
@@ -623,7 +853,28 @@ const BentoGrid = ({
                             aria-label={`${nameOf(card)}, ${sizeLabel(size)}${hiddenHere ? `, hidden on ${device}` : ''}, position ${index + 1} of ${cards.length}. Arrow keys move, plus and minus resize.`}
                             onPointerDown={(e) => startGesture(e, index, 'move')}
                             onKeyDown={(e) => onSurfaceKeyDown(e, index)}
+                            onWheel={container ? scrollContainer : undefined}
                         />
+                        {childCardsOf(card).map((child, childIndex) => (
+                            <div
+                                key={child.id ?? childIndex}
+                                className="grid-child-surface"
+                                data-child={childIndex}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`${nameOf(child)}, in ${nameOf(card)}. Drag out of the container, or press Enter to take it out.`}
+                                style={{ display: 'none' }}
+                                onPointerDown={(e) => startChildGesture(e, index, childIndex)}
+                                onWheel={scrollContainer}
+                                onKeyDown={(e) => {
+                                    if (e.key !== 'Enter' && e.key !== ' ') return;
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    const key = takeOut(index, childIndex);
+                                    if (key) focusKeyRef.current = key;
+                                }}
+                            />
+                        ))}
                         {onEditCard && (
                             <button
                                 type="button"
@@ -654,7 +905,7 @@ const BentoGrid = ({
                                 Hidden on {DEVICES.find(dv => dv.key === device)?.label.toLowerCase()}
                             </span>
                         )}
-                        {sizes.length > 1 && (
+                        {(sizes.length > 1 || getCardInfo(card.type)?.rows) && (
                             <button
                                 type="button"
                                 className="button-reset grid-resize-handle"
@@ -677,7 +928,7 @@ const BentoGrid = ({
     if (!Array.isArray(cards)) return null;
 
     const dragIndex = dragKey ? list.findIndex((c, i) => keyOf(c, i) === dragKey) : -1;
-    const dragTarget = dragIndex >= 0 ? layoutCards(list, columns).get(dragIndex) : null;
+    const dragTarget = dragIndex >= 0 && !intoKey ? layoutCards(list, columns).get(dragIndex) : null;
 
     return (
         <div className={`bento-grid${editing ? ' editing' : ''}${settled && !editing ? ' settled' : ''}${dragKey ? ' is-dragging' : ''}`}>

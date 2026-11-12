@@ -4,8 +4,8 @@ import yaml from 'js-yaml';
 import { PageActiveContext } from '../../context/pageActive';
 import { getCardComponent, getCardInfo, getCardSizes } from '../../features/registry';
 import CardErrorBoundary from '../Grid/CardErrorBoundary';
-import { DEVICES, SIZES, sizeOf, usableSizes, withSize } from '../Grid/gridLayout';
-import { Group, ToggleField } from './EditorFields';
+import { DEVICES, MAX_ROWS, SIZES, isSubTile, rowSpanOf, sizeOf, usableSizes, withRows, withSize } from '../Grid/gridLayout';
+import { Group, SegmentedField, ToggleField } from './EditorFields';
 import { setIn } from './setIn';
 import { boxOf } from './icons/cardBox';
 import Stage from './icons/Stage';
@@ -71,8 +71,12 @@ const CardPreview = ({ config, globalConfig }) => {
     const settled = useSettled(config, PREVIEW_DELAY_MS);
     const Card = getCardComponent(config.type);
     const box = boxOf(config);
-    const { tileSize: _tileSize, colSpan: _colSpan, ...content } = settled;
-    const shown = { ...content, ...(config.tileSize ? { tileSize: config.tileSize } : { colSpan: config.colSpan }) };
+    const { tileSize: _tileSize, colSpan: _colSpan, rowSpan: _rowSpan, ...content } = settled;
+    const shown = {
+        ...content,
+        ...(config.tileSize ? { tileSize: config.tileSize } : { colSpan: config.colSpan }),
+        ...(config.rowSpan ? { rowSpan: config.rowSpan } : {}),
+    };
 
     return (
         <Stage width={box.width} height={box.height}>
@@ -126,12 +130,14 @@ const SizePicker = ({ value, sizes, onChange }) => (
  * @param {Object} props.card - The card being edited.
  * @param {Object} [props.globalConfig] - The dashboard config, for the card preview.
  * @param {boolean} [props.isNew] - Whether the card was just added; Cancel then removes it again.
+ * @param {number} [props.maxColumns=3] - Widest size offered, such as the width of the container the card is in.
+ * @param {boolean} [props.nested] - The card is inside a container card: its screen visibility is the container's.
  * @param {(card: Object) => void} props.onSave - Receives the edited card.
  * @param {() => void} props.onCancel - Closes without changes.
  * @param {() => void} props.onRemove - Removes the card from the dashboard.
  * @returns {JSX.Element} The dialog.
  */
-const CardEditor = ({ card, globalConfig, isNew = false, onSave, onCancel, onRemove }) => {
+const CardEditor = ({ card, globalConfig, isNew = false, maxColumns = 3, nested = false, onSave, onCancel, onRemove }) => {
     const dialogRef = useRef(null);
     const [draft, setDraft] = useState(card);
     const [tab, setTab] = useState('settings');
@@ -143,7 +149,7 @@ const CardEditor = ({ card, globalConfig, isNew = false, onSave, onCancel, onRem
     const info = getCardInfo(draft.type);
     const Editor = info?.Editor;
     const stage = info?.stage;
-    const sizes = usableSizes(getCardSizes(draft.type), 3);
+    const sizes = usableSizes(getCardSizes(draft.type), maxColumns);
     const hideOn = Array.isArray(draft.hideOn) ? draft.hideOn : [];
 
     useEffect(() => {
@@ -249,7 +255,7 @@ const CardEditor = ({ card, globalConfig, isNew = false, onSave, onCancel, onRem
                             <>
                                 {stage && <stage.Inspector config={draft} onChange={setDraft} selection={selection} onSelect={setSelection} />}
                                 {Editor
-                                    ? <Editor config={draft} onChange={setDraft} />
+                                    ? <Editor config={draft} onChange={setDraft} globalConfig={globalConfig} />
                                     : <p className="editor-note">This card has no settings form. Its options can be changed in the YAML tab.</p>}
                             </>
                         )}
@@ -261,21 +267,33 @@ const CardEditor = ({ card, globalConfig, isNew = false, onSave, onCancel, onRem
                                         <SizePicker value={sizeOf(draft)} sizes={sizes} onChange={(size) => setDraft(withSize(draft, size))} />
                                     </Group>
                                 )}
-                                <Group title="Show on" description="Hidden cards stay visible, dimmed, while editing.">
-                                    {DEVICES.map(device => {
-                                        const DeviceIcon = DEVICE_ICONS[device.key];
-                                        return (
-                                            <div className="card-editor-device" key={device.key}>
-                                                <DeviceIcon size={20} aria-hidden="true" />
-                                                <ToggleField
-                                                    label={`Show on ${device.label.toLowerCase()}`}
-                                                    checked={!hideOn.includes(device.key)}
-                                                    onChange={(on) => setVisible(device.key, on)}
-                                                />
-                                            </div>
-                                        );
-                                    })}
-                                </Group>
+                                {info?.rows && !isSubTile(sizeOf(draft)) && (
+                                    <Group title="Height">
+                                        <SegmentedField
+                                            label="Rows"
+                                            value={rowSpanOf(draft)}
+                                            options={Array.from({ length: MAX_ROWS }, (_, i) => ({ value: i + 1, label: `${i + 1} ${i ? 'rows' : 'row'}` }))}
+                                            onChange={(rows) => setDraft(withRows(draft, rows))}
+                                        />
+                                    </Group>
+                                )}
+                                {!nested && (
+                                    <Group title="Show on" description="Hidden cards stay visible, dimmed, while editing.">
+                                        {DEVICES.map(device => {
+                                            const DeviceIcon = DEVICE_ICONS[device.key];
+                                            return (
+                                                <div className="card-editor-device" key={device.key}>
+                                                    <DeviceIcon size={20} aria-hidden="true" />
+                                                    <ToggleField
+                                                        label={`Show on ${device.label.toLowerCase()}`}
+                                                        checked={!hideOn.includes(device.key)}
+                                                        onChange={(on) => setVisible(device.key, on)}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </Group>
+                                )}
                             </>
                         )}
 
@@ -301,7 +319,7 @@ const CardEditor = ({ card, globalConfig, isNew = false, onSave, onCancel, onRem
                     <footer className="editor-remove">
                         {confirmRemove ? (
                             <>
-                                <span>{isNew ? 'Discard this card?' : 'Remove this card from the dashboard?'}</span>
+                                <span>{isNew ? 'Discard this card?' : `Remove this card from the ${nested ? 'container' : 'dashboard'}?`}</span>
                                 <button type="button" className="button-reset editor-dialog-action" onClick={() => setConfirmRemove(false)}>Keep</button>
                                 <button type="button" className="button-reset editor-dialog-action destructive" onClick={onRemove}>Remove</button>
                             </>

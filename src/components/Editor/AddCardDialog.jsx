@@ -8,9 +8,10 @@ import './CardEditor.css';
  * @param {Object} props
  * @param {(type: string) => void} props.onPick - Receives the chosen card type.
  * @param {() => void} props.onCancel - Closes without adding.
+ * @param {string[]} [props.exclude] - Card types not to offer, such as containers inside a container.
  * @returns {JSX.Element} The dialog.
  */
-const AddCardDialog = ({ onPick, onCancel }) => {
+const AddCardDialog = ({ onPick, onCancel, exclude = [] }) => {
     const dialogRef = useRef(null);
 
     useEffect(() => {
@@ -32,7 +33,7 @@ const AddCardDialog = ({ onPick, onCancel }) => {
             </header>
             <div className="editor-dialog-body">
                 <ul className="add-card-list">
-                    {Object.entries(cardInfo).map(([type, info]) => (
+                    {Object.entries(cardInfo).filter(([type]) => !exclude.includes(type)).map(([type, info]) => (
                         <li key={type}>
                             <button type="button" className="button-reset add-card-option" onClick={() => onPick(type)}>
                                 <span className="add-card-icon" aria-hidden="true">

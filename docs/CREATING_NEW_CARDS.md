@@ -45,6 +45,9 @@ export const cardRegistry = {
 ```
 
 Each card is wrapped in an error boundary, so a crash shows an error in that card instead of breaking the dashboard.
+Cards can also be placed inside a container card, where they are drawn a little smaller in a cell of the container's
+own grid; base the layout on the size the card is given, not on the window. Services that look cards up with
+`findCard` or `getAllCards` find the cards inside containers too.
 
 To make the card available in edit mode's **Add Card** list, describe it in `cardInfo` in the same file:
 
@@ -61,6 +64,7 @@ export const cardInfo = {
         defaults: { colSpan: 1, title: 'Hello' }, // optional, properties of a new card
         Editor: MyCardEditor,                    // optional settings form
         headerIcon: true,                        // optional, see below
+        rows: true,                              // optional, the card can be 1–3 rows tall (`rowSpan`)
     },
 };
 ```
@@ -73,8 +77,11 @@ before it has its data. The card editor shows a live preview of every card, so t
 Without `sizes`, edit mode offers one, two and three columns; list `half` and `quarter` only if the card works at
 those sizes.
 
+Set `rows` when the card can be taller than one row. Edit mode then offers its height in the Layout tab and changes
+it when the resize handle is dragged down; the card reads `config.rowSpan`.
+
 The optional `Editor` is the **Settings** tab of the card editor, next to the Layout and YAML tabs. It receives the
-card's config and an `onChange` that takes the updated config. Build it from the controls in
+card's config, an `onChange` that takes the updated config, and the dashboard config as `globalConfig`. Build it from the controls in
 `src/components/Editor/EditorFields.jsx` and update values with `setIn` from `src/components/Editor/setIn.js`, which
 drops cleared fields:
 

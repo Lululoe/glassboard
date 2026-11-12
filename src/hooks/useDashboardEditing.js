@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { getCardInfo } from '../features/registry';
+import { flattenCards } from '../../shared/containerCards';
 import { resetLayout, restoreLayout, saveLayout } from '../lib/api';
 
 /**
@@ -17,7 +18,7 @@ export const pageKey = (page, idx) => String(page.id ?? idx);
  * @returns {string} A new id such as `weather-k3f9`.
  */
 function newCardId(type, drafts) {
-    const taken = new Set(Object.values(drafts).flat().map(c => String(c.id)));
+    const taken = new Set(flattenCards(Object.values(drafts).flat()).map(c => String(c.id)));
     for (;;) {
         const id = `${type}-${Math.random().toString(36).slice(2, 6)}`;
         if (!taken.has(id)) return id;

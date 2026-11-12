@@ -1,0 +1,117 @@
+/* A panel holding other cards. It has no backdrop blur of its own, so the cards inside keep
+   blurring the page behind them. */
+.container-card {
+    --container-pad: 12px;
+    --container-gap: 12px;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: var(--container-pad);
+    border-radius: calc(var(--radius-card) + 4px);
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.container-card.plain {
+    padding: 0;
+    background: none;
+}
+
+.container-card-title {
+    margin: 0;
+    padding: 2px 4px 0;
+    font-size: var(--fs-13);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* The space the cards share; rows are measured against its height */
+.container-card-body {
+    flex: 1;
+    min-height: 0;
+    container-type: size;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+}
+
+.container-card-body::-webkit-scrollbar {
+    display: none;
+}
+
+.container-card-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--container-cols, 1), minmax(0, 1fr));
+    grid-auto-rows: calc((100cqh - (var(--container-rows, 1) - 1) * var(--container-gap)) / var(--container-rows, 1));
+    gap: var(--container-gap);
+}
+
+.container-card-slot {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: var(--container-gap);
+    min-width: 0;
+    min-height: 0;
+}
+
+.container-card-item {
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+}
+
+/* The card is laid out at its full size divided by the scale, then drawn at the scale, so text,
+   icons and spacing all shrink together while the card still fills its cell. Card styles that
+   compress on small tiles (`@container tile`) measure this element. Cards inside sit flat on
+   the panel, without their drop shadow. */
+.container-card-scale {
+    --shadow-tile: none;
+    container: tile / size;
+    flex: 1;
+    display: flex;
+    min-width: 0;
+    min-height: 0;
+    zoom: var(--container-scale, 0.88);
+}
+
+.container-card-scale > * {
+    flex: 1;
+    min-width: 0;
+}
+
+.container-card-scale > .glass-card {
+    width: 100%;
+    height: 100%;
+}
+
+.container-card-empty {
+    margin: 0;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    padding: 12px;
+    box-sizing: border-box;
+    border: 1.5px dashed rgba(255, 255, 255, 0.3);
+    border-radius: var(--radius-card);
+    color: var(--text-secondary);
+    font-size: var(--fs-13);
+    text-align: center;
+}
+
+:root[data-theme="light"] .container-card:not(.plain) {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    .container-card:not(.plain) {
+        background: var(--solid-surface);
+    }
+}

@@ -16,6 +16,7 @@ import {
     WIDGET_TYPES, isHeaderColor,
 } from '../../shared/pageHeader.js';
 import logger from '../logger.js';
+import { flattenCards } from '../../shared/containerCards.js';
 import { isDemoMode } from '../services/demo.js';
 
 const KEEP_ALIVE_INTERVAL = 30 * 1000;
@@ -177,7 +178,7 @@ router.put('/layout', (req, res, next) => {
         if (unknown) throw new HttpError(400, `Unknown page: ${unknown}`);
 
         const seen = new Set();
-        Object.values(sent).flat().forEach(card => {
+        flattenCards(Object.values(sent).flat()).forEach(card => {
             if (seen.has(String(card.id))) throw new HttpError(400, `Duplicate card id "${card.id}"`);
             seen.add(String(card.id));
         });
