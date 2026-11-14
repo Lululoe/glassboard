@@ -23,6 +23,7 @@ appearance:
 | `glass` | Frosted tiles with small rounded corners and a soft offset shadow. |
 | `liquid` | Liquid Glass: clear glass with a lit rim, large round corners, and a header bar that floats as a capsule. |
 | `material` | Material Design 3: solid neutral surfaces without blur, tonal elevation, round icon buttons, and the accent as tonal containers. Uses Roboto Flex or Roboto when installed, else the system font. |
+| `terminal` | Monospace type, square corners, flat dark panels outlined in the accent, and card titles in `[ brackets ]`. Graphs are drawn with block characters (`▁▃▅█`) and the forecast with ASCII art; app icons turn monochrome. Without a page background of its own, the page is a dark screen. |
 
 A style chosen in the Theme menu is saved in `layout.yaml` and wins over `config.yaml`; picking the style of
 `config.yaml` again removes it from `layout.yaml`. When `editable: false` is set, the style can only be set in

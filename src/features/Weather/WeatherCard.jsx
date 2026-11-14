@@ -5,6 +5,8 @@ import Icon from '../../components/Shared/Icon';
 import './WeatherCard.css';
 import { useElementSize } from '../../hooks/useElementSize';
 import { useFitCount } from '../../hooks/useFitCount';
+import { useTheme } from '../../context/ThemeContext';
+import { CONDITION_ART, CONDITION_ICONS, conditionKind } from './weatherConditions';
 
 /** Content height from which the other forecast fits underneath, in pixels. */
 const STRIP_FROM = 190;
@@ -33,20 +35,20 @@ const labelOf = (item, index, type) => {
  * @param {string} condition - The weather condition string.
  * @returns {string} The matched icon name.
  */
-const getWeatherIcon = (condition) => {
-    const conditionLower = (condition || '').toLowerCase();
+const getWeatherIcon = (condition) => CONDITION_ICONS[conditionKind(condition)];
 
-    if (conditionLower.includes('storm') || conditionLower.includes('thunder')) return 'lu-CloudLightning';
-    if (conditionLower.includes('snow')) return 'lu-CloudSnow';
-    if (conditionLower.includes('drizzle')) return 'lu-CloudDrizzle';
-    if (conditionLower.includes('rain') || conditionLower.includes('shower')) return 'lu-CloudRain';
-    if (conditionLower.includes('fog') || conditionLower.includes('mist')) return 'lu-CloudFog';
-    if (conditionLower.includes('partly') || conditionLower.includes('mainly')) return 'lu-CloudSun';
-    if (conditionLower.includes('clear') || conditionLower.includes('sunny')) return 'lu-Sun';
-    if (conditionLower.includes('cloud') || conditionLower.includes('overcast')) return 'lu-Cloud';
-    if (conditionLower.includes('wind')) return 'lu-Wind';
-
-    return 'lu-Cloud'; // Default
+/**
+ * A forecast entry's condition: an icon, or in the Terminal style an ASCII drawing.
+ * @param {Object} props
+ * @param {string} props.condition - The condition.
+ * @param {boolean} props.ascii - Whether to draw it in ASCII.
+ * @returns {JSX.Element} The icon or drawing.
+ */
+const ConditionPicture = ({ condition, ascii }) => {
+    if (!ascii) return <Icon icon={getWeatherIcon(condition)} size={32} className="weather-day-icon" />;
+    const kind = conditionKind(condition);
+    const tone = kind === 'clear' || kind === 'partly' ? ' is-sun' : ['rain', 'drizzle', 'snow', 'storm'].includes(kind) ? ' is-wet' : '';
+    return <pre className={`weather-art${tone}`} aria-hidden="true">{CONDITION_ART[kind].join('\n')}</pre>;
 };
 
 /**
@@ -62,6 +64,7 @@ const WeatherCard = ({ config = {} }) => {
     const iconBackground = config.iconBackground || defaultBackground;
     const iconColor = config.iconColor;
 
+    const { style } = useTheme();
     const [forecastType, setForecastType] = useState('daily');
     // As many as fit the card's current width, so a wide card shows more instead of gaps
     const [visibleCols, gridRef] = useFitCount(80, MAX_DAYS);
@@ -149,7 +152,7 @@ const WeatherCard = ({ config = {} }) => {
                         <div key={idx} className="weather-day">
                             <div className="weather-day-header">{labelOf(item, idx, forecastType)}</div>
                             <div className="weather-day-body">
-                                <Icon icon={getWeatherIcon(item.condition)} size={32} className="weather-day-icon" />
+                                <ConditionPicture condition={item.condition} ascii={style === 'terminal'} />
                                 <div className="weather-day-condition">{item.condition}</div>
                                 <div className="weather-day-temp">
                                     {item.temperature !== undefined && (
