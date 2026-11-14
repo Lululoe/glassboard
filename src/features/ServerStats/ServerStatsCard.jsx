@@ -1,3 +1,5 @@
+import { useCardNotice } from '../../context/notices';
+import { serverStatsNotices } from '../cardNotices';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
 import Icon from '../../components/Shared/Icon';
 import UsageBar from '../../components/Shared/UsageBar';
@@ -104,6 +106,7 @@ const TemperatureRow = ({ data }) => {
 const ServerStatsCard = ({ config }) => {
     const stats = useServerStats();
     const sensors = config.data?.sensors || ['cpu', 'ram', 'storage', 'network', 'temp'];
+    useCardNotice(serverStatsNotices(stats, sensors));
 
     return (
         <TwoToneBase

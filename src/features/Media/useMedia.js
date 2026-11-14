@@ -1,5 +1,5 @@
 import { callService } from '../../lib/api';
-import { usePolling } from '../../hooks/usePolling';
+import { BACKGROUND_SLOW, usePolling } from '../../hooks/usePolling';
 
 /**
  * Formats a date as YYYY-MM-DD in local time (toISOString would shift it to UTC).
@@ -25,7 +25,7 @@ export const useMedia = (start, end, interval = 60000) => {
 
     const { data, loading, error } = usePolling(
         () => callService('media', { start: startStr, end: endStr }),
-        { interval, enabled: Boolean(startStr && endStr), key: `${startStr}|${endStr}` }
+        { interval, backgroundInterval: BACKGROUND_SLOW, enabled: Boolean(startStr && endStr), key: `${startStr}|${endStr}` }
     );
 
     return { events: data || [], loading, error };

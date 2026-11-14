@@ -1,3 +1,5 @@
+import { useCardNotice } from '../../context/notices';
+import { transmissionNotices } from '../cardNotices';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
 import Icon from '../../components/Shared/Icon';
 import EmptyState from '../../components/Shared/EmptyState';
@@ -84,6 +86,7 @@ const TorrentItem = ({ torrent }) => {
  */
 const TransmissionCard = ({ config }) => {
     const { torrents, totals, error } = useTransmission();
+    useCardNotice(transmissionNotices(torrents, error));
     const url = (config && config.url) || '';
     const icon = (config && config.icon) || "sh-transmission";
     const iconColor = config && config.iconColor;

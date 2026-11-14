@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { callService } from '../../lib/api';
-import { usePolling } from '../../hooks/usePolling';
+import { BACKGROUND_FAST, usePolling } from '../../hooks/usePolling';
 
 const TEMP_HISTORY_LENGTH = 10;
 
@@ -25,7 +25,7 @@ const useServerStats = (interval = 2000) => {
         const stats = await callService('serverstats');
         tempHistory.current = [...tempHistory.current, stats.temp].slice(-TEMP_HISTORY_LENGTH);
         return { ...stats, temp: tempHistory.current };
-    }, { interval });
+    }, { interval, backgroundInterval: BACKGROUND_FAST });
 
     return data;
 };

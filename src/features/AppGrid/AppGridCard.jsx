@@ -1,3 +1,5 @@
+import { useCardNotice } from '../../context/notices';
+import { appGridNotices } from '../cardNotices';
 import React, { useRef } from 'react';
 import BaseCard from '../../components/Shared/BaseCard';
 import AppIcon from '../../components/Shared/AppIcon';
@@ -28,6 +30,7 @@ const AppGridCard = ({ config, globalConfig }) => {
     const size = SIZES.has(config.size) ? config.size : 'medium';
     const showLabels = config.showLabels !== false;
     const statuses = useAppStatus(config.id, { enabled: config.statusCheck !== false && apps.length > 0 });
+    useCardNotice(appGridNotices(apps, statuses));
 
     const gridRef = useRef(null);
     const capacity = useGridCapacity(gridRef, `${size}|${showLabels}|${config.columns}`);

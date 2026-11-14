@@ -1,9 +1,11 @@
+import { useCardNotice } from '../../context/notices';
+import { thermostatNotices } from '../cardNotices';
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Minus, Plus } from 'lucide-react';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
 import Icon from '../../components/Shared/Icon';
 import { callService } from '../../lib/api';
-import { usePolling } from '../../hooks/usePolling';
+import { BACKGROUND_FAST, usePolling } from '../../hooks/usePolling';
 import { MAX_ROOMS, formatTemp, useClimateControl } from './useThermostat';
 import { PresetMenu, StateBadge } from './ThermostatParts';
 import './ThermostatCard.css';
@@ -135,10 +137,17 @@ const Room = ({ config, raw, updatedAt, refresh, layout, compact, open, onOpenCh
 const MultiThermostatCard = ({ config }) => {
     const rooms = (Array.isArray(config.rooms) ? config.rooms : []).filter(r => r?.entity_id).slice(0, MAX_ROOMS);
     const ids = rooms.map(r => r.entity_id);
-    const { data, updatedAt, refresh } = usePolling(
+    const { data, error, updatedAt, refresh } = usePolling(
         () => callService('homeassistant', { endpoint: 'states', entity_ids: ids }),
-        { interval: 5000, enabled: ids.length > 0, key: ids.join(',') },
+        { interval: 5000, backgroundInterval: BACKGROUND_FAST, enabled: ids.length > 0, key: ids.join(',') },
     );
+    useCardNotice(thermostatNotices(rooms.map((room) => {
+        const raw = data?.[room.entity_id];
+        return {
+            name: room.name || raw?.attributes?.friendly_name || room.entity_id,
+            available: Boolean(raw) && raw.state !== 'unavailable' && raw.state !== 'unknown',
+        };
+    }), Boolean(data) && !error));
     const [openRoom, setOpenRoom] = useState(/** @type {number|null} */ (null));
 
     const layout = (config.colSpan || 1) >= 2 ? 'columns' : 'rows';

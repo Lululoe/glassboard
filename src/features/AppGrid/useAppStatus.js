@@ -1,5 +1,5 @@
 import { callService } from '../../lib/api';
-import { usePolling } from '../../hooks/usePolling';
+import { BACKGROUND_SLOW, usePolling } from '../../hooks/usePolling';
 
 const EMPTY = [];
 
@@ -15,7 +15,7 @@ const EMPTY = [];
 export const useAppStatus = (cardId, { enabled = true, interval = 60000 } = {}) => {
     const { data } = usePolling(
         () => callService('appstatus', { cardId }),
-        { interval, enabled: enabled && cardId !== undefined, key: String(cardId) }
+        { interval, backgroundInterval: BACKGROUND_SLOW, enabled: enabled && cardId !== undefined, key: String(cardId) }
     );
     return data?.statuses ?? EMPTY;
 };
