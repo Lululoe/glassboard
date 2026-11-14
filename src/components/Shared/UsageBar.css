@@ -1,14 +1,14 @@
 .usage-bar {
     width: 100%;
     height: 6px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--bg-fill);
     overflow: hidden;
 }
 
 .usage-bar > div {
     height: 100%;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--color-primary);
     transition: width 0.3s var(--ease-standard), background var(--duration-standard) var(--ease-standard);
 }

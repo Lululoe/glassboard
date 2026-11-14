@@ -176,6 +176,17 @@ export async function handleMyServiceRequest({ cardId }) {
 ## 7. Styling
 Create a CSS file (e.g., `MyCard.css`) and import it in your JSX. Use unique class names to avoid collisions.
 
+Cards must look right in every [style](THEMING.md#styles) (Glass, Liquid Glass, Material, Terminal), so use the
+design tokens from `src/index.css` instead of fixed values:
+
+- **Corners**: `var(--radius-card)` for the card itself; `var(--radius-4)`, `var(--radius-9)`, `var(--radius-14)` …
+  (the Glass size in px) for parts inside it; `var(--radius-pill)` and `var(--radius-round)` for capsules and circles.
+- **Frosting**: `backdrop-filter: blur(calc(15px * var(--blur-scale)))`, so styles with opaque surfaces can drop it.
+- **Colors and type**: `--text-primary/secondary/tertiary`, `--bg-fill`, `--color-separator`, `--card-primary`,
+  `--font-family`, `--font-mono`.
+
+A test (`src/styles/tokens.test.js`) fails on fixed corner radii and blur amounts.
+
 ## 8. Tests and Docs
 Add Vitest tests next to the component, hook and service, and document the card's options in
 [CARD_CONFIGURATION.md](CARD_CONFIGURATION.md).

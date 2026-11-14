@@ -2,8 +2,8 @@
    corner and casting a soft offset shadow. Tiles do not move on hover; their links do. */
 .glass-card {
     background: var(--bg-card-surface);
-    backdrop-filter: blur(15px) saturate(86%);
-    -webkit-backdrop-filter: blur(15px) saturate(86%);
+    backdrop-filter: blur(calc(15px * var(--blur-scale))) saturate(86%);
+    -webkit-backdrop-filter: blur(calc(15px * var(--blur-scale))) saturate(86%);
     border-radius: var(--radius-card);
     box-shadow: var(--shadow-tile);
     padding: 20px;

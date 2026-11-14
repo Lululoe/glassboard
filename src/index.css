@@ -19,6 +19,29 @@
   --fs-34: 2.125rem;
   --fs-40: 2.5rem;
 
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* Shape and material. A style (see src/styles/) changes the scales: the radius steps below are
+     the Glass sizes at scale 1, --round-scale turns pills, circles and squircles square at 0,
+     and --blur-scale 0 removes the frosting. Components use these tokens, never fixed sizes. */
+  --radius-scale: 1;
+  --round-scale: 1;
+  --blur-scale: 1;
+  --radius-2: calc(2px * var(--radius-scale));
+  --radius-3: calc(3px * var(--radius-scale));
+  --radius-4: calc(4px * var(--radius-scale));
+  --radius-7: calc(7px * var(--radius-scale));
+  --radius-8: calc(8px * var(--radius-scale));
+  --radius-9: calc(9px * var(--radius-scale));
+  --radius-10: calc(10px * var(--radius-scale));
+  --radius-11: calc(11px * var(--radius-scale));
+  --radius-12: calc(12px * var(--radius-scale));
+  --radius-14: calc(14px * var(--radius-scale));
+  --radius-22: calc(22px * var(--radius-scale));
+  --radius-24: calc(24px * var(--radius-scale));
+  --radius-pill: calc(999px * var(--round-scale));
+  --radius-round: calc(50% * var(--round-scale));
+
   /* Layout variables - static (modelled on iCloud's tiles) */
   --radius-card: 11px;
   --gap-grid: 30px;
@@ -193,7 +216,7 @@ body {
 
 .scrollable::-webkit-scrollbar-thumb {
   background-color: var(--text-quaternary);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 3px solid transparent;
   background-clip: padding-box;
 }

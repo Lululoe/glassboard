@@ -28,7 +28,7 @@
     grid-auto-flow: column;
     grid-auto-columns: 1fr;
     padding: 2px;
-    border-radius: 9px;
+    border-radius: var(--radius-9);
     background: var(--bg-fill);
     gap: 2px;
 }
@@ -41,7 +41,7 @@
     min-height: 34px;
     min-width: 44px;
     padding: 0 8px;
-    border-radius: 7px;
+    border-radius: var(--radius-7);
     font-size: var(--fs-12);
     font-weight: 600;
     color: var(--text-on-fill);
@@ -104,7 +104,7 @@
 .graph-dot {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     flex-shrink: 0;
     background: var(--c);
 }
@@ -132,7 +132,7 @@
     min-height: 0;
     touch-action: pan-y;
     cursor: crosshair;
-    border-radius: 7px;
+    border-radius: var(--radius-7);
 }
 
 .graph-plot {
@@ -219,7 +219,7 @@
     width: 10px;
     height: 10px;
     margin: -5px 0 0 -5px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     box-shadow: 0 0 0 2px var(--bg-tile, #fff);
     pointer-events: none;
 }
@@ -228,7 +228,7 @@
 .graph-part-tip {
     position: absolute;
     padding: 7px 10px;
-    border-radius: 9px;
+    border-radius: var(--radius-9);
     background: var(--bg-tile, #fff);
     color: #1c1c1e;
     font-size: var(--fs-12);
@@ -300,7 +300,7 @@
     gap: 6px;
     min-height: 32px;
     padding: 0 11px 0 9px;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
     background: var(--bg-fill);
     font-size: var(--fs-12);
     font-weight: 600;
@@ -361,7 +361,7 @@
     align-items: center;
     gap: 9px;
     padding: 7px 8px;
-    border-radius: 9px;
+    border-radius: var(--radius-9);
     min-height: 48px;
     transition: opacity var(--duration-standard) var(--ease-standard), background var(--duration-standard) var(--ease-standard);
 }
@@ -486,7 +486,7 @@
 }
 
 .graph-week-stack i:last-child {
-    border-radius: 4px 4px 0 0;
+    border-radius: var(--radius-4) var(--radius-4) 0 0;
 }
 
 .last-week .graph-week-stack {
@@ -520,7 +520,7 @@
     min-width: 28px;
     display: grid;
     place-items: center;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
 }
 
 .graph-week-col[aria-pressed="true"] .graph-week-day {
@@ -583,7 +583,7 @@
     min-width: 0;
     width: 100%;
     font-size: var(--fs-11);
-    border-radius: 10px;
+    border-radius: var(--radius-10);
 }
 
 /* The selected day keeps a round mark, a little wider than its column */
@@ -616,7 +616,7 @@
     column-gap: 9px;
     align-items: center;
     padding: 7px 4px;
-    border-radius: 7px;
+    border-radius: var(--radius-7);
     transition: background 0.15s;
 }
 
@@ -660,7 +660,7 @@
     grid-column: 2 / 4;
     height: 4px;
     margin-top: 4px;
-    border-radius: 2px;
+    border-radius: var(--radius-2);
     background: var(--bg-fill);
     overflow: hidden;
 }
@@ -668,7 +668,7 @@
 .graph-share i {
     display: block;
     height: 100%;
-    border-radius: 2px;
+    border-radius: var(--radius-2);
     background: var(--c);
 }
 

@@ -92,7 +92,7 @@
 .stat-history > div {
     flex: 1;
     max-width: 16px;
-    border-radius: 2px 2px 0 0;
+    border-radius: var(--radius-2) var(--radius-2) 0 0;
     background: var(--color-primary);
     opacity: 0.7;
     transition: height 0.3s var(--ease-standard);

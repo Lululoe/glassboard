@@ -237,7 +237,7 @@
     content: '';
     width: 24px;
     height: 24px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     background: var(--bg-tile, #fff);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
@@ -284,7 +284,7 @@
     position: absolute;
     width: 26px;
     height: 26px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     background: var(--bg-tile, #fff);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
@@ -311,7 +311,7 @@
 .grid-icon-button {
     position: absolute;
     z-index: 3;
-    border-radius: 22.5%;
+    border-radius: calc(22.5% * var(--round-scale));
     cursor: pointer;
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
     transition: box-shadow var(--duration-standard) var(--ease-standard);
@@ -330,7 +330,7 @@
     bottom: -7px;
     width: 20px;
     height: 20px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     display: grid;
     place-items: center;
     background: var(--bg-tile, #fff);
@@ -369,10 +369,10 @@
     align-items: center;
     gap: 5px;
     padding: 5px 10px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(calc(14px * var(--blur-scale)));
+    -webkit-backdrop-filter: blur(calc(14px * var(--blur-scale)));
     color: #fff;
     font-size: var(--fs-12);
     font-weight: 600;

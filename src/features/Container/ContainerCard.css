@@ -10,7 +10,7 @@
     flex-direction: column;
     gap: 8px;
     padding: var(--container-pad);
-    border-radius: calc(var(--radius-card) + 4px);
+    border-radius: calc(var(--radius-card) + var(--radius-4));
     background: rgba(255, 255, 255, 0.08);
     /* The same shadow as other cards; the cards inside sit flat on the panel */
     box-shadow: var(--shadow-tile);

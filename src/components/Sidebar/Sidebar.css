@@ -18,12 +18,12 @@
     gap: 8px;
     width: 68px;
     padding: 11px 0;
-    border-radius: 24px;
+    border-radius: var(--radius-24);
     background: var(--bg-toolbar);
     border: 1px solid var(--border-popup);
     box-shadow: var(--shadow-popup);
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(calc(20px * var(--blur-scale))) saturate(140%);
+    -webkit-backdrop-filter: blur(calc(20px * var(--blur-scale))) saturate(140%);
 }
 
 .sidebar-item,
@@ -39,7 +39,7 @@
     display: block;
     width: var(--sb-button);
     height: var(--sb-button);
-    border-radius: 14px;
+    border-radius: var(--radius-14);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
 }
@@ -121,7 +121,7 @@
     min-width: 18px;
     height: 18px;
     padding: 0 5px;
-    border-radius: 9px;
+    border-radius: var(--radius-9);
     font-size: var(--fs-11);
     font-weight: 700;
     line-height: 18px;
@@ -162,12 +162,12 @@
     min-width: 160px;
     max-width: 280px;
     padding: 9px 12px;
-    border-radius: 10px;
+    border-radius: var(--radius-10);
     background: var(--bg-popup, var(--bg-toolbar));
     border: 1px solid var(--border-popup);
     box-shadow: var(--shadow-popup);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(calc(20px * var(--blur-scale)));
+    -webkit-backdrop-filter: blur(calc(20px * var(--blur-scale)));
     color: var(--text-primary);
     opacity: 0;
     visibility: hidden;
@@ -218,7 +218,7 @@
 .sidebar-tip-dot {
     width: 7px;
     height: 7px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     flex-shrink: 0;
 }
 
@@ -234,12 +234,12 @@
     transform: var(--fly-place);
     transform-origin: left center;
     padding: 11px;
-    border-radius: 24px;
+    border-radius: var(--radius-24);
     background: var(--bg-toolbar);
     border: 1px solid var(--border-popup);
     box-shadow: var(--shadow-popup);
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    backdrop-filter: blur(calc(20px * var(--blur-scale))) saturate(140%);
+    -webkit-backdrop-filter: blur(calc(20px * var(--blur-scale))) saturate(140%);
     animation: sidebar-fly-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -360,7 +360,7 @@
 .sidebar-fly-item.is-drop-after::after {
     content: '';
     position: absolute;
-    border-radius: 2px;
+    border-radius: var(--radius-2);
     background: var(--system-blue);
     pointer-events: none;
 }
@@ -417,7 +417,7 @@
     place-items: center;
     width: 100%;
     height: 100%;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
     background: var(--bg-toolbar);
     overflow: hidden;
 }
@@ -515,7 +515,7 @@
 
 .sidebar-preview .sidebar-item {
     padding: 16px;
-    border-radius: 24px;
+    border-radius: var(--radius-24);
     background: var(--bg-toolbar);
     border: 1px solid var(--border-popup);
     box-shadow: var(--shadow-popup);
