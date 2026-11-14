@@ -168,6 +168,26 @@ pages:
 
 A web address set in `config.yaml` is used as it is, without downloading it.
 
+**Motion** adds a moving layer behind the cards, over any of the backgrounds above:
+
+- **Aurora**: soft color fields drifting slowly; with a **Color** background they take its colors.
+- **Blobs**: shapes floating behind the cards, which the [Liquid Glass](THEMING#styles) style bends at its edges.
+- **Matrix**: characters falling in the accent color, made for the Terminal style.
+
+```yaml
+background:
+  motion: aurora        # over the theme's gradient
+pages:
+  - id: servers
+    background:
+      theme: true
+      motion: matrix
+    cards: []
+```
+
+Aurora and Blobs only move with the graphics card (no repainting), and Matrix draws 20 frames a second and pauses in
+hidden tabs, so they also run on a Raspberry Pi. Nothing moves when the device asks for reduced motion.
+
 Uploaded and downloaded pictures are stored in a `backgrounds` folder next to `layout.yaml` (or in `BACKGROUNDS_DIR`), named by
 their content, and removed when no saved background uses them any more.
 

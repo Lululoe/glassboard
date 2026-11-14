@@ -19,6 +19,7 @@ import logger from '../logger.js';
 import { flattenCards } from '../../shared/containerCards.js';
 import { isDemoMode } from '../services/demo.js';
 import { appearanceSchema } from '../configSchema.js';
+import { BACKGROUND_MOTIONS } from '../../shared/pageBackground.js';
 
 const KEEP_ALIVE_INTERVAL = 30 * 1000;
 
@@ -62,14 +63,17 @@ const layoutCard = z.looseObject({
 const launcherItem = z.looseObject({ name: z.string(), url: z.string() });
 
 /** A page background: a color its gradient is made from, or a picture (a web or uploaded URL). */
+const motion = z.enum(Object.keys(BACKGROUND_MOTIONS)).optional();
+
 const background = z.object({
     color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
     image: z.string().max(2000).regex(/^(https?:\/\/|\/)/).optional(),
     dim: z.number().min(0).max(0.8).optional(),
-}).refine(b => Boolean(b.color) !== Boolean(b.image), 'needs either a color or a picture');
+    motion,
+}).refine(b => !(b.color && b.image) && Boolean(b.color || b.image || b.motion), 'needs a color, a picture or a motion');
 
-/** A single page's background: its own, or `{ theme: true }` for the theme's gradient on that page. */
-const pageBackground = z.union([background, z.object({ theme: z.literal(true) })]);
+/** A single page's background: its own, or `{ theme: true }` for the theme's gradient on that page, which may move. */
+const pageBackground = z.union([z.object({ theme: z.literal(true), motion }), background]);
 
 /**
  * A line of the page header as the browser saves it. There is no `template`: the object drops

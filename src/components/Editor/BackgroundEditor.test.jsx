@@ -27,6 +27,24 @@ describe('BackgroundEditor', () => {
         await waitFor(() => expect(onSave).toHaveBeenCalledWith({ background: { color: '#123456' }, pageBackground: undefined }));
     });
 
+    it('adds a moving layer to the theme gradient or a color', async () => {
+        const onSave = vi.fn();
+        render(<BackgroundEditor background={{ color: '#5e3bd1' }} onSave={onSave} onCancel={() => {}} />);
+        expect(screen.getByRole('radio', { name: 'None' })).toHaveAttribute('aria-checked', 'true');
+        fireEvent.click(screen.getByRole('radio', { name: 'Aurora' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+        await waitFor(() => expect(onSave).toHaveBeenCalledWith({ background: { color: '#5e3bd1', motion: 'aurora' }, pageBackground: undefined }));
+
+    });
+
+    it("can move the theme's own gradient", async () => {
+        const onSave = vi.fn();
+        render(<BackgroundEditor onSave={onSave} onCancel={() => {}} />);
+        fireEvent.click(screen.getByRole('radio', { name: 'Matrix' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+        await waitFor(() => expect(onSave).toHaveBeenCalledWith({ background: { motion: 'matrix' }, pageBackground: undefined }));
+    });
+
     it('uploads a picture and saves it with its darkening', async () => {
         vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ url: '/api/config/background/a.jpg' }) })));
         const onSave = vi.fn();

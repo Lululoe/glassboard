@@ -176,6 +176,18 @@ describe('layout API', () => {
             expect((await put(server, { pages, background: { image: 'javascript:alert(1)' } })).status).toBe(400);
         });
 
+        it('saves a moving layer over the theme, a color or a picture, and refuses unknown ones', async () => {
+            expect((await put(server, { pages, background: { motion: 'aurora' } })).status).toBe(200);
+            expect(readLayout().background).toEqual({ motion: 'aurora' });
+            expect((await put(server, { pages, background: { color: '#7a2bd4', motion: 'blobs' } })).status).toBe(200);
+            expect(readLayout().background).toEqual({ color: '#7a2bd4', motion: 'blobs' });
+            expect((await put(server, { pages, pageBackgrounds: { home: { theme: true, motion: 'matrix' } } })).status).toBe(200);
+            expect(readLayout().pageBackgrounds).toEqual({ home: { theme: true, motion: 'matrix' } });
+
+            expect((await put(server, { pages, background: { motion: 'fireworks' } })).status).toBe(400);
+            expect((await put(server, { pages, background: {} })).status).toBe(400);
+        });
+
         it('downloads a picture from the web and serves it from here', async () => {
             const webp = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBPVP8 ')]);
             const site = await listenOnLoopback(http.createServer((req, res) => {
