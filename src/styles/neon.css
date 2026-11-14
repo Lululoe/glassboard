@@ -39,8 +39,12 @@
     --bg-page-gradient: radial-gradient(ellipse 80% 60% at 0% 0%, color-mix(in srgb, var(--color-primary) 16%, var(--neon-page)) 0%, var(--neon-page) 70%) !important;
     --bg-page-base: var(--neon-page);
 
-    /* Selected controls (presets, segments, levels) are a pale tint of the accent with dark text */
+    /* Pale tint of the accent for tooltips, badges and handles, with dark text */
     --bg-tile: color-mix(in oklch, var(--color-primary) 28%, #fff) !important;
+    /* Selected controls (presets, segments, levels) are a gradient of the card's color, the accent
+       outside cards; light enough for their dark text */
+    --neon-selected: linear-gradient(135deg, color-mix(in oklch, var(--color-primary) 60%, #fff) 0%, color-mix(in oklch, var(--color-primary) 88%, #fff) 100%);
+    --neon-selected-glow: color-mix(in srgb, var(--color-primary) 70%, transparent);
 }
 
 :root[data-style="neon"][data-theme="light"] {
@@ -87,6 +91,13 @@
     --neon-card-edge: color-mix(in srgb, var(--neon-card-hue) 30%, var(--neon-edge));
     --shadow-tile: 0 18px 40px -28px color-mix(in srgb, var(--neon-card-hue) 85%, transparent);
     --bg-tile: color-mix(in oklch, var(--neon-card-hue) 28%, #fff);
+    --neon-selected: linear-gradient(135deg, color-mix(in oklch, var(--neon-card-hue) 60%, #fff) 0%, color-mix(in oklch, var(--neon-card-hue) 88%, #fff) 100%);
+    --neon-selected-glow: color-mix(in srgb, var(--neon-card-hue) 70%, transparent);
+    /* A colored card: deep gradients of its color, the header lighter than the body */
+    --neon-band: linear-gradient(135deg, color-mix(in oklch, var(--neon-card-hue) 50%, #000) 0%, color-mix(in oklch, var(--neon-card-hue) 34%, #000) 100%);
+    --neon-body: linear-gradient(135deg, color-mix(in oklch, var(--neon-card-hue) 26%, var(--neon-card)) 0%, color-mix(in oklch, var(--neon-card-hue) 14%, var(--neon-card)) 100%);
+    --neon-lit: color-mix(in oklch, var(--neon-card-hue) 30%, #fff);
+    --neon-lit-secondary: color-mix(in oklch, var(--neon-card-hue) 40%, #b6bdc9);
     position: relative;
 }
 
@@ -94,6 +105,20 @@
 :root[data-style="neon"][data-theme="light"] .ha-tile,
 :root[data-style="neon"][data-theme="light"] .container-card {
     --shadow-tile: 0 18px 40px -28px color-mix(in srgb, var(--neon-card-hue) 60%, transparent), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --neon-band: linear-gradient(135deg, color-mix(in oklch, var(--neon-card-hue) 24%, #fff) 0%, color-mix(in oklch, var(--neon-card-hue) 12%, #fff) 100%);
+    --neon-body: linear-gradient(135deg, color-mix(in oklch, var(--neon-card-hue) 10%, #fff) 0%, color-mix(in oklch, var(--neon-card-hue) 4%, #fff) 100%);
+    --neon-lit: color-mix(in oklch, var(--neon-card-hue) 60%, #000);
+    --neon-lit-secondary: color-mix(in oklch, var(--neon-card-hue) 45%, #333);
+}
+
+/* The app grid stays neutral: its icons bring the color */
+:root[data-style="neon"] .app-grid-card {
+    --neon-card-edge: var(--neon-edge);
+    --shadow-tile: 0 18px 40px -28px rgba(170, 178, 194, 0.55);
+}
+
+:root[data-style="neon"][data-theme="light"] .app-grid-card {
+    --shadow-tile: 0 18px 40px -28px rgba(30, 36, 50, 0.4), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 /* Thermostats are warm, and cool while cooling */
@@ -103,6 +128,36 @@
 
 :root[data-style="neon"] .thermostat-card:has(.thermo-slider.cooling) {
     --card-hue: #40c8e0;
+}
+
+/* A thermostat that is on is filled with its color, like an on tile */
+:root[data-style="neon"] .thermostat-card:has(.thermo-slider:not(.off)) {
+    background: var(--neon-band);
+    color: var(--neon-lit);
+    --text-primary: var(--neon-lit);
+    --text-secondary: var(--neon-lit-secondary);
+}
+
+/* Two-tone cards with a colored icon: the header in the icon's color, the body the same but darker */
+:root[data-style="neon"] .two-tone-card.has-hue .two-tone-header {
+    background: var(--neon-band);
+    --text-secondary: var(--neon-lit-secondary);
+}
+
+:root[data-style="neon"] .two-tone-card.has-hue .two-tone-title {
+    color: var(--neon-lit);
+}
+
+:root[data-style="neon"] .two-tone-card.has-hue .two-tone-content {
+    background: var(--neon-body);
+}
+
+:root[data-style="neon"] .two-tone-card.has-hue {
+    --scroll-shade: color-mix(in oklch, var(--neon-card-hue) 14%, var(--neon-card));
+}
+
+:root[data-style="neon"][data-theme="light"] .two-tone-card.has-hue {
+    --scroll-shade: color-mix(in oklch, var(--neon-card-hue) 4%, #fff);
 }
 
 /* The card edge is a ring laid over the card, so it shows over the solid panels of two-tone
@@ -227,11 +282,17 @@
 }
 
 /* Selected segments are solid color and glow, like a switched-on button */
+/* Selected options are a gradient of the card's color (the accent outside cards) with dark text,
+   and glow in it */
 :root[data-style="neon"] .editor-segmented button[aria-checked="true"],
-:root[data-style="neon"] .graph-seg button[aria-pressed="true"] {
-    background: var(--color-primary);
-    color: var(--on-accent);
-    box-shadow: 0 10px 24px -14px var(--color-primary);
+:root[data-style="neon"] .graph-seg button[aria-pressed="true"],
+:root[data-style="neon"] .vac-seg button[aria-pressed="true"],
+:root[data-style="neon"] :is(.thermo-chip, .thermo-preset)[aria-pressed="true"],
+:root[data-style="neon"] .mt-preset[aria-expanded="true"],
+:root[data-style="neon"] .thermo-menu-item[aria-checked="true"] {
+    background: var(--neon-selected);
+    color: #1c1c1e;
+    box-shadow: 0 10px 24px -14px var(--neon-selected-glow);
 }
 
 :root[data-style="neon"] .editor-toggle input:checked + .editor-switch {
