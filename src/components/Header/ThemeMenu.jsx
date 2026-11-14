@@ -20,8 +20,8 @@ const MODE_OPTIONS = [
 ];
 
 /**
- * Popover of the header's Theme button: light or dark and liquid glass refraction for this
- * browser, and the dashboard's style and accent color for everyone using it.
+ * Popover of the header's Theme button: light or dark, liquid glass refraction and terminal
+ * screen effects for this browser, and the dashboard's style and accent color for everyone using it.
  * @param {Object} props
  * @param {boolean} props.editable - Whether the dashboard's style can be changed here.
  * @param {() => void} props.onClose - Closes the menu.
@@ -29,7 +29,7 @@ const MODE_OPTIONS = [
  */
 const ThemeMenu = ({ editable, onClose }) => {
     const dialogRef = useRef(null);
-    const { modeSetting, setMode, style, accent, setAppearance, refraction } = useTheme();
+    const { modeSetting, setMode, style, accent, setAppearance, refraction, screenEffects } = useTheme();
     const custom = accent && !ACCENT_PRESETS.some(p => p.color === accent);
     const [error, setError] = useState(null);
 
@@ -137,6 +137,15 @@ const ThemeMenu = ({ editable, onClose }) => {
                         <div className="editor-hint">Not available in this browser. Chrome, Edge and Android show it.</div>
                     </div>
                 )
+            )}
+
+            {style === 'terminal' && (
+                <ToggleField
+                    label="Screen effects"
+                    checked={screenEffects.enabled}
+                    onChange={screenEffects.setEnabled}
+                    hint="Scanlines and a phosphor glow, like an old monitor. Only on this device."
+                />
             )}
 
             {error && <div className="theme-menu-error" role="alert">{error}</div>}

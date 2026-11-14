@@ -14,6 +14,7 @@ export const ThemeContext = createContext({
     accent: null,
     setAppearance: async () => {},
     refraction: { supported: false, enabled: false, active: false, setEnabled: () => {} },
+    screenEffects: { enabled: true, active: false, setEnabled: () => {} },
 });
 
 /**
@@ -73,12 +74,14 @@ const writeStored = (key, value) => {
 const MODE_KEY = 'theme-mode';
 /** Storage key of the refraction setting; `off` turns it off, anything else leaves it on where supported. */
 export const REFRACTION_KEY = 'glassboard-refraction';
+/** Storage key of the Terminal style's screen effects; `off` turns them off, anything else leaves them on. */
+export const SCREEN_EFFECTS_KEY = 'glassboard-screen-effects';
 
 /**
  * Provider component that manages the application theme, applying CSS variables and the
  * `data-theme` (light or dark) and `data-style` attributes to the document root.
  *
- * Light or dark and refraction are kept per browser. The style and accent belong to the
+ * Light or dark, refraction and screen effects are kept per browser. The style and accent belong to the
  * dashboard: they come from the config, and changing them saves them for every browser.
  * @param {Object} props
  * @param {React.ReactNode} props.children - Child components to wrap.
@@ -118,6 +121,10 @@ export const ThemeProvider = ({ children, config }) => {
     const [refractionOn, setRefractionOn] = useState(() => readStored(REFRACTION_KEY) !== 'off');
     const supported = refractionSupported();
     const refractionActive = style === 'liquid' && supported && refractionOn && !reducedTransparency;
+
+    // The Terminal style's scanlines and glow, on unless turned off in this browser
+    const [effectsOn, setEffectsOn] = useState(() => readStored(SCREEN_EFFECTS_KEY) !== 'off');
+    const effectsActive = style === 'terminal' && effectsOn;
 
     const appliedVars = useRef([]);
 
@@ -170,6 +177,15 @@ export const ThemeProvider = ({ children, config }) => {
         setRefractionOn(enabled);
     };
 
+    /**
+     * Turns the Terminal style's screen effects on or off in this browser.
+     * @param {boolean} enabled - Whether to show them.
+     */
+    const setEffectsEnabled = (enabled) => {
+        writeStored(SCREEN_EFFECTS_KEY, enabled ? null : 'off');
+        setEffectsOn(enabled);
+    };
+
     // Apply the default theme's colors overlaid with the active theme's and the accent,
     // removing variables left over from a previous theme or mode.
     useEffect(() => {
@@ -194,7 +210,9 @@ export const ThemeProvider = ({ children, config }) => {
         root.setAttribute('data-style', style);
         if (refractionActive) root.setAttribute('data-refraction', 'on');
         else root.removeAttribute('data-refraction');
-    }, [style, refractionActive]);
+        if (effectsActive) root.setAttribute('data-effects', 'crt');
+        else root.removeAttribute('data-effects');
+    }, [style, refractionActive, effectsActive]);
 
     // Custom CSS Injection
     useEffect(() => {
@@ -220,6 +238,7 @@ export const ThemeProvider = ({ children, config }) => {
             accent,
             setAppearance,
             refraction: { supported, enabled: refractionOn, active: refractionActive, setEnabled: setRefractionEnabled },
+            screenEffects: { enabled: effectsOn, active: effectsActive, setEnabled: setEffectsEnabled },
         }}>
             {children}
         </ThemeContext.Provider>

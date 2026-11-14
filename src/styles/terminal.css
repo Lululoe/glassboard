@@ -182,3 +182,63 @@
 .weather-art.is-wet {
     color: var(--color-primary);
 }
+
+/*
+ * Screen effects (on unless turned off in the Theme menu; see ThemeContext): scanlines and a
+ * darker rim over the whole screen, a phosphor glow on text, and a cursor after the dashboard's
+ * name. There is no flicker, which can trouble people sensitive to flashing light.
+ */
+:root[data-effects="crt"] body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    pointer-events: none;
+    background:
+        repeating-linear-gradient(transparent 0 2px, rgba(0, 0, 0, 0.16) 2px 3px),
+        radial-gradient(ellipse at center, transparent 62%, rgba(0, 0, 0, 0.35) 100%);
+}
+
+:root[data-effects="crt"][data-theme="light"] body::after {
+    background:
+        repeating-linear-gradient(transparent 0 2px, rgba(0, 0, 0, 0.045) 2px 3px),
+        radial-gradient(ellipse at center, transparent 65%, rgba(0, 0, 0, 0.1) 100%);
+}
+
+:root[data-effects="crt"][data-theme="dark"] .glass-card,
+:root[data-effects="crt"][data-theme="dark"] .app-header,
+:root[data-effects="crt"][data-theme="dark"] .ha-tile.off,
+:root[data-effects="crt"][data-theme="dark"] .page-header {
+    text-shadow: 0 0 6px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+:root[data-effects="crt"] .header-title::after {
+    content: '█';
+    margin-left: 4px;
+    color: var(--color-primary);
+    animation: terminal-cursor 1.1s steps(1) infinite;
+}
+
+@keyframes terminal-cursor {
+    50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root[data-effects="crt"] .header-title::after {
+        animation: none;
+    }
+}
+
+/* Increase Contrast: clear text without glow or lines over it */
+@media (prefers-contrast: more) {
+    :root[data-effects="crt"] body::after {
+        display: none;
+    }
+
+    :root[data-effects="crt"] .glass-card,
+    :root[data-effects="crt"] .app-header,
+    :root[data-effects="crt"] .ha-tile.off,
+    :root[data-effects="crt"] .page-header {
+        text-shadow: none !important;
+    }
+}

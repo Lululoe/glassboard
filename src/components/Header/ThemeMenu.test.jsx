@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { REFRACTION_KEY, ThemeProvider } from '../../context/ThemeContext';
+import { REFRACTION_KEY, SCREEN_EFFECTS_KEY, ThemeProvider } from '../../context/ThemeContext';
 import Header from './Header';
 
 beforeAll(() => {
@@ -27,6 +27,7 @@ describe('Theme menu', () => {
         vi.unstubAllGlobals();
         document.documentElement.removeAttribute('data-style');
         document.documentElement.removeAttribute('data-theme');
+        document.documentElement.removeAttribute('data-effects');
     });
 
     it('picks light or dark for this browser only', () => {
@@ -106,6 +107,23 @@ describe('Theme menu', () => {
         expect(screen.queryByRole('switch', { name: 'Refraction' })).toBeNull();
         expect(screen.getByText(/Not available in this browser/)).toBeInTheDocument();
         userAgent.mockRestore();
+    });
+
+    it('shows the Terminal screen effects by default and turns them off in this browser only', () => {
+        openMenu({ appearance: { style: 'terminal' } });
+        expect(document.documentElement.getAttribute('data-effects')).toBe('crt');
+        const toggle = screen.getByRole('switch', { name: 'Screen effects' });
+        expect(toggle).toBeChecked();
+        fireEvent.click(toggle);
+        expect(document.documentElement.hasAttribute('data-effects')).toBe(false);
+        expect(localStorage.getItem(SCREEN_EFFECTS_KEY)).toBe('off');
+        expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('offers screen effects only with the Terminal style', () => {
+        openMenu({ appearance: { style: 'material' } });
+        expect(screen.queryByRole('switch', { name: 'Screen effects' })).toBeNull();
+        expect(document.documentElement.hasAttribute('data-effects')).toBe(false);
     });
 
     it('is left out when the config turns the theme button off', () => {

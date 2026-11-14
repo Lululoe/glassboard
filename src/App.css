@@ -70,6 +70,16 @@
     background-clip: padding-box;
 }
 
+/* The page's scrollbar shows only while the pointer is over the page; browsers that support
+   the standard properties use these and skip the WebKit ones */
+.scroll-content {
+    scrollbar-color: transparent transparent;
+}
+
+.scroll-content:hover {
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
 /* Show scrollbar on hover of the scroll container */
 .scroll-content:hover::-webkit-scrollbar-thumb {
     background-color: rgba(255, 255, 255, 0.2);

@@ -36,7 +36,8 @@ function offending(pattern) {
 describe('design tokens', () => {
     it('corner radii use the radius tokens, so styles can reshape them', () => {
         expect(offending(/^\s*border-radius:[^;]*\d+(\.\d+)?(px|%)(?![^(]*\*\s*var\(--(round|radius)-scale\))/)
-            .filter(line => !/border-radius:\s*0(\s|;)/.test(line) && !line.includes('/* fixed:'))).toEqual([]);
+            // Radii derived from the card's own (concentric corners) follow the style too
+            .filter(line => !/border-radius:\s*0(\s|;)/.test(line) && !line.includes('/* fixed:') && !/calc\(var\(--radius-card\) - \d+px\)/.test(line))).toEqual([]);
     });
 
     it('frosted surfaces scale their blur with --blur-scale, so opaque styles can drop it', () => {

@@ -50,6 +50,12 @@ draw it and show the frosted glass alone. Refraction is on by default where supp
 menu (for example on a Raspberry Pi, to save power), and is kept per browser. It is also off when the system asks for
 reduced transparency.
 
+### Terminal screen effects
+The Terminal style adds scanlines, a darker rim and a phosphor glow on text, like an old monitor, and a blinking
+cursor after the dashboard's name. They are on by default, can be turned off with **Screen effects** in the Theme
+menu, and are kept per browser. The cursor stays still with reduced motion, and the lines and glow are left out
+with increased contrast.
+
 Themes (below) set colors; they apply in every style, but a style replaces the card, bar and menu surfaces it needs.
 
 ## Custom CSS
