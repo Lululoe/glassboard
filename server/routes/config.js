@@ -18,6 +18,7 @@ import {
 import logger from '../logger.js';
 import { flattenCards } from '../../shared/containerCards.js';
 import { isDemoMode } from '../services/demo.js';
+import { appearanceSchema } from '../configSchema.js';
 
 const KEEP_ALIVE_INTERVAL = 30 * 1000;
 
@@ -263,6 +264,7 @@ router.put('/layout', (req, res, next) => {
             pageHeaders,
             headerAutoHide: autoHide === (getBaseConfig().headerAutoHide ?? 'never') ? undefined : autoHide,
             sidebar: sidebarSetting && !deepEqual(sidebarSetting, getBaseConfig().sidebar) ? sidebarSetting : undefined,
+            appearance: previous.appearance,
         });
         // A reset keeps a copy of the layout it removed, so its pictures stay until that copy is gone
         const backup = readLayoutBackup();
@@ -323,6 +325,41 @@ router.get('/background/:name', (req, res) => {
     const file = backgroundImagePath(req.params.name);
     if (!file || !fs.existsSync(file)) return res.status(404).end();
     res.set('Cache-Control', 'public, max-age=31536000, immutable').sendFile(file);
+});
+
+/** Body of an appearance change: a style or accent, or null to go back to the one in config.yaml. */
+const appearanceBody = z.object({
+    style: appearanceSchema.shape.style.nullable(),
+    accent: appearanceSchema.shape.accent.nullable(),
+}).partial().strict();
+
+/**
+ * Saves the dashboard's style and accent color, as chosen in the Theme menu. They apply to every
+ * browser showing the dashboard. Left out, a setting is kept; `null` goes back to config.yaml.
+ * Only settings that differ from config.yaml are stored.
+ */
+router.put('/appearance', (req, res, next) => {
+    try {
+        assertEditable();
+        const parsed = appearanceBody.safeParse(req.body);
+        if (!parsed.success) {
+            const issue = parsed.error.issues[0];
+            throw new HttpError(400, `Invalid appearance: ${issue.path.join('.')} ${issue.message}`.trim());
+        }
+        const previous = readLayout();
+        const base = getBaseConfig().appearance || {};
+        const merged = { ...previous.appearance };
+        Object.entries(parsed.data).forEach(([key, value]) => {
+            if (value === null || value === base[key]) delete merged[key];
+            else merged[key] = value;
+        });
+        writeLayout({ ...previous, appearance: Object.keys(merged).length > 0 ? merged : undefined });
+        logger.info('Saved dashboard appearance');
+        loadConfig();
+        res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
 });
 
 /** Removes everything saved from the browser, so the dashboard goes back to config.yaml. */

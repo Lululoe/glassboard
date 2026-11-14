@@ -35,6 +35,11 @@ describe('initialHead', () => {
         expect(head).not.toContain('<script>alert');
     });
 
+    it("sets the dashboard's style before the first paint", () => {
+        expect(initialHead({ appearance: { style: 'terminal' } })).toContain("setAttribute('data-style','terminal')");
+        expect(initialHead({ appearance: { style: "x');alert(1)//" } })).toContain("setAttribute('data-style','glass')");
+    });
+
     it('goes before </head>', () => {
         expect(withInitialHead('<html><head><title>x</title></head><body></body></html>', {}))
             .toMatch(/<title>x<\/title><script>.*<\/style><\/head>/);

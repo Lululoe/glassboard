@@ -8,6 +8,37 @@ The page background can also be set without a theme, from edit mode or with `bac
 the gradient is made from, or a picture); see [Page background](CARD_CONFIGURATION.md#page-background). It takes the
 place of `--bg-page-gradient`.
 
+## Styles
+A style is the dashboard's design language: the shape, material and type of every card, bar and menu. It applies to
+the whole dashboard, for everyone using it. Pick it in the **Theme** menu (the palette button in the header bar) or in
+`config.yaml`:
+
+```yaml
+appearance:
+  style: liquid      # glass (default) | liquid | material | terminal
+```
+
+| Style | Look |
+| :--- | :--- |
+| `glass` | Frosted tiles with small rounded corners and a soft offset shadow. |
+| `liquid` | Liquid Glass: clear glass with a lit rim, large round corners, and a header bar that floats as a capsule. |
+
+A style chosen in the Theme menu is saved in `layout.yaml` and wins over `config.yaml`; picking the style of
+`config.yaml` again removes it from `layout.yaml`. When `editable: false` is set, the style can only be set in
+`config.yaml`. `themeToggle: false` hides the Theme button.
+
+### Light and dark
+The Theme menu's **Appearance** picks Automatic (follow the system), Light or Dark. This is kept per browser.
+
+### Liquid Glass refraction
+In Chrome, Edge, Android and other Chromium browsers, the rim of Liquid Glass surfaces also bends what is behind it, like
+the edge of a lens. It is most visible over a picture or a moving background. Safari, Firefox and all iOS browsers can't
+draw it and show the frosted glass alone. Refraction is on by default where supported, can be turned off in the Theme
+menu (for example on a Raspberry Pi, to save power), and is kept per browser. It is also off when the system asks for
+reduced transparency.
+
+Themes (below) set colors; they apply in every style, but a style replaces the card, bar and menu surfaces it needs.
+
 ## Custom CSS
 Place a `custom.css` in the project root (or mount it to `/app/custom.css` in Docker) to add your own styles. It is loaded after the built-in styles. Changes apply on page reload.
 

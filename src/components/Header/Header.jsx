@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useAutoHide } from '../../hooks/useAutoHide';
 import './Header.css';
-import { LayoutTemplate, Sun, Moon, LayoutGrid, Pencil, SquarePen, Plus, Wallpaper, FilePen, RotateCcw, PanelLeft } from 'lucide-react';
+import { LayoutTemplate, Palette, LayoutGrid, Pencil, SquarePen, Plus, Wallpaper, FilePen, RotateCcw, PanelLeft } from 'lucide-react';
 import LauncherPopup from './LauncherPopup';
-import { useTheme } from '../../context/ThemeContext';
+import ThemeMenu from './ThemeMenu';
 
 /**
- * Application header component displaying the logo, theme toggle, and launcher grid toggle.
+ * Application header component displaying the logo, the Theme menu, and launcher grid toggle.
  * While the layout is being edited it shows Reset and Done instead.
  * @param {Object} props
  * @param {Object} props.config - The global application configuration object.
@@ -33,8 +33,8 @@ import { useTheme } from '../../context/ThemeContext';
  */
 const Header = ({ config, edit, autoHide = false }) => {
     const [isLauncherOpen, setIsLauncherOpen] = useState(false);
-    const { mode, toggleMode } = useTheme();
-    const { hidden, reveal, hideSoon } = useAutoHide(autoHide, isLauncherOpen);
+    const [isThemeOpen, setIsThemeOpen] = useState(false);
+    const { hidden, reveal, hideSoon } = useAutoHide(autoHide, isLauncherOpen || isThemeOpen);
     // On touch screens there is no pointer leaving the bar, so it hides a few seconds after the last tap
     const TOUCH_DELAY = 4000;
 
@@ -180,12 +180,14 @@ const Header = ({ config, edit, autoHide = false }) => {
                     {config?.themeToggle !== false && (
                         <button
                             type="button"
-                            className="button-reset icon-button"
-                            onClick={toggleMode}
-                            title={mode === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
-                            aria-label={mode === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+                            className={`button-reset icon-button${isThemeOpen ? ' active' : ''}`}
+                            onClick={() => setIsThemeOpen(!isThemeOpen)}
+                            title="Theme"
+                            aria-label="Theme"
+                            aria-haspopup="dialog"
+                            aria-expanded={isThemeOpen}
                         >
-                            {mode === 'dark' ? <Sun size={20} aria-hidden="true" /> : <Moon size={20} aria-hidden="true" />}
+                            <Palette size={20} aria-hidden="true" />
                         </button>
                     )}
                     <button
@@ -200,6 +202,16 @@ const Header = ({ config, edit, autoHide = false }) => {
                         <LayoutGrid size={20} aria-hidden="true" />
                     </button>
                 </div>
+                )}
+
+                {isThemeOpen && (
+                    <ThemeMenu
+                        editable={config?.editable !== false}
+                        onClose={() => {
+                            setIsThemeOpen(false);
+                            if (autoHide) hideSoon();
+                        }}
+                    />
                 )}
 
                 {isLauncherOpen && (

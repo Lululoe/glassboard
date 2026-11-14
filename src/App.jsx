@@ -28,6 +28,7 @@ import { HeaderEntitiesContext } from './context/headerEntities';
 import { headerBarHides, headerWidgetEntityIds, resolvePageHeader } from '../shared/pageHeader';
 import PageBackground from './components/Layout/PageBackground';
 import ParticlesBackground from './components/Layout/ParticlesBackground';
+import LiquidRefraction from './components/Layout/LiquidRefraction';
 import Sidebar from './components/Sidebar/Sidebar';
 import SidebarItemEditor from './components/Editor/SidebarItemEditor';
 import { entryAt, isFolder, normalizeItems, replaceEntry, ungroup } from './components/Sidebar/sidebarModel';
@@ -133,6 +134,7 @@ function Dashboard({ config }) {
             <div className={`App${layout.editing ? ' is-editing' : ''}${headerBarHidden ? ' has-hidden-header-bar' : ''}${sidebarOn ? ' has-sidebar' : ''}`} {...(layout.editing ? {} : swipeHandlers)}>
                 <PageBackground background={activeBackground ?? layout.background} />
                 <ParticlesBackground />
+                <LiquidRefraction />
                 <Header
                     config={liveConfig}
                     autoHide={headerBarHidden}

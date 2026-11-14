@@ -18,13 +18,16 @@ function cssFiles(dir) {
     });
 }
 
+/** Style sheets (src/styles) set each style's own look, so they may use fixed values. */
+const STYLE_DIR = path.join(SRC, 'styles');
+
 /**
- * Finds declarations in all stylesheets that match a pattern, outside the token definitions.
+ * Finds declarations in the components' stylesheets that match a pattern.
  * @param {RegExp} pattern - Pattern a declaration line must not match.
  * @returns {string[]} `file:line: text` of every match.
  */
 function offending(pattern) {
-    return cssFiles(SRC).flatMap(file => fs.readFileSync(file, 'utf8').split('\n')
+    return cssFiles(SRC).filter(file => !file.startsWith(STYLE_DIR)).flatMap(file => fs.readFileSync(file, 'utf8').split('\n')
         .map((line, i) => ({ line, i }))
         .filter(({ line }) => pattern.test(line))
         .map(({ line, i }) => `${path.relative(SRC, file)}:${i + 1}: ${line.trim()}`));
@@ -33,7 +36,7 @@ function offending(pattern) {
 describe('design tokens', () => {
     it('corner radii use the radius tokens, so styles can reshape them', () => {
         expect(offending(/^\s*border-radius:[^;]*\d+(\.\d+)?(px|%)(?![^(]*\*\s*var\(--(round|radius)-scale\))/)
-            .filter(line => !/border-radius:\s*0(\s|;)/.test(line))).toEqual([]);
+            .filter(line => !/border-radius:\s*0(\s|;)/.test(line) && !line.includes('/* fixed:'))).toEqual([]);
     });
 
     it('frosted surfaces scale their blur with --blur-scale, so opaque styles can drop it', () => {

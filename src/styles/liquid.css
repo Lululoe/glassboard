@@ -1,0 +1,101 @@
+/*
+ * Liquid Glass: clear, thick glass with a lit rim and larger, rounder corners. Surfaces show
+ * more of the page behind them and stand off it with a soft shadow. Where the browser can,
+ * the rim also bends what is behind it (refraction, see refraction.js), set per surface as
+ * --refraction; without it the plain blur stays.
+ *
+ * Theme colors are set inline on the root, so the tokens a theme also sets need !important.
+ */
+:root[data-style="liquid"] {
+    --radius-scale: 1.6;
+    --radius-card: 26px;
+    --blur-scale: 0.8;
+    --liquid-blur: blur(12px) saturate(180%);
+    --liquid-rim: inset 0 1px 0 rgba(255, 255, 255, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.13), inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+
+    --bg-card-surface: rgba(20, 22, 32, 0.24);
+    --bg-card-glass: transparent !important;
+    --bg-card-glass-header: rgba(255, 255, 255, 0.08) !important;
+    --bg-toolbar: rgba(24, 26, 36, 0.3);
+    --bg-popup: rgba(30, 32, 42, 0.74) !important;
+    --border-popup: rgba(255, 255, 255, 0.16);
+    --shadow-tile: var(--liquid-rim), 0 12px 32px rgba(0, 0, 0, 0.26);
+    --shadow-popup: var(--liquid-rim), 0 18px 48px rgba(0, 0, 0, 0.36);
+    --bg-fill: rgba(255, 255, 255, 0.14);
+    --bg-fill-hover: rgba(255, 255, 255, 0.22);
+}
+
+:root[data-style="liquid"][data-theme="light"] {
+    --liquid-rim: inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 0 0 1px rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(255, 255, 255, 0.3);
+    --bg-card-surface: rgba(255, 255, 255, 0.4);
+    --bg-card-glass-header: rgba(255, 255, 255, 0.3) !important;
+    --bg-toolbar: rgba(255, 255, 255, 0.42);
+    --bg-popup: rgba(250, 250, 253, 0.82) !important;
+    --border-popup: rgba(255, 255, 255, 0.55);
+    --shadow-tile: var(--liquid-rim), 0 12px 32px rgba(0, 25, 70, 0.18);
+    --shadow-popup: var(--liquid-rim), 0 18px 48px rgba(0, 25, 70, 0.24);
+    --bg-fill: rgba(255, 255, 255, 0.42);
+    --bg-fill-hover: rgba(255, 255, 255, 0.62);
+}
+
+/* Glass surfaces: frosted by default, bent at the rim where refraction is on */
+:root[data-style="liquid"] .glass-card,
+:root[data-style="liquid"] .ha-tile.off,
+:root[data-style="liquid"] .sidebar-rail,
+:root[data-style="liquid"] .app-header {
+    -webkit-backdrop-filter: var(--liquid-blur);
+    backdrop-filter: var(--refraction, var(--liquid-blur));
+}
+
+/* A two-tone card is one piece of glass: its banner is a brighter band, not a separate pane */
+:root[data-style="liquid"] .glass-card.two-tone-card {
+    background: var(--bg-card-surface) !important;
+    -webkit-backdrop-filter: var(--liquid-blur) !important;
+    backdrop-filter: var(--refraction, var(--liquid-blur)) !important;
+}
+
+:root[data-style="liquid"] .two-tone-header,
+:root[data-style="liquid"] .two-tone-content {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+:root[data-style="liquid"] .two-tone-header {
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Text keeps its contrast over a bright spot showing through the clear glass */
+:root[data-style="liquid"][data-theme="dark"] .glass-card,
+:root[data-style="liquid"][data-theme="dark"] .app-header,
+:root[data-style="liquid"][data-theme="dark"] .ha-tile.off {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+/* The header bar floats as a capsule under the top edge */
+:root[data-style="liquid"] .app-header {
+    margin: calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 0 calc(12px + env(safe-area-inset-left));
+    padding: 0 10px 0 18px;
+    height: 48px;
+    top: calc(8px + env(safe-area-inset-top));
+    border-radius: var(--radius-pill);
+    box-shadow: var(--shadow-popup);
+}
+
+:root[data-style="liquid"] dialog.launcher-popup,
+:root[data-style="liquid"] dialog.theme-menu {
+    top: calc(64px + env(safe-area-inset-top));
+    border: 0;
+    border-radius: var(--radius-24);
+    /* Menus hold small text over anything, so they are frosted more and not bent */
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
+}
+
+:root[data-style="liquid"] .sidebar-rail {
+    border: 0;
+}
+
+:root[data-style="liquid"] .page-indicators {
+    background: var(--bg-toolbar);
+    box-shadow: var(--liquid-rim), 0 6px 16px rgba(0, 0, 0, 0.2);
+}

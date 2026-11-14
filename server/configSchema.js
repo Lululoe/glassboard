@@ -4,6 +4,13 @@ import {
     isHeaderColor,
 } from '../shared/pageHeader.js';
 import { childCardsOf } from '../shared/containerCards.js';
+import { APPEARANCE_STYLES, isAccent } from '../shared/appearance.js';
+
+/** The dashboard's style and accent color. */
+export const appearanceSchema = z.object({
+    style: z.enum(APPEARANCE_STYLES).optional(),
+    accent: z.string().refine(isAccent, 'Use a #rrggbb color').optional(),
+});
 
 const id = z.union([z.string().min(1), z.number()]);
 
@@ -96,6 +103,7 @@ const sidebar = z.looseObject({
 export const configSchema = z.looseObject({
     theme: z.string().optional(),
     themeToggle: z.boolean().optional(),
+    appearance: appearanceSchema.optional(),
     headerAutoHide: z.enum(HEADER_AUTO_HIDE).optional(),
     demo: z.boolean().optional(),
     editable: z.boolean().optional(),
