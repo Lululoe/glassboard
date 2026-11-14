@@ -1,5 +1,6 @@
 import { getCardComponent } from '../registry';
 import CardErrorBoundary from '../../components/Grid/CardErrorBoundary';
+import { NoticeCard } from '../../context/NoticeScopes';
 import { buildEntries, fitToColumns, isSubTile, rowSpanOf, sizeOf } from '../../components/Grid/gridLayout';
 import { childCardsOf } from '../../../shared/containerCards';
 import { columnsOf, scaleOf } from './containerModel';
@@ -52,7 +53,9 @@ const renderItem = (cards, index, globalConfig, place) => {
         <div key={keyOf(cards, index)} data-child-index={index} className={`container-card-item ${isSubTile(size) ? `tile-${size}` : `col-span-${size}`}`} style={style}>
             <div className="container-card-scale">
                 <CardErrorBoundary label={card.id ?? card.type} resetKey={card}>
-                    {Card ? <Card config={card} globalConfig={globalConfig} /> : <UnknownCard type={card.type} />}
+                    <NoticeCard card={card}>
+                        {Card ? <Card config={card} globalConfig={globalConfig} /> : <UnknownCard type={card.type} />}
+                    </NoticeCard>
                 </CardErrorBoundary>
             </div>
         </div>

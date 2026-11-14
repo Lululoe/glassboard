@@ -18,6 +18,11 @@ themes: []
 # screen: never (default), with-page-header (on pages that show the page header below) or always.
 # headerAutoHide: with-page-header
 
+# An optional sidebar of the pages, with folders and bubbles when cards need attention. It can also be
+# turned on and arranged in the browser's edit mode. See docs/SIDEBAR.md.
+# sidebar:
+#   enabled: true
+
 # An optional header above the cards: a clock under the date by default. Set it here for every
 # page, or as `pageHeader` on a page to change or turn it off there. See docs/HEADER_CONFIGURATION.md.
 # pageHeader:

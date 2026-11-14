@@ -59,7 +59,7 @@ export function useDashboardEditing(config, pages) {
     const [editor, setEditor] = useState(/** @type {{key: string, index: number, isNew: boolean, mode?: 'card'|'icon'}|null} */ (null));
     const [adding, setAdding] = useState(false);
     const [carry, setCarry] = useState(null);
-    const [shared, setShared] = useState(/** @type {{launcher?: Object, iconBackgrounds: string[], background?: Object, pageBackgrounds: Object<string, Object>, pageHeader?: *, pageHeaders: Object<string, *>, headerAutoHide?: string}|null} */ (null));
+    const [shared, setShared] = useState(/** @type {{launcher?: Object, iconBackgrounds: string[], background?: Object, pageBackgrounds: Object<string, Object>, pageHeader?: *, pageHeaders: Object<string, *>, headerAutoHide?: string, sidebar?: Object}|null} */ (null));
     const [editingBackground, setEditingBackground] = useState(/** @type {false|'all'|'page'} */ (false));
     const [editingHeader, setEditingHeader] = useState(/** @type {null|'layout'|'title'|'subtitle'|'widget'|'widget-add'} */ (null));
     const [editingWidget, setEditingWidget] = useState(/** @type {number|null} */ (null));
@@ -67,6 +67,7 @@ export function useDashboardEditing(config, pages) {
     const [pageDrafts, setPageDrafts] = useState(/** @type {Array<{id: string, name?: string}>|null} */ (null));
     const [pageDialog, setPageDialog] = useState(/** @type {{id?: string}|null} */ (null));
     const [editingMenu, setEditingMenu] = useState(false);
+    const [editingSidebar, setEditingSidebar] = useState(/** @type {import('../components/Sidebar/sidebarModel').EntryPath|null} */ (null));
     const [confirmingReset, setConfirmingReset] = useState(false);
     const [canUndoReset, setCanUndoReset] = useState(false);
     const [undoFailed, setUndoFailed] = useState(false);
@@ -93,6 +94,7 @@ export function useDashboardEditing(config, pages) {
         pageHeader: config.pageHeader,
         pageHeaders: Object.fromEntries(gridPages.filter(({ page }) => page.pageHeader !== undefined).map(({ page, key }) => [key, page.pageHeader])),
         headerAutoHide: config.headerAutoHide,
+        sidebar: config.sidebar,
     };
 
     const cardsOf = (page, idx) => drafts?.[pageKey(page, idx)] ?? page.cards;
@@ -221,7 +223,7 @@ export function useDashboardEditing(config, pages) {
     };
 
     const finish = async () => {
-        if (saving || editor || adding || editingMenu || editingBackground || editingHeader || pageDialog || confirmingReset) return;
+        if (saving || editor || adding || editingMenu || editingBackground || editingHeader || editingSidebar || pageDialog || confirmingReset) return;
         const original = Object.fromEntries(gridPages.map(({ page, key }) => [key, page.cards || []]));
         const unchanged = JSON.stringify(drafts) === JSON.stringify(original)
             && JSON.stringify(shared) === JSON.stringify(savedShared)
@@ -250,7 +252,7 @@ export function useDashboardEditing(config, pages) {
         setSaving(true);
         setStatus('Saving…');
         try {
-            const { launcher, iconBackgrounds, background, pageBackgrounds, pageHeader, pageHeaders, headerAutoHide } = shared;
+            const { launcher, iconBackgrounds, background, pageBackgrounds, pageHeader, pageHeaders, headerAutoHide, sidebar } = shared;
             await saveLayout(drafts, {
                 ...(launcher ? { launcher } : {}),
                 iconBackgrounds,
@@ -262,6 +264,7 @@ export function useDashboardEditing(config, pages) {
                 pageHeader: pageHeader ?? null,
                 pageHeaders: Object.fromEntries(Object.keys(drafts).map(key => [key, pageHeaders[key] ?? null])),
                 headerAutoHide: headerAutoHide ?? null,
+                sidebar: sidebar ?? null,
             });
             setSavedFor(config);
             setStatus(null);
@@ -319,6 +322,30 @@ export function useDashboardEditing(config, pages) {
         saveMenu: (launcher, headerAutoHide) => {
             setShared(prev => ({ ...prev, launcher, headerAutoHide }));
             setEditingMenu(false);
+        },
+        /** The sidebar, as in the draft while editing. */
+        sidebar: shared ? shared.sidebar : config.sidebar,
+        /**
+         * Shows or hides the sidebar in the draft.
+         * @param {boolean} enabled - Whether it shows.
+         */
+        setSidebarEnabled: (enabled) => setShared(prev => ({ ...prev, sidebar: { ...prev.sidebar, enabled } })),
+        /**
+         * Keeps a new arrangement of the sidebar's icons in the draft.
+         * @param {Array<Object>} items - The pages and folders, in order.
+         */
+        setSidebarItems: (items) => setShared(prev => ({ ...prev, sidebar: { ...prev.sidebar, items } })),
+        /** The sidebar icon whose editor is open. */
+        editingSidebar,
+        openSidebarEditor: setEditingSidebar,
+        closeSidebarEditor: () => setEditingSidebar(null),
+        /**
+         * Keeps a new arrangement from the sidebar icon editor and closes it.
+         * @param {Array<Object>} items - The pages and folders, in order.
+         */
+        saveSidebarItems: (items) => {
+            setShared(prev => ({ ...prev, sidebar: { ...prev.sidebar, items } }));
+            setEditingSidebar(null);
         },
         withDraftPages, addPage, renamePage, deletePage,
         pageDialog,

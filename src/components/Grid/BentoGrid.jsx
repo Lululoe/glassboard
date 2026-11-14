@@ -3,6 +3,7 @@ import { EyeOff, Pencil } from 'lucide-react';
 import { getCardComponent, getCardInfo, getCardSizes } from '../../features/registry';
 import { useGridColumns } from '../../hooks/useGridColumns';
 import CardErrorBoundary from './CardErrorBoundary';
+import { NoticeCard } from '../../context/NoticeScopes';
 import { childCardsOf, isContainer } from '../../../shared/containerCards';
 import {
     DEVICES, MAX_ROWS, buildEntries, deviceFor, dropIndex, fitToColumns, isHiddenAt, isSubTile, layoutCards, moveItem, nearestSize,
@@ -838,9 +839,11 @@ const BentoGrid = ({
             >
                 <div className="grid-item-body" inert={editing || undefined}>
                     <CardErrorBoundary label={card.id ?? card.type} resetKey={shown}>
-                        {CardComponent
-                            ? <CardComponent config={shown} globalConfig={globalConfig} />
-                            : <FallbackCard type={card.type} />}
+                        <NoticeCard card={card}>
+                            {CardComponent
+                                ? <CardComponent config={shown} globalConfig={globalConfig} />
+                                : <FallbackCard type={card.type} />}
+                        </NoticeCard>
                     </CardErrorBoundary>
                 </div>
                 {editing && (

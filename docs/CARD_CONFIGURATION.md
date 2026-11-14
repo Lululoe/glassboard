@@ -17,6 +17,7 @@ All cards support these base options:
 | `rowSpan` | number | 1 | Height in grid rows (1-3), for cards that can be taller, such as `container`. |
 | `hideOn` | array | | Screen sizes the card is hidden on: `phone`, `tablet` and/or `desktop`. |
 | `primaryColor` | string | | Sets `--card-primary` for the card (overrides theme/default). |
+| `notify` | boolean / object | `true` | Whether the card's notices show in the [sidebar](SIDEBAR#notifications). `false` turns them off, `{ activity: false }` only those of one level (`alert`, `todo`, `activity`). |
 
 ---
 
@@ -176,7 +177,7 @@ formatting stay untouched. Every device sees the saved dashboard. For cards from
 only stores the page, position, size and visibility, unless the card's options were changed in the browser; then
 it stores the whole card, and later edits to that card in `config.yaml` are ignored until you reset. Cards added
 in the browser live only in `layout.yaml`, and cards removed in the browser are listed under `removed`. A header menu
-edited in the browser replaces `launcher` from `config.yaml` as a whole, as do `iconBackgrounds` and `background`.
+edited in the browser replaces `launcher` from `config.yaml` as a whole, as do `iconBackgrounds`, `background` and `sidebar`.
 Pages added in the browser are listed under `addedPages` (id and name) and come after the pages of `config.yaml`;
 their cards are stored like other cards added in the browser. Cards added
 to `config.yaml` later appear after the saved ones. Deleting `layout.yaml` (or **Reset…**) restores the dashboard

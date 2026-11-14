@@ -126,6 +126,18 @@ export const useMyData = (cardId) => {
 the same card at once, and keeps the last data when a request fails. Identical concurrent `callService` calls
 (e.g. two cards of the same type) share one request.
 
+A card that reports notices (see step 9) should keep polling on pages that are not shown, at a slower pace, so
+the sidebar stays current. Pass `backgroundInterval`; a hidden browser tab still pauses it:
+
+```js
+import { BACKGROUND_SLOW, usePolling } from '../../hooks/usePolling';
+
+usePolling(fetcher, { interval: 30000, backgroundInterval: BACKGROUND_SLOW });
+```
+
+Use `BACKGROUND_FAST` (one minute) for live Home Assistant state and `BACKGROUND_SLOW` (five minutes) for slower
+services.
+
 ## 5. Add a Backend Service (optional)
 1. Create `server/services/myservice.js` exporting an async handler that receives the request parameters.
    Read credentials with `getServiceConfig` (environment variables, then `services.yaml`) and throw
@@ -167,3 +179,35 @@ Create a CSS file (e.g., `MyCard.css`) and import it in your JSX. Use unique cla
 ## 8. Tests and Docs
 Add Vitest tests next to the component, hook and service, and document the card's options in
 [CARD_CONFIGURATION.md](CARD_CONFIGURATION.md).
+
+## 9. Report Notices (optional)
+A card can tell the [sidebar](SIDEBAR#notifications) that something needs attention with `useCardNotice`. Derive
+the notice from data the card already has, and pass a falsy value when there is nothing to report:
+
+```js
+import { useCardNotice } from '../../context/notices';
+
+const { prs } = useGit(config.id);
+useCardNotice(prs.length > 0 && {
+    level: 'todo',               // 'alert' (broken), 'todo' (waits for the user) or 'activity' (running)
+    count: prs.length,           // optional, 1 by default
+    title: `${prs.length} open pull request${prs.length === 1 ? '' : 's'}`,
+});
+```
+
+A card can also pass a list, for example an error and a job in progress at the same time; falsy entries are
+skipped:
+
+```js
+useCardNotice([
+    failed && { level: 'alert', title: 'Print failed' },
+    printing && { level: 'activity', title: `Printing · ${progress} %` },
+]);
+```
+
+Notices go away when the card passes nothing or unmounts, so there is no read or unread state to keep. Keep the
+rules in `src/features/cardNotices.js` as plain functions from the card's data to its notices, next to those of
+the other cards, so they can be tested without rendering the card. The card and page are known from where the card is rendered, so the card passes
+only the notice; previews in editors publish nothing. Users can turn a card's notices off with `notify` in its
+config, which `useCardNotice` handles. Remember `backgroundInterval` in `usePolling` (step 4), so the notice stays
+current while the card's page is not shown.

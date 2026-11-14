@@ -76,6 +76,23 @@ const launcherItem = z.looseObject({
     url: z.string(),
 });
 
+const sidebarIcon = {
+    icon: z.string().optional(),
+    iconColor: z.string().optional(),
+    iconBackground: z.string().optional(),
+};
+
+const sidebarPage = z.looseObject({ page: z.union([z.string(), z.number()]), ...sidebarIcon });
+
+/** The sidebar: whether it shows, and its pages and folders in order. */
+const sidebar = z.looseObject({
+    enabled: z.boolean().optional(),
+    items: z.array(z.union([
+        sidebarPage,
+        z.looseObject({ folder: z.string().min(1), name: z.string().optional(), pages: z.array(sidebarPage), ...sidebarIcon }),
+    ])).optional(),
+});
+
 export const configSchema = z.looseObject({
     theme: z.string().optional(),
     themeToggle: z.boolean().optional(),
@@ -91,6 +108,7 @@ export const configSchema = z.looseObject({
         links: z.array(launcherItem).optional(),
         links_title: z.string().optional(),
     }).optional(),
+    sidebar: sidebar.optional(),
     background: z.looseObject({
         color: z.string().optional(),
         image: z.string().optional(),
