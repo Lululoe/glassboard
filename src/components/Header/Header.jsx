@@ -107,7 +107,7 @@ const Header = ({ config, edit, autoHide = false }) => {
                 </div>
 
                 {edit?.active ? (
-                    <div className="header-right">
+                    <div className="header-right" key="edit">
                         {edit.status && <span className="header-edit-status" role="status">{edit.status}</span>}
                         <button
                             type="button"
@@ -186,7 +186,7 @@ const Header = ({ config, edit, autoHide = false }) => {
                         </button>
                     </div>
                 ) : (
-                <div className="header-right">
+                <div className="header-right" key="view">
                     {edit?.canUndoReset && (
                         <span className="header-edit-status" role="status">
                             {edit.undoFailed ? "Couldn't undo the reset." : 'Dashboard reset.'}{' '}
