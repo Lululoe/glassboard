@@ -24,6 +24,8 @@
     --shadow-popup: var(--liquid-rim), 0 18px 48px rgba(0, 0, 0, 0.36);
     --bg-fill: rgba(255, 255, 255, 0.14);
     --bg-fill-hover: rgba(255, 255, 255, 0.22);
+    /* Dividers are a line of light in the glass, not grey paint */
+    --color-separator: rgba(255, 255, 255, 0.16) !important;
 }
 
 :root[data-style="liquid"][data-theme="light"] {
@@ -37,6 +39,7 @@
     --shadow-popup: var(--liquid-rim), 0 18px 48px rgba(0, 25, 70, 0.24);
     --bg-fill: rgba(255, 255, 255, 0.42);
     --bg-fill-hover: rgba(255, 255, 255, 0.62);
+    --color-separator: rgba(0, 20, 60, 0.12) !important;
 }
 
 /* Glass surfaces: frosted by default, bent at the rim where refraction is on */
@@ -252,6 +255,7 @@
         --bg-toolbar: #1c1c1e;
         --bg-popup: #1c1c1e !important;
         --liquid-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+        --color-separator: rgba(255, 255, 255, 0.4) !important;
     }
 
     :root[data-style="liquid"][data-theme="light"] {
@@ -260,6 +264,7 @@
         --bg-toolbar: #ffffff;
         --bg-popup: #ffffff !important;
         --liquid-rim: inset 0 0 0 1px rgba(0, 0, 0, 0.22);
+        --color-separator: rgba(60, 60, 67, 0.45) !important;
     }
 
     :root[data-style="liquid"] .glass-card,
