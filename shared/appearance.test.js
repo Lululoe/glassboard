@@ -4,7 +4,7 @@ import { ACCENT_PRESETS, APPEARANCE_STYLES, accentVariables, isAccent, normalize
 describe('appearance', () => {
     it('defaults to Glass with the theme accent', () => {
         expect(normalizeAppearance(undefined)).toEqual({ style: 'glass', accent: null });
-        expect(normalizeAppearance({ style: 'neon', accent: 'blue' })).toEqual({ style: 'glass', accent: null });
+        expect(normalizeAppearance({ style: 'disco', accent: 'blue' })).toEqual({ style: 'glass', accent: null });
     });
 
     it('keeps known styles and #rrggbb accents', () => {

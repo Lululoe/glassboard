@@ -111,8 +111,11 @@ const HAControlCard = ({ config }) => {
 
                 // Dynamic color override if on
                 const circleStyle = {};
+                // The tile's own color, which a style can use for the whole tile (Neon does)
+                const tileStyle = {};
                 if (isOn && entity.color) {
                     circleStyle.backgroundColor = entity.color;
+                    tileStyle['--tile-color'] = entity.color;
                 }
 
                 // Get display state from configured attributes
@@ -127,7 +130,7 @@ const HAControlCard = ({ config }) => {
                 if (hasDialog) {
                     // Two sibling buttons: the tile opens the controls, the icon switches
                     return (
-                        <div key={entity.entity_id ?? idx} className={tileClass}>
+                        <div key={entity.entity_id ?? idx} className={tileClass} style={tileStyle}>
                             <button
                                 type="button"
                                 className="button-reset ha-tile-open"
@@ -156,6 +159,7 @@ const HAControlCard = ({ config }) => {
                     <Tile
                         key={entity.entity_id ?? idx}
                         className={hasActions ? `button-reset ${tileClass}` : tileClass}
+                        style={tileStyle}
                         {...(hasActions && {
                             type: 'button',
                             'aria-pressed': isOn,

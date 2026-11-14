@@ -157,6 +157,21 @@ dialog.theme-menu::backdrop {
     background: color-mix(in srgb, var(--color-primary) 40%, #202124);
 }
 
+.preview-neon {
+    background: radial-gradient(ellipse at 0% 0%, color-mix(in srgb, var(--color-primary) 22%, #07090d), #07090d 75%);
+}
+
+.preview-neon .preview-tile {
+    border-radius: 9px; /* fixed: pictures another style */
+    background: #18181b;
+    box-shadow: inset 0 0 0 1px rgba(58, 62, 72, 0.9);
+}
+
+.preview-neon .preview-tile:first-child {
+    background: linear-gradient(135deg, color-mix(in oklch, var(--color-primary) 52%, #000), color-mix(in oklch, var(--color-primary) 32%, #000));
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 40%, transparent), 0 6px 14px -8px var(--color-primary);
+}
+
 .preview-terminal {
     background: #050906;
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { SegmentedField, ToggleField } from '../Editor/EditorFields';
-import { ACCENT_PRESETS, APPEARANCE_STYLES, STYLE_NAMES } from '../../../shared/appearance.js';
+import { ACCENT_PRESETS, MENU_STYLES, STYLE_NAMES } from '../../../shared/appearance.js';
 import '../Editor/EditorFields.css';
 import './ThemeMenu.css';
 
@@ -10,6 +10,7 @@ const STYLE_HINTS = {
     glass: 'Frosted tiles',
     liquid: 'Clear glass, round',
     material: 'Solid, Material 3',
+    neon: 'Dark, glowing color',
     terminal: 'Monospace, square',
 };
 
@@ -74,7 +75,7 @@ const ThemeMenu = ({ editable, onClose }) => {
             <fieldset className="theme-menu-styles" disabled={!editable}>
                 <legend className="editor-label">Style</legend>
                 <div className="theme-menu-style-grid">
-                    {APPEARANCE_STYLES.map(id => (
+                    {(MENU_STYLES.includes(style) ? MENU_STYLES : [...MENU_STYLES, style]).map(id => (
                         <label key={id} className={`theme-menu-style${style === id ? ' is-selected' : ''}`}>
                             <input
                                 type="radio"

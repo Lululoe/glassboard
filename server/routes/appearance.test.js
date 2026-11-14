@@ -58,10 +58,15 @@ describe('appearance API', () => {
     });
 
     it('refuses unknown styles, colors that are not #rrggbb and other settings', async () => {
-        expect((await put(server, { style: 'neon' })).status).toBe(400);
+        expect((await put(server, { style: 'disco' })).status).toBe(400);
         expect((await put(server, { accent: 'red' })).status).toBe(400);
         expect((await put(server, { theme: 'ocean' })).status).toBe(400);
         expect(readLayout().appearance).toBeUndefined();
+    });
+
+    it('accepts Neon', async () => {
+        expect((await put(server, { style: 'neon' })).status).toBe(200);
+        expect(readLayout().appearance).toEqual({ style: 'neon' });
     });
 
     it('keeps the appearance when the layout is saved in edit mode', async () => {

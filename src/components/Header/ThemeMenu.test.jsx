@@ -55,7 +55,7 @@ describe('Theme menu', () => {
     it('goes back to the saved style and says why when saving fails', async () => {
         fetch.mockResolvedValueOnce({ ok: false, status: 403, json: async () => ({ error: 'Editing is disabled' }) });
         openMenu({ appearance: { style: 'liquid' } });
-        fireEvent.click(screen.getByRole('radio', { name: /Terminal/ }));
+        fireEvent.click(screen.getByRole('radio', { name: /Neon/ }));
         expect(await screen.findByRole('alert')).toHaveTextContent('Editing is disabled');
         await waitFor(() => expect(document.documentElement.getAttribute('data-style')).toBe('liquid'));
     });
@@ -118,6 +118,17 @@ describe('Theme menu', () => {
         expect(document.documentElement.hasAttribute('data-effects')).toBe(false);
         expect(localStorage.getItem(SCREEN_EFFECTS_KEY)).toBe('off');
         expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it('offers Neon and holds Terminal back unless the dashboard uses it', () => {
+        openMenu({});
+        expect(screen.getByRole('radio', { name: /Neon/ })).toBeInTheDocument();
+        expect(screen.queryByRole('radio', { name: /Terminal/ })).toBeNull();
+    });
+
+    it('still shows Terminal while the dashboard is set to it', () => {
+        openMenu({ appearance: { style: 'terminal' } });
+        expect(screen.getByRole('radio', { name: /Terminal/ })).toBeChecked();
     });
 
     it('offers screen effects only with the Terminal style', () => {

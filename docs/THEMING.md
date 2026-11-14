@@ -15,7 +15,7 @@ the whole dashboard, for everyone using it. Pick it in the **Theme** menu (the p
 
 ```yaml
 appearance:
-  style: liquid      # glass (default) | liquid | material | terminal
+  style: liquid      # glass (default) | liquid | material | neon | terminal
 ```
 
 | Style | Look |
@@ -23,7 +23,11 @@ appearance:
 | `glass` | Frosted tiles with small rounded corners and a soft offset shadow. |
 | `liquid` | Liquid Glass: clear glass with a lit rim, large round corners, and no header bar: the header buttons float as round glass buttons over the page and grow out of the one nearest the edge as they appear. |
 | `material` | Material Design 3: solid neutral surfaces without blur, tonal elevation, round icon buttons, and the accent as tonal containers. Uses Roboto Flex or Roboto when installed, else the system font. |
+| `neon` | A near-black page with solid zinc cards, round buttons and Inter. Color shows where something is on: an on Home Assistant tile becomes a deep gradient of its color, the entity's `color` or else the accent, with lit text and a soft glow, and selected controls are a pale tint of the accent. Header buttons float over the page, and the name fades out when the page is scrolled. In light mode, cards are white and on tiles pastel. |
 | `terminal` | Monospace type, square corners, flat dark panels outlined in the accent, and card titles in `[ brackets ]`. Graphs are drawn with block characters (`▁▃▅█`) and the forecast with ASCII art; app icons turn monochrome. Without a page background of its own, the page is a dark screen. |
+
+The Theme menu offers Glass, Liquid Glass, Material and Neon. Terminal is held back from the menu for now: it can
+still be set in `config.yaml`, and the menu shows it while the dashboard uses it.
 
 A style chosen in the Theme menu is saved in `layout.yaml` and wins over `config.yaml`; picking the style of
 `config.yaml` again removes it from `layout.yaml`. When `editable: false` is set, the style can only be set in

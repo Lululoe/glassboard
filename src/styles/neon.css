@@ -1,0 +1,293 @@
+/*
+ * Neon: a near-black page with solid zinc cards, and color where something is on. An active
+ * Home Assistant tile becomes a deep gradient of its color (the entity's `color`, else the
+ * accent) with lit text, and colored parts glow softly. Round, faintly lit buttons; Inter.
+ *
+ * Theme colors are set inline on the root, so the tokens a theme also sets need !important.
+ */
+:root[data-style="neon"] {
+    --font-family: Inter, "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --radius-scale: 1.4;
+    --radius-card: 24px;
+    --blur-scale: 0;
+
+    --neon-page: #07090d;
+    --neon-card: #18181b;
+    --neon-raised: #222226;
+    --neon-edge: rgba(58, 62, 72, 0.7);
+    --neon-line: rgba(255, 255, 255, 0.1);
+    --neon-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
+    --text-primary: #fafafa !important;
+    --text-secondary: #9ca6b5 !important;
+    --text-tertiary: #6b7383;
+    --text-quaternary: #4b5160;
+    --color-separator: rgba(255, 255, 255, 0.08) !important;
+    --bg-card-surface: var(--neon-card);
+    --bg-card-glass: var(--neon-card) !important;
+    --bg-card-glass-header: var(--neon-card) !important;
+    --bg-toolbar: rgba(24, 24, 27, 0.97);
+    --bg-popup: rgba(24, 24, 27, 0.98) !important;
+    --border-popup: rgba(161, 161, 170, 0.24);
+    --bg-fill: rgba(255, 255, 255, 0.1);
+    --bg-fill-hover: rgba(255, 255, 255, 0.16);
+    --shadow-tile: inset 0 0 0 1px var(--neon-edge);
+    --shadow-popup: inset 0 0 0 1px rgba(161, 161, 170, 0.24), 0 24px 40px -24px rgba(0, 0, 0, 0.62), 0 10px 18px -14px rgba(0, 0, 0, 0.36);
+    --shadow-app: rgba(0, 0, 0, 0.4);
+    --scroll-shade: rgba(24, 24, 27, 0.95);
+    /* A dark room, faintly lit in the accent from the top left, unless the page sets its own */
+    --bg-page-gradient: radial-gradient(ellipse 80% 60% at 0% 0%, color-mix(in srgb, var(--color-primary) 16%, var(--neon-page)) 0%, var(--neon-page) 70%) !important;
+    --bg-page-base: var(--neon-page);
+
+    /* Selected controls (presets, segments, levels) are a pale tint of the accent with dark text */
+    --bg-tile: color-mix(in oklch, var(--color-primary) 28%, #fff) !important;
+}
+
+:root[data-style="neon"][data-theme="light"] {
+    --neon-page: #f1f2f5;
+    --neon-card: #ffffff;
+    --neon-raised: #f4f4f6;
+    --neon-edge: rgba(24, 28, 40, 0.1);
+    --neon-line: rgba(0, 0, 0, 0.1);
+    --neon-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+    --text-primary: #18181b !important;
+    --text-secondary: #545b68 !important;
+    --text-tertiary: #7d8492;
+    --text-quaternary: #a6abb5;
+    --color-separator: rgba(0, 0, 0, 0.08) !important;
+    --bg-toolbar: rgba(255, 255, 255, 0.97);
+    --bg-popup: rgba(255, 255, 255, 0.98) !important;
+    --border-popup: rgba(24, 28, 40, 0.12);
+    --bg-fill: rgba(0, 0, 0, 0.05);
+    --bg-fill-hover: rgba(0, 0, 0, 0.09);
+    --shadow-tile: inset 0 0 0 1px var(--neon-edge), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-popup: inset 0 0 0 1px rgba(24, 28, 40, 0.12), 0 24px 40px -24px rgba(0, 0, 0, 0.25), 0 10px 18px -14px rgba(0, 0, 0, 0.15);
+    --scroll-shade: rgba(255, 255, 255, 0.95);
+    --bg-page-gradient: radial-gradient(ellipse 80% 60% at 0% 0%, color-mix(in srgb, var(--color-primary) 14%, var(--neon-page)) 0%, var(--neon-page) 70%) !important;
+}
+
+/* Solid surfaces: nothing is frosted */
+:root[data-style="neon"] .glass-card,
+:root[data-style="neon"] .two-tone-header,
+:root[data-style="neon"] .two-tone-content,
+:root[data-style="neon"] .ha-tile,
+:root[data-style="neon"] .sidebar-rail,
+:root[data-style="neon"] dialog {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+:root[data-style="neon"] dialog.launcher-popup,
+:root[data-style="neon"] dialog.theme-menu {
+    border: 0;
+    border-radius: var(--radius-24);
+}
+
+/* A two-tone card is one surface: its title sits on the card, not on a band */
+:root[data-style="neon"] .two-tone-header {
+    box-shadow: none;
+}
+
+:root[data-style="neon"] .two-tone-title {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+/* Card icons sit in a ring of the accent, glowing faintly */
+:root[data-style="neon"] .two-tone-header .app-icon-container {
+    border-radius: var(--radius-round);
+    background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 40%, transparent), 0 12px 30px color-mix(in srgb, var(--color-primary) 14%, transparent);
+}
+
+/* ---------- Home Assistant tiles ---------- */
+
+/* An on tile is its color deepened to a diagonal gradient, with a lit edge and text. The color is
+   the entity's own (set on the tile), else the accent; it is worked out on the tile so each tile
+   gets its own. */
+:root[data-style="neon"] .ha-tile {
+    --neon-hue: var(--tile-color, var(--color-primary));
+    --neon-tile: linear-gradient(135deg, color-mix(in oklch, var(--neon-hue) 52%, #000) 0%, color-mix(in oklch, var(--neon-hue) 32%, #000) 100%);
+}
+
+:root[data-style="neon"][data-theme="light"] .ha-tile {
+    --neon-tile: linear-gradient(135deg, color-mix(in oklch, var(--neon-hue) 22%, #fff) 0%, color-mix(in oklch, var(--neon-hue) 10%, #fff) 100%);
+}
+
+:root[data-style="neon"] .ha-tile.on {
+    background: var(--neon-tile);
+    color: color-mix(in oklch, var(--neon-hue) 30%, #fff);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neon-hue) 32%, transparent), 0 18px 40px -28px var(--neon-hue);
+}
+
+:root[data-style="neon"] .ha-tile.on .ha-tile-name {
+    color: color-mix(in oklch, var(--neon-hue) 45%, #fff);
+}
+
+:root[data-style="neon"] .ha-tile.on .ha-tile-state {
+    color: color-mix(in oklch, var(--neon-hue) 25%, #fff);
+}
+
+/* The icon is a ring of its color, the same on the tile as on the card icons */
+:root[data-style="neon"] .ha-icon-circle {
+    width: 36px;
+    height: 36px;
+}
+
+:root[data-style="neon"] .ha-tile.on .ha-icon-circle {
+    background: color-mix(in srgb, var(--neon-hue) 22%, transparent) !important;
+    color: color-mix(in oklch, var(--neon-hue) 40%, #fff);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neon-hue) 50%, transparent), 0 12px 30px color-mix(in srgb, var(--neon-hue) 20%, transparent);
+}
+
+:root[data-style="neon"] .ha-tile.off .ha-icon-circle {
+    background: var(--bg-fill);
+    box-shadow: inset 0 0 0 1px var(--neon-line), var(--neon-highlight);
+}
+
+:root[data-style="neon"][data-theme="light"] .ha-tile.on {
+    color: color-mix(in oklch, var(--neon-hue) 55%, #000);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--neon-hue) 30%, transparent), 0 18px 40px -28px var(--neon-hue);
+}
+
+:root[data-style="neon"][data-theme="light"] .ha-tile.on .ha-tile-name {
+    color: color-mix(in oklch, var(--neon-hue) 60%, #000);
+}
+
+:root[data-style="neon"][data-theme="light"] .ha-tile.on .ha-tile-state {
+    color: color-mix(in oklch, var(--neon-hue) 45%, #222);
+}
+
+:root[data-style="neon"][data-theme="light"] .ha-tile.on .ha-icon-circle {
+    background: color-mix(in srgb, var(--neon-hue) 18%, #fff) !important;
+    color: color-mix(in oklch, var(--neon-hue) 65%, #000);
+}
+
+/* ---------- Buttons and controls ---------- */
+
+/* Round buttons, faintly lit along the top */
+:root[data-style="neon"] .icon-button,
+:root[data-style="neon"] .two-tone-header-action {
+    border-radius: var(--radius-round);
+}
+
+:root[data-style="neon"] .two-tone-header-action {
+    background: var(--bg-fill);
+    box-shadow: inset 0 0 0 1px var(--neon-line), var(--neon-highlight);
+}
+
+/* Selected segments are solid color and glow, like a switched-on button */
+:root[data-style="neon"] .editor-segmented button[aria-checked="true"],
+:root[data-style="neon"] .graph-seg button[aria-pressed="true"] {
+    background: var(--color-primary);
+    color: var(--on-accent);
+    box-shadow: 0 10px 24px -14px var(--color-primary);
+}
+
+:root[data-style="neon"] .editor-toggle input:checked + .editor-switch {
+    box-shadow: 0 6px 18px -8px var(--color-primary);
+}
+
+:root[data-style="neon"] .header-done-button {
+    box-shadow: 0 10px 24px -14px var(--color-primary);
+}
+
+:root[data-style="neon"] .page-indicators {
+    background: var(--bg-toolbar);
+    box-shadow: inset 0 0 0 1px var(--border-popup), 0 24px 40px -24px rgba(0, 0, 0, 0.62);
+}
+
+:root[data-style="neon"] .sidebar-rail {
+    border: 0;
+    background: var(--bg-toolbar);
+    box-shadow: inset 0 0 0 1px var(--border-popup), 0 24px 40px -24px rgba(0, 0, 0, 0.62);
+}
+
+/* ---------- Header ---------- */
+
+/* No bar: the name sits on the page, and the page scrolls up beneath it to the top edge; the name
+   fades out once the page is scrolled, and the buttons stay */
+:root[data-style="neon"] .app-header {
+    height: calc(60px + env(safe-area-inset-top));
+    padding-right: calc(14px + env(safe-area-inset-right));
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+:root[data-style="neon"] .App:not(.has-hidden-header-bar) > .app-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+
+:root[data-style="neon"] .App:not(.has-hidden-header-bar) .scroll-content,
+:root[data-style="neon"] .App:not(.has-hidden-header-bar) .iframe-view-container {
+    padding-top: calc(60px + env(safe-area-inset-top));
+}
+
+:root[data-style="neon"] .header-left {
+    transition: opacity 0.2s var(--ease-standard);
+}
+
+:root[data-style="neon"] .app-header.is-scrolled:not(.is-editing) .header-left,
+:root[data-style="neon"] .app-header.is-auto-hide:not(.is-editing) .header-left {
+    opacity: 0;
+    pointer-events: none;
+}
+
+:root[data-style="neon"] .header-right {
+    gap: 8px;
+}
+
+/* Header buttons float over the cards as dark, lit rounds */
+:root[data-style="neon"] .header-right > .icon-button {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-toolbar);
+    box-shadow: inset 0 0 0 1px var(--border-popup), var(--neon-highlight), 0 14px 32px -20px rgba(0, 0, 0, 0.7);
+}
+
+@media (pointer: fine) {
+    :root[data-style="neon"] .header-right > .icon-button:hover {
+        background: color-mix(in srgb, var(--bg-toolbar), var(--text-primary) 8%);
+    }
+}
+
+:root[data-style="neon"] .header-right > .icon-button.active {
+    background: color-mix(in srgb, var(--bg-toolbar), var(--text-primary) 14%);
+}
+
+:root[data-style="neon"] .header-right > .header-text-button,
+:root[data-style="neon"] .header-right > .header-done-button {
+    height: 40px;
+    padding: 0 16px;
+}
+
+:root[data-style="neon"] .header-right > .header-text-button {
+    margin-right: 0;
+    background: var(--bg-toolbar);
+    box-shadow: inset 0 0 0 1px var(--border-popup);
+}
+
+/* ---------- Accessibility ---------- */
+
+/* Increase Contrast: visible card edges and plain text on tiles */
+@media (prefers-contrast: more) {
+    :root[data-style="neon"] {
+        --neon-edge: rgba(255, 255, 255, 0.45);
+        --neon-line: rgba(255, 255, 255, 0.4);
+    }
+
+    :root[data-style="neon"][data-theme="light"] {
+        --neon-edge: rgba(0, 0, 0, 0.4);
+        --neon-line: rgba(0, 0, 0, 0.35);
+    }
+
+    :root[data-style="neon"] .ha-tile.on .ha-tile-name,
+    :root[data-style="neon"] .ha-tile.on .ha-tile-state {
+        color: var(--text-primary);
+    }
+}

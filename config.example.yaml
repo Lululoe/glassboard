@@ -5,7 +5,7 @@
 theme: "default"
 themes: []
 
-# Style of the whole dashboard (glass, liquid, material or terminal) and its accent color.
+# Style of the whole dashboard (glass, liquid, material, neon or terminal) and its accent color.
 # Both can also be picked in the Theme menu of the header bar. See docs/THEMING.md.
 # appearance:
 #   style: glass

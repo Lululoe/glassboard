@@ -4,14 +4,21 @@
  * refraction are chosen per browser and are not part of it.
  */
 
-/** Styles a dashboard can use, in the order the Theme menu lists them. */
-export const APPEARANCE_STYLES = ['glass', 'liquid', 'material', 'terminal'];
+/** Styles a dashboard can use. */
+export const APPEARANCE_STYLES = ['glass', 'liquid', 'material', 'neon', 'terminal'];
+
+/**
+ * Styles the Theme menu offers, in its order. Terminal is held back for now: a dashboard set to it
+ * in config.yaml still uses it, and the menu shows it only while it is chosen.
+ */
+export const MENU_STYLES = ['glass', 'liquid', 'material', 'neon'];
 
 /** Names of the styles, as the Theme menu shows them. */
 export const STYLE_NAMES = {
     glass: 'Glass',
     liquid: 'Liquid Glass',
     material: 'Material',
+    neon: 'Neon',
     terminal: 'Terminal',
 };
 
