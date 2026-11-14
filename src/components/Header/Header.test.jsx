@@ -80,3 +80,20 @@ describe('Header auto-hide', () => {
         expect(bar()).not.toHaveClass('is-hidden');
     });
 });
+
+describe('Header scrolling', () => {
+    it('marks the bar while the page shown is scrolled down, and reads it again on another page', () => {
+        const page = document.createElement('div');
+        page.className = 'scroll-content page-active';
+        document.body.appendChild(page);
+        const { rerender } = render(<Header config={{}} page={0} />);
+        expect(bar()).not.toHaveClass('is-scrolled');
+        page.scrollTop = 120;
+        fireEvent.scroll(page);
+        expect(bar()).toHaveClass('is-scrolled');
+        page.scrollTop = 0;
+        rerender(<Header config={{}} page={1} />);
+        expect(bar()).not.toHaveClass('is-scrolled');
+        page.remove();
+    });
+});

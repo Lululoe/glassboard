@@ -89,6 +89,26 @@
     gap: 8px;
 }
 
+/* The header lies over the page, which scrolls up beneath it to the top edge instead of being
+   cut off under a band; the page starts below the header */
+:root[data-style="liquid"] .App:not(.has-hidden-header-bar) > .app-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+
+:root[data-style="liquid"] .App:not(.has-hidden-header-bar) .scroll-content,
+:root[data-style="liquid"] .App:not(.has-hidden-header-bar) .iframe-view-container {
+    padding-top: calc(60px + env(safe-area-inset-top));
+}
+
+/* Once the page is scrolled, the name fades out so cards pass under the buttons alone */
+:root[data-style="liquid"] .app-header.is-scrolled:not(.is-editing) .header-left {
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* An auto-hiding header lies over the page, where the name would run into the cards; only the
    buttons float in */
 :root[data-style="liquid"] .app-header.is-auto-hide:not(.is-editing) .header-left {

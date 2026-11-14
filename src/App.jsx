@@ -140,6 +140,7 @@ function Dashboard({ config }) {
                 <Header
                     config={liveConfig}
                     autoHide={headerBarHidden}
+                    page={pageIndex}
                     edit={{
                         available: editable,
                         active: layout.editing,

@@ -41,9 +41,10 @@ const inRevealCorner = (x, y) => x <= REVEAL_CORNER.width && y <= REVEAL_CORNER.
  * @param {() => void} [props.edit.onToggleSidebar] - Shows or hides the sidebar.
  * @param {boolean} [props.autoHide] - Hides the bar until it is pointed at, tapped at the top of the
  *   screen or reached with the keyboard. It stays while it is used and while its menu is open.
+ * @param {number} [props.page] - The page shown; when it changes, whether it is scrolled is read again.
  * @returns {JSX.Element} The rendered header.
  */
-const Header = ({ config, edit, autoHide = false }) => {
+const Header = ({ config, edit, autoHide = false, page }) => {
     const [isLauncherOpen, setIsLauncherOpen] = useState(false);
     const [isThemeOpen, setIsThemeOpen] = useState(false);
     const { hidden, reveal, hideSoon } = useAutoHide(autoHide, isLauncherOpen || isThemeOpen);
@@ -66,6 +67,15 @@ const Header = ({ config, edit, autoHide = false }) => {
         window.addEventListener('pointermove', onMove);
         return () => window.removeEventListener('pointermove', onMove);
     }, [autoHide, reveal, hideSoon]);
+
+    // Whether the page is scrolled down, so a style can fade the name out over the cards
+    const [scrolled, setScrolled] = useState(false);
+    useEffect(() => {
+        const update = () => setScrolled((document.querySelector('.scroll-content.page-active')?.scrollTop ?? 0) > 4);
+        update();
+        document.addEventListener('scroll', update, { capture: true, passive: true });
+        return () => document.removeEventListener('scroll', update, { capture: true });
+    }, [page]);
 
     const autoHideHandlers = autoHide ? {
         onPointerEnter: (e) => { if (e.pointerType === 'mouse') reveal(); },
@@ -95,7 +105,7 @@ const Header = ({ config, edit, autoHide = false }) => {
                 </div>
             )}
             <header
-                className={`app-header${edit?.active ? ' is-editing' : ''}${autoHide ? ' is-auto-hide' : ''}${hidden ? ' is-hidden' : ''}`}
+                className={`app-header${edit?.active ? ' is-editing' : ''}${autoHide ? ' is-auto-hide' : ''}${hidden ? ' is-hidden' : ''}${scrolled ? ' is-scrolled' : ''}`}
                 {...autoHideHandlers}
             >
                 <div className="header-left">
