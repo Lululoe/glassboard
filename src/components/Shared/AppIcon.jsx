@@ -1,5 +1,6 @@
 import React from 'react';
 import Icon from './Icon';
+import { iconGlow } from './iconGlow';
 import './AppIcon.css';
 
 /**
@@ -19,7 +20,7 @@ const AppIcon = ({ icon, background, color, className = '', size = "100%" }) => 
     return (
         <div
             className={`app-icon-container${background === 'transparent' ? ' is-bare' : ''} ${className}`}
-            style={{ background: background || 'var(--icon-background)' }}
+            style={{ background: background || 'var(--icon-background)', '--icon-glow': iconGlow(background) ?? undefined }}
         >
             <Icon icon={icon} size={size} className="app-icon" color={color} />
         </div>

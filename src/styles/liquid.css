@@ -225,6 +225,15 @@
     }
 }
 
+/* On narrow screens Reset is a round button with only its icon, like the others */
+@media (max-width: 640px) {
+    :root[data-style="liquid"] .header-right > .header-reset-button {
+        width: 40px;
+        padding: 0;
+        border-radius: var(--radius-round);
+    }
+}
+
 /* Done keeps its accent fill, lit like the rest of the glass */
 :root[data-style="liquid"] .header-right > .header-done-button {
     background: var(--color-primary);
