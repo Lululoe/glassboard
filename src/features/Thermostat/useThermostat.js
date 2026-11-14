@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { callService } from '../../lib/api';
-import { usePolling } from '../../hooks/usePolling';
+import { BACKGROUND_FAST, usePolling } from '../../hooks/usePolling';
 
 const CONFIRM_DELAY = 500;
 
@@ -211,7 +211,7 @@ export function useThermostat(config, interval = 3000) {
     const id = config.entity_id;
     const { data, loading, error, updatedAt, refresh } = usePolling(
         () => callService('homeassistant', { endpoint: 'states', entity_ids: [id] }),
-        { interval, enabled: Boolean(id), key: id || '' },
+        { interval, backgroundInterval: BACKGROUND_FAST, enabled: Boolean(id), key: id || '' },
     );
     return { ...useClimateControl(config, data?.[id], updatedAt, refresh), loading, error };
 }

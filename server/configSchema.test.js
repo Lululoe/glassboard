@@ -33,6 +33,17 @@ describe('validateConfig', () => {
         expect(problems).toContain('pages[1].cards[0].id: Duplicate card id "x"');
     });
 
+    it('checks ids inside container cards and accepts row spans', () => {
+        const problems = validateConfig({
+            cards: [
+                { id: 'x', type: 'git' },
+                { id: 'box', type: 'container', rowSpan: 2, cards: [{ id: 'x', type: 'weather' }] },
+            ],
+        });
+        expect(problems).toEqual(['cards[1].cards[0].id: Duplicate card id "x"']);
+        expect(validateConfig({ cards: [{ id: 'box', type: 'container', rowSpan: 4 }] }).some(p => p.startsWith('cards[0].rowSpan:'))).toBe(true);
+    });
+
     it('accepts page headers and reports invalid header options', () => {
         expect(validateConfig({
             pageHeader: { align: 'center', layout: 'stacked', title: { type: 'clock', format: 'HH:mm', color: '#fff' }, subtitle: false },

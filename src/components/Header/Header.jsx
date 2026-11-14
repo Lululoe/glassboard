@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAutoHide } from '../../hooks/useAutoHide';
 import './Header.css';
-import { LayoutTemplate, Sun, Moon, LayoutGrid, Pencil, SquarePen, Plus, Wallpaper, FilePen, RotateCcw } from 'lucide-react';
+import { LayoutTemplate, Sun, Moon, LayoutGrid, Pencil, SquarePen, Plus, Wallpaper, FilePen, RotateCcw, PanelLeft } from 'lucide-react';
 import LauncherPopup from './LauncherPopup';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -25,6 +25,8 @@ import { useTheme } from '../../context/ThemeContext';
  * @param {() => void} [props.edit.onEditMenu] - Opens the editor of the header menu.
  * @param {() => void} [props.edit.onEditBackground] - Opens the editor of the page background.
  * @param {() => void} [props.edit.onEditPage] - Opens the settings of the page being shown.
+ * @param {boolean} [props.edit.sidebar] - Whether the sidebar shows.
+ * @param {() => void} [props.edit.onToggleSidebar] - Shows or hides the sidebar.
  * @param {boolean} [props.autoHide] - Hides the bar until it is pointed at, tapped at the top of the
  *   screen or reached with the keyboard. It stays while it is used and while its menu is open.
  * @returns {JSX.Element} The rendered header.
@@ -123,6 +125,19 @@ const Header = ({ config, edit, autoHide = false }) => {
                             >
                                 <LayoutGrid size={20} aria-hidden="true" />
                                 <span className="header-menu-edit-badge"><Pencil size={10} strokeWidth={3} aria-hidden="true" /></span>
+                            </button>
+                        )}
+                        {edit.onToggleSidebar && (
+                            <button
+                                type="button"
+                                className={`button-reset icon-button header-sidebar-toggle${edit.sidebar ? ' is-on' : ''}`}
+                                onClick={edit.onToggleSidebar}
+                                disabled={edit.saving}
+                                title={edit.sidebar ? 'Hide sidebar' : 'Show sidebar'}
+                                aria-label="Sidebar"
+                                aria-pressed={!!edit.sidebar}
+                            >
+                                <PanelLeft size={20} aria-hidden="true" />
                             </button>
                         )}
                         <button

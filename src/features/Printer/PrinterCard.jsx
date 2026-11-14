@@ -1,3 +1,5 @@
+import { useCardNotice } from '../../context/notices';
+import { printerNotices } from '../cardNotices';
 import { useEffect, useRef, useState } from 'react';
 import { Lightbulb, Pause, Play, Square } from 'lucide-react';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
@@ -206,6 +208,7 @@ const HalfContent = ({ printer }) => {
 const PrinterCard = ({ config }) => {
     const half = config.tileSize === 'half';
     const { printer, loading, error, run } = usePrinter(config.id, Boolean(config.printer));
+    useCardNotice(printerNotices(printer));
 
     let body;
     if (!config.printer) body = <EmptyState message="Choose a printer in the card settings." />;

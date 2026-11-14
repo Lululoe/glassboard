@@ -1,5 +1,5 @@
 import { callService } from '../../lib/api';
-import { usePolling } from '../../hooks/usePolling';
+import { BACKGROUND_FAST, usePolling } from '../../hooks/usePolling';
 
 /**
  * Derives a simplified state from a Transmission torrent.
@@ -48,7 +48,7 @@ export const useTransmission = (interval = 5000) => {
                 count: json.totalCount ?? torrents.length,
             },
         };
-    }, { interval });
+    }, { interval, backgroundInterval: BACKGROUND_FAST });
 
     return {
         torrents: data?.torrents || [],

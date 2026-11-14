@@ -1,3 +1,5 @@
+import { useCardNotice } from '../../context/notices';
+import { gitNotices } from '../cardNotices';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
 import StatusPill from '../../components/Shared/StatusPill';
 import { formatFullTime, formatRelativeTime } from '../../lib/format';
@@ -96,6 +98,7 @@ const PrItem = ({ pr }) => {
  */
 const GitCard = ({ config }) => {
     const { prs, stats, loading, error } = useGit(config?.id);
+    useCardNotice(gitNotices(prs));
 
     if (config?.hideEmpty && !loading && prs.length === 0) {
         return null;

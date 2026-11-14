@@ -1,0 +1,14 @@
+.container-editor-icon {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    background: var(--bg-fill-hover, var(--bg-fill));
+    color: var(--text-secondary);
+}
+
+.editor-item-detail.container-editor-detail {
+    font-family: inherit;
+}

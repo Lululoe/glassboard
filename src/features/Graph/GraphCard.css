@@ -401,6 +401,8 @@
 
 /* ===== This week against last week ===== */
 .graph-week {
+    /* Height of the row of day letters under the columns, with the gap above it */
+    --week-axis: 34px;
     flex: 1;
     min-height: 0;
     display: flex;
@@ -446,7 +448,7 @@
 .graph-week-split {
     width: 1px;
     background: var(--color-separator);
-    margin: 0 4px 34px -4px;
+    margin: 0 4px var(--week-axis) -4px;
     flex-shrink: 0;
 }
 
@@ -532,6 +534,62 @@
     right: 0;
     border-top: 1px dashed var(--text-tertiary);
     pointer-events: none;
+}
+
+/* Narrow cards: the caption stays on one line and the day letters get smaller, so the columns
+   keep most of the height and all fourteen days fit side by side */
+.graph-card.compact .graph-week {
+    --week-axis: 24px;
+}
+
+.graph-card.compact .graph-hero {
+    flex-wrap: nowrap;
+}
+
+.graph-card.compact .graph-hero-value {
+    font-size: var(--fs-28);
+    line-height: 2rem;
+    white-space: nowrap;
+}
+
+.graph-card.compact .graph-week .graph-caption {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.graph-card.compact .graph-week-bars {
+    gap: 3px;
+    margin-top: 6px;
+}
+
+.graph-card.compact .graph-week-col {
+    gap: 4px;
+}
+
+.graph-card.compact .graph-week-split {
+    margin: 0 2px var(--week-axis) -2px;
+}
+
+.graph-card.compact .graph-week-stack {
+    width: min(20px, 90%);
+}
+
+.graph-card.compact .graph-week-day {
+    position: relative;
+    z-index: 1;
+    height: 20px;
+    min-width: 0;
+    width: 100%;
+    font-size: var(--fs-11);
+    border-radius: 10px;
+}
+
+/* The selected day keeps a round mark, a little wider than its column */
+.graph-card.compact .graph-week-col[aria-pressed="true"] .graph-week-day {
+    width: 20px;
+    margin: 0 -6px;
 }
 
 /* Breakdown of the selected day (stacked, two wide and wider) */

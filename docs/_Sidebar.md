@@ -4,6 +4,7 @@
 ### Setup & Configuration
 - [Card Configuration](CARD_CONFIGURATION)
 - [Header Configuration](HEADER_CONFIGURATION)
+- [Sidebar](SIDEBAR)
 - [Theming Guide](THEMING)
 
 ### Developer Documentation

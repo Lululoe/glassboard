@@ -224,3 +224,11 @@ describe('header bar auto-hide', () => {
     });
 });
 
+
+describe('sidebar', () => {
+    it('replaces the one of config.yaml', () => {
+        const sidebar = { enabled: true, items: [{ page: 'a', icon: 'lu-House' }] };
+        expect(applyLayout({ sidebar: { enabled: false } }, { pages: {}, sidebar }).sidebar).toEqual(sidebar);
+        expect(applyLayout({ sidebar: { enabled: false } }, { pages: {} }).sidebar).toEqual({ enabled: false });
+    });
+});
