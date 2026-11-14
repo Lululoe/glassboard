@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { SegmentedField, ToggleField } from '../Editor/EditorFields';
-import { APPEARANCE_STYLES, STYLE_NAMES } from '../../../shared/appearance.js';
+import { ACCENT_PRESETS, APPEARANCE_STYLES, STYLE_NAMES } from '../../../shared/appearance.js';
 import '../Editor/EditorFields.css';
 import './ThemeMenu.css';
 
@@ -21,7 +21,7 @@ const MODE_OPTIONS = [
 
 /**
  * Popover of the header's Theme button: light or dark and liquid glass refraction for this
- * browser, and the dashboard's style for everyone using it.
+ * browser, and the dashboard's style and accent color for everyone using it.
  * @param {Object} props
  * @param {boolean} props.editable - Whether the dashboard's style can be changed here.
  * @param {() => void} props.onClose - Closes the menu.
@@ -29,7 +29,8 @@ const MODE_OPTIONS = [
  */
 const ThemeMenu = ({ editable, onClose }) => {
     const dialogRef = useRef(null);
-    const { modeSetting, setMode, style, setAppearance, refraction } = useTheme();
+    const { modeSetting, setMode, style, accent, setAppearance, refraction } = useTheme();
+    const custom = accent && !ACCENT_PRESETS.some(p => p.color === accent);
     const [error, setError] = useState(null);
 
     useEffect(() => {
@@ -44,9 +45,18 @@ const ThemeMenu = ({ editable, onClose }) => {
      * @param {{style?: string, accent?: string|null}} change - The change.
      */
     const save = (change) => {
+        clearTimeout(pickTimer.current);
         setError(null);
         setAppearance(change).catch(err => setError(err.message));
     };
+
+    // The color picker reports every color passed while dragging; only the one it stops at is saved
+    const pickTimer = useRef(0);
+    const pickColor = (color) => {
+        clearTimeout(pickTimer.current);
+        pickTimer.current = setTimeout(() => save({ accent: color }), 400);
+    };
+    useEffect(() => () => clearTimeout(pickTimer.current), []);
 
     // A click on the backdrop, outside the menu, closes it. Clicks on the menu's own controls
     // target those controls, so only clicks on the dialog element itself are checked.
@@ -82,7 +92,35 @@ const ThemeMenu = ({ editable, onClose }) => {
                         </label>
                     ))}
                 </div>
-                <div className="editor-hint">{editable ? 'For everyone using this dashboard.' : 'Set in config.yaml.'}</div>
+            </fieldset>
+
+            <fieldset className="theme-menu-accents" disabled={!editable}>
+                <legend className="editor-label">Accent</legend>
+                <div className="theme-menu-swatches">
+                    <label className="theme-menu-swatch is-theme" title="Theme color">
+                        <input type="radio" name="glassboard-accent" checked={!accent} onChange={() => save({ accent: null })} aria-label="Theme color" />
+                    </label>
+                    {ACCENT_PRESETS.map(preset => (
+                        <label key={preset.color} className="theme-menu-swatch" style={{ '--swatch': preset.color }} title={preset.name}>
+                            <input
+                                type="radio"
+                                name="glassboard-accent"
+                                checked={accent === preset.color}
+                                onChange={() => save({ accent: preset.color })}
+                                aria-label={preset.name}
+                            />
+                        </label>
+                    ))}
+                    <label className={`theme-menu-swatch is-custom${custom ? ' is-checked' : ''}`} style={custom ? { '--swatch': accent } : undefined} title="Other color">
+                        <input
+                            type="color"
+                            value={accent || '#0a84ff'}
+                            onChange={(e) => pickColor(e.target.value)}
+                            aria-label="Other color"
+                        />
+                    </label>
+                </div>
+                <div className="editor-hint">{editable ? 'Style and accent are for everyone using this dashboard.' : 'Set in config.yaml.'}</div>
             </fieldset>
 
             {style === 'liquid' && (

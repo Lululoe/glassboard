@@ -27,6 +27,17 @@ A style chosen in the Theme menu is saved in `layout.yaml` and wins over `config
 `config.yaml` again removes it from `layout.yaml`. When `editable: false` is set, the style can only be set in
 `config.yaml`. `themeToggle: false` hides the Theme button.
 
+### Accent color
+The accent colors buttons, highlights, switches, selections and graphs. Pick a preset or any other color in the Theme
+menu, or set it in `config.yaml`; without one, the theme's `--color-primary` is used. Like the style, it applies to the
+whole dashboard. Page backgrounds and card surfaces are not tinted, and status colors (up, warning, down) stay red,
+orange and green.
+
+```yaml
+appearance:
+  accent: "#ff375f"
+```
+
 ### Light and dark
 The Theme menu's **Appearance** picks Automatic (follow the system), Light or Dark. This is kept per browser.
 

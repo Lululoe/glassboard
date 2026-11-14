@@ -59,6 +59,30 @@ describe('Theme menu', () => {
         await waitFor(() => expect(document.documentElement.getAttribute('data-style')).toBe('liquid'));
     });
 
+    it('sets the accent color for everyone, or goes back to the theme color', () => {
+        openMenu({});
+        fireEvent.click(screen.getByRole('radio', { name: 'Pink' }));
+        expect(document.documentElement.style.getPropertyValue('--color-primary')).toBe('#ff375f');
+        expect(fetch).toHaveBeenLastCalledWith('/api/config/appearance', expect.objectContaining({ body: JSON.stringify({ accent: '#ff375f' }) }));
+
+        fireEvent.click(screen.getByRole('radio', { name: 'Theme color' }));
+        expect(document.documentElement.style.getPropertyValue('--color-primary')).toBe('');
+        expect(fetch).toHaveBeenLastCalledWith('/api/config/appearance', expect.objectContaining({ body: JSON.stringify({ accent: null }) }));
+    });
+
+    it('saves a picked color once the picker stops on it', () => {
+        vi.useFakeTimers();
+        openMenu({});
+        const picker = screen.getByLabelText('Other color');
+        fireEvent.change(picker, { target: { value: '#123456' } });
+        fireEvent.change(picker, { target: { value: '#654321' } });
+        expect(fetch).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(500);
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetch).toHaveBeenCalledWith('/api/config/appearance', expect.objectContaining({ body: JSON.stringify({ accent: '#654321' }) }));
+        vi.useRealTimers();
+    });
+
     it('cannot change the style when editing is off', () => {
         openMenu({ editable: false });
         expect(screen.getByRole('radio', { name: /Liquid Glass/ })).toBeDisabled();
