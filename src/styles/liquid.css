@@ -43,7 +43,7 @@
 :root[data-style="liquid"] .glass-card,
 :root[data-style="liquid"] .ha-tile.off,
 :root[data-style="liquid"] .sidebar-rail,
-:root[data-style="liquid"] .app-header {
+:root[data-style="liquid"] .header-right > button {
     -webkit-backdrop-filter: var(--liquid-blur);
     backdrop-filter: var(--refraction, var(--liquid-blur));
 }
@@ -72,19 +72,67 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
 
-/* The header bar floats as a capsule under the top edge */
+/* No header bar: the name sits on the page, and each control is its own floating glass button */
 :root[data-style="liquid"] .app-header {
-    margin: calc(8px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) 0 calc(12px + env(safe-area-inset-left));
-    padding: 0 10px 0 18px;
-    height: 48px;
-    top: calc(8px + env(safe-area-inset-top));
+    height: calc(60px + env(safe-area-inset-top));
+    padding-right: calc(14px + env(safe-area-inset-right));
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+}
+
+:root[data-style="liquid"] .header-right {
+    gap: 8px;
+}
+
+/* An auto-hiding header lies over the page, where the name would run into the cards; only the
+   buttons float in */
+:root[data-style="liquid"] .app-header.is-auto-hide:not(.is-editing) .header-left {
+    visibility: hidden;
+}
+
+:root[data-style="liquid"] .header-right > button {
+    background: var(--bg-toolbar);
+    box-shadow: var(--shadow-tile);
+}
+
+:root[data-style="liquid"] .header-right > .icon-button {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-round);
+}
+
+:root[data-style="liquid"] .header-right > .header-text-button {
+    height: 40px;
+    padding: 0 16px;
     border-radius: var(--radius-pill);
-    box-shadow: var(--shadow-popup);
+}
+
+/* Done keeps its accent fill, lit like the rest of the glass */
+:root[data-style="liquid"] .header-right > .header-done-button {
+    background: var(--color-primary);
+    box-shadow: var(--liquid-rim), 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+@media (pointer: fine) {
+    :root[data-style="liquid"] .header-right > .icon-button:hover {
+        background: color-mix(in srgb, var(--bg-toolbar), var(--text-primary) 8%);
+    }
+}
+
+:root[data-style="liquid"] .header-right > .icon-button:active,
+:root[data-style="liquid"] .header-right > .icon-button.active {
+    background: color-mix(in srgb, var(--bg-toolbar), var(--text-primary) 14%);
+}
+
+:root[data-style="liquid"] .header-right > .icon-button:focus-visible {
+    box-shadow: var(--shadow-tile), var(--focus-ring);
 }
 
 :root[data-style="liquid"] dialog.launcher-popup,
 :root[data-style="liquid"] dialog.theme-menu {
-    top: calc(64px + env(safe-area-inset-top));
+    top: calc(66px + env(safe-area-inset-top));
     border: 0;
     border-radius: var(--radius-24);
     /* Menus hold small text over anything, so they are frosted more and not bent */
@@ -131,6 +179,7 @@
     :root[data-style="liquid"] .ha-tile.off,
     :root[data-style="liquid"] .sidebar-rail,
     :root[data-style="liquid"] .app-header,
+    :root[data-style="liquid"] .header-right > button,
     :root[data-style="liquid"] dialog.launcher-popup,
     :root[data-style="liquid"] dialog.theme-menu {
         -webkit-backdrop-filter: none !important;

@@ -3,7 +3,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { startRefraction } from '../../styles/refraction.js';
 
 /** Glass surfaces whose rim bends the backdrop in the Liquid Glass style. */
-export const REFRACTED_SURFACES = '.glass-card, .ha-tile.off, .app-header, .sidebar-rail';
+export const REFRACTED_SURFACES = '.glass-card, .ha-tile.off, .header-right > button, .sidebar-rail';
 
 /**
  * Bends the backdrop at the rim of glass surfaces while the Liquid Glass style is shown with
