@@ -113,6 +113,11 @@
     border-radius: var(--radius-pill);
 }
 
+/* Every glass button sits the same distance apart; Reset is set apart by its red label */
+:root[data-style="liquid"] .header-right > .header-text-button {
+    margin-right: 0;
+}
+
 /* Arriving: the name fades in, and the buttons well up out of the right edge like drops of
    glass, the one nearest the edge first, overshooting a little before they settle */
 :root[data-style="liquid"] .app-header,
