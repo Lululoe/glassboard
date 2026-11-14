@@ -126,18 +126,22 @@
 
 :root[data-style="liquid"] .header-right > * {
     --liquid-delay: 0ms;
-    animation: liquid-morph-in 0.6s cubic-bezier(0.3, 1.4, 0.5, 1) var(--liquid-delay) backwards;
+    animation: liquid-morph-in 0.7s var(--ease-standard) var(--liquid-delay) backwards;
     transition:
         transform 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) var(--liquid-delay),
         opacity 0.25s var(--ease-standard) var(--liquid-delay),
         background var(--duration-standard) var(--ease-standard);
 }
 
-:root[data-style="liquid"] .header-right > :nth-last-child(2) { --liquid-delay: 40ms; }
-:root[data-style="liquid"] .header-right > :nth-last-child(3) { --liquid-delay: 80ms; }
-:root[data-style="liquid"] .header-right > :nth-last-child(4) { --liquid-delay: 120ms; }
-:root[data-style="liquid"] .header-right > :nth-last-child(5) { --liquid-delay: 160ms; }
-:root[data-style="liquid"] .header-right > :nth-last-child(n+6) { --liquid-delay: 200ms; }
+/* Each button starts at the edge, so the ones further in travel further, as if they split off
+   one drop */
+:root[data-style="liquid"] .header-right > * { --liquid-from: 56px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(2) { --liquid-delay: 50ms; --liquid-from: 104px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(3) { --liquid-delay: 100ms; --liquid-from: 152px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(4) { --liquid-delay: 150ms; --liquid-from: 200px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(5) { --liquid-delay: 200ms; --liquid-from: 248px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(6) { --liquid-delay: 250ms; --liquid-from: 296px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(n+7) { --liquid-delay: 300ms; --liquid-from: 344px; }
 
 /* Hidden: the buttons have drawn back into the edge, and the header lets clicks through */
 :root[data-style="liquid"] .app-header.is-auto-hide.is-hidden {
@@ -151,7 +155,7 @@
 
 :root[data-style="liquid"] .app-header.is-hidden .header-right > * {
     opacity: 0;
-    transform: translateX(56px) scale(0.35, 0.5);
+    transform: translateX(var(--liquid-from)) scale(0.35, 0.5);
     transition-delay: 0ms;
     /* Taking the animation away lets it play again each time the header is revealed */
     animation: none;
@@ -162,9 +166,10 @@
 }
 
 @keyframes liquid-morph-in {
-    0% { opacity: 0; transform: translateX(56px) scale(0.35, 0.5); }
-    35% { opacity: 1; }
-    65% { transform: translateX(-3px) scale(1.06, 0.95); }
+    0% { opacity: 0; transform: translateX(var(--liquid-from)) scale(0.35, 0.5); }
+    25% { opacity: 1; }
+    45% { transform: translateX(calc(var(--liquid-from) * 0.4)) scale(1.25, 0.8); }
+    75% { transform: translateX(-3px) scale(0.96, 1.04); }
     100% { opacity: 1; transform: none; }
 }
 

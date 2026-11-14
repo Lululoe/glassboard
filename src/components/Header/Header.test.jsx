@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { headerBarHides } from '../../../shared/pageHeader';
-import Header from './Header';
+import Header, { REVEAL_CORNER } from './Header';
 
 const bar = () => document.querySelector('.app-header');
 
@@ -35,6 +35,27 @@ describe('Header auto-hide', () => {
         expect(bar()).not.toHaveClass('is-hidden');
         fireEvent.pointerLeave(bar(), { pointerType: 'mouse' });
         expect(bar()).not.toHaveClass('is-hidden');
+        act(() => vi.advanceTimersByTime(1000));
+        expect(bar()).toHaveClass('is-hidden');
+    });
+
+    it('shows while the mouse is in the top-left corner, and hides again after it leaves', () => {
+        const move = (x, y, target = document.body) => {
+            const e = new MouseEvent('pointermove', { clientX: x, clientY: y, bubbles: true });
+            Object.defineProperty(e, 'pointerType', { value: 'mouse' });
+            act(() => { target.dispatchEvent(e); });
+        };
+        render(<Header config={{}} autoHide />);
+        move(600, 300);
+        expect(bar()).toHaveClass('is-hidden');
+        move(REVEAL_CORNER.width - 10, REVEAL_CORNER.height - 10);
+        expect(bar()).not.toHaveClass('is-hidden');
+        // Moving from the corner onto the bar keeps it
+        move(REVEAL_CORNER.width + 50, 20, bar());
+        act(() => vi.advanceTimersByTime(1000));
+        expect(bar()).not.toHaveClass('is-hidden');
+        move(100, 30);
+        move(100, REVEAL_CORNER.height + 100);
         act(() => vi.advanceTimersByTime(1000));
         expect(bar()).toHaveClass('is-hidden');
     });

@@ -1,9 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAutoHide } from '../../hooks/useAutoHide';
 import './Header.css';
 import { LayoutTemplate, Palette, LayoutGrid, Pencil, SquarePen, Plus, Wallpaper, FilePen, RotateCcw, PanelLeft } from 'lucide-react';
 import LauncherPopup from './LauncherPopup';
 import ThemeMenu from './ThemeMenu';
+
+/** The top-left corner that reveals an auto-hiding header when the mouse is in it, in pixels. */
+// eslint-disable-next-line react-refresh/only-export-components
+export const REVEAL_CORNER = { width: 240, height: 72 };
+
+/**
+ * Whether a point is in the top-left corner that reveals the header.
+ * @param {number} x - Distance from the left edge.
+ * @param {number} y - Distance from the top edge.
+ * @returns {boolean} True inside the corner.
+ */
+const inRevealCorner = (x, y) => x <= REVEAL_CORNER.width && y <= REVEAL_CORNER.height;
 
 /**
  * Application header component displaying the logo, the Theme menu, and launcher grid toggle.
@@ -37,6 +49,23 @@ const Header = ({ config, edit, autoHide = false }) => {
     const { hidden, reveal, hideSoon } = useAutoHide(autoHide, isLauncherOpen || isThemeOpen);
     // On touch screens there is no pointer leaving the bar, so it hides a few seconds after the last tap
     const TOUCH_DELAY = 4000;
+
+    // Besides the strip along the top edge, the mouse in the top-left corner reveals the bar. It is
+    // watched rather than covered, so the cards under the corner can still be clicked.
+    useEffect(() => {
+        if (!autoHide) return undefined;
+        let inside = false;
+        const onMove = (e) => {
+            if (e.pointerType !== 'mouse') return;
+            const now = inRevealCorner(e.clientX, e.clientY);
+            if (now && !inside) reveal();
+            // Leaving the corner onto the bar itself keeps it; the bar hides when the mouse leaves it
+            else if (!now && inside && !e.target?.closest?.('.app-header')) hideSoon();
+            inside = now;
+        };
+        window.addEventListener('pointermove', onMove);
+        return () => window.removeEventListener('pointermove', onMove);
+    }, [autoHide, reveal, hideSoon]);
 
     const autoHideHandlers = autoHide ? {
         onPointerEnter: (e) => { if (e.pointerType === 'mouse') reveal(); },

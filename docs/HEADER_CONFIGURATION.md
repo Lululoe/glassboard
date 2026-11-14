@@ -52,7 +52,7 @@ screen:
 | `with-page-header` | hides on pages that show a [page header](#page-header), which has the time already. |
 | `always` | hides on every page. |
 
-A hidden bar comes back when the pointer moves to the top edge of the screen, when the handle at the top of a
+A hidden bar comes back when the pointer moves to the top edge or the top-left corner of the screen, when the handle at the top of a
 touch screen is tapped, or when it is reached with the keyboard (Tab). It stays while it is used and while its
 menu is open, then hides again: a moment after the pointer leaves it, or a few seconds after the last tap. It
 never hides in edit mode, so **Done** is always at hand.
