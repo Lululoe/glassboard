@@ -21,7 +21,7 @@ appearance:
 | Style | Look |
 | :--- | :--- |
 | `glass` | Frosted tiles with small rounded corners and a soft offset shadow. |
-| `liquid` | Liquid Glass: clear glass with a lit rim, large round corners, and no header bar: the header buttons float as round glass buttons over the page and well up from the side as they appear. |
+| `liquid` | Liquid Glass: clear glass with a lit rim, large round corners, and no header bar: the header buttons float as round glass buttons over the page and grow out of the one nearest the edge as they appear. |
 | `material` | Material Design 3: solid neutral surfaces without blur, tonal elevation, round icon buttons, and the accent as tonal containers. Uses Roboto Flex or Roboto when installed, else the system font. |
 | `terminal` | Monospace type, square corners, flat dark panels outlined in the accent, and card titles in `[ brackets ]`. Graphs are drawn with block characters (`▁▃▅█`) and the forecast with ASCII art; app icons turn monochrome. Without a page background of its own, the page is a dark screen. |
 

@@ -120,30 +120,33 @@
 }
 
 :root[data-style="liquid"] .header-left {
-    animation: liquid-fade-in 0.3s var(--ease-standard) backwards;
-    transition: opacity 0.3s var(--ease-standard);
+    animation: liquid-fade-in 0.25s var(--ease-standard) backwards;
+    transition: opacity 0.2s var(--ease-standard);
 }
 
+/* The buttons grow out of the one nearest the edge, all at once, the way glass splits into
+   separate controls: a quick swell past full size, and icons that come into focus */
 :root[data-style="liquid"] .header-right > * {
-    --liquid-delay: 0ms;
-    animation: liquid-morph-in 0.4s var(--ease-standard) var(--liquid-delay) backwards;
+    --liquid-from: 0px;
+    animation: liquid-morph-in 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
     transition:
-        transform 0.25s var(--ease-standard) var(--liquid-delay),
-        opacity 0.15s var(--ease-standard) var(--liquid-delay),
+        transform 0.2s var(--ease-standard),
+        opacity 0.12s var(--ease-standard) 0.06s,
         background var(--duration-standard) var(--ease-standard);
 }
 
-/* Each button starts at the edge, so the ones further in travel further, as if they split off
-   one drop */
-:root[data-style="liquid"] .header-right > * { --liquid-from: 56px; }
-:root[data-style="liquid"] .header-right > :nth-last-child(2) { --liquid-delay: 25ms; --liquid-from: 104px; }
-:root[data-style="liquid"] .header-right > :nth-last-child(3) { --liquid-delay: 50ms; --liquid-from: 152px; }
-:root[data-style="liquid"] .header-right > :nth-last-child(4) { --liquid-delay: 75ms; --liquid-from: 200px; }
-:root[data-style="liquid"] .header-right > :nth-last-child(5) { --liquid-delay: 100ms; --liquid-from: 248px; }
-:root[data-style="liquid"] .header-right > :nth-last-child(6) { --liquid-delay: 125ms; --liquid-from: 296px; }
-:root[data-style="liquid"] .header-right > :nth-last-child(n+7) { --liquid-delay: 150ms; --liquid-from: 344px; }
+:root[data-style="liquid"] .header-right > * > svg {
+    animation: liquid-focus 0.32s var(--ease-standard) backwards;
+}
 
-/* Hidden: the buttons have drawn back into the edge, and the header lets clicks through */
+:root[data-style="liquid"] .header-right > :nth-last-child(2) { --liquid-from: 48px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(3) { --liquid-from: 96px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(4) { --liquid-from: 144px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(5) { --liquid-from: 192px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(6) { --liquid-from: 240px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(n+7) { --liquid-from: 288px; }
+
+/* Hidden: the buttons have merged back into the one at the edge, and the header lets clicks through */
 :root[data-style="liquid"] .app-header.is-auto-hide.is-hidden {
     pointer-events: none;
 }
@@ -155,9 +158,12 @@
 
 :root[data-style="liquid"] .app-header.is-hidden .header-right > * {
     opacity: 0;
-    transform: translateX(var(--liquid-from)) scale(0.35, 0.5);
-    transition-delay: 0ms;
+    transform: translateX(var(--liquid-from)) scale(0.6);
     /* Taking the animation away lets it play again each time the header is revealed */
+    animation: none;
+}
+
+:root[data-style="liquid"] .app-header.is-hidden .header-right > * > svg {
     animation: none;
 }
 
@@ -166,21 +172,28 @@
 }
 
 @keyframes liquid-morph-in {
-    0% { opacity: 0; transform: translateX(var(--liquid-from)) scale(0.35, 0.5); }
-    25% { opacity: 1; }
-    45% { transform: translateX(calc(var(--liquid-from) * 0.4)) scale(1.25, 0.8); }
-    75% { transform: translateX(-3px) scale(0.96, 1.04); }
+    0% { opacity: 0; transform: translateX(var(--liquid-from)) scale(0.6); }
+    30% { opacity: 1; }
+    65% { transform: translateX(calc(var(--liquid-from) * -0.04)) scale(1.07, 1.03); }
     100% { opacity: 1; transform: none; }
+}
+
+@keyframes liquid-focus {
+    from { filter: blur(4px); opacity: 0.4; }
 }
 
 @media (prefers-reduced-motion: reduce) {
     :root[data-style="liquid"] .header-right > * {
         animation-name: liquid-fade-in;
-        transition: opacity 0.25s var(--ease-standard), background var(--duration-standard) var(--ease-standard);
+        transition: opacity 0.2s var(--ease-standard), background var(--duration-standard) var(--ease-standard);
     }
 
     :root[data-style="liquid"] .app-header.is-hidden .header-right > * {
         transform: none;
+    }
+
+    :root[data-style="liquid"] .header-right > * > svg {
+        animation: none;
     }
 }
 
