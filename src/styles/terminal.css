@@ -100,6 +100,20 @@
     box-shadow: inset 0 -1px 0 var(--term-line);
 }
 
+/* Header buttons of the bar and the cards: outlined while pointed at, like a selected cell */
+@media (pointer: fine) {
+    :root[data-style="terminal"] .icon-button:hover,
+    :root[data-style="terminal"] .two-tone-header-action:hover {
+        box-shadow: inset 0 0 0 1px var(--term-line-strong);
+    }
+}
+
+:root[data-style="terminal"] .editor-segmented,
+:root[data-style="terminal"] .graph-seg {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--term-line);
+}
+
 /* App icons turn monochrome, so the page reads as one color */
 :root[data-style="terminal"] .app-icon-container {
     filter: grayscale(1) contrast(1.15);
@@ -115,7 +129,8 @@
     background: var(--term-panel);
 }
 
-:root[data-style="terminal"] .editor-segmented button[aria-checked="true"] {
+:root[data-style="terminal"] .editor-segmented button[aria-checked="true"],
+:root[data-style="terminal"] .graph-seg button[aria-pressed="true"] {
     background: var(--color-primary);
     color: var(--term-bg);
     box-shadow: none;

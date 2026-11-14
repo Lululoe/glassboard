@@ -100,7 +100,8 @@
 }
 
 /* The selected segment is the accent's tonal container, not a white pill */
-:root[data-style="material"] .editor-segmented {
+:root[data-style="material"] .editor-segmented,
+:root[data-style="material"] .graph-seg {
     gap: 0;
     padding: 0;
     background: transparent;
@@ -109,11 +110,13 @@
     overflow: hidden;
 }
 
-:root[data-style="material"] .editor-segmented button {
+:root[data-style="material"] .editor-segmented button,
+:root[data-style="material"] .graph-seg button {
     border-radius: 0;
 }
 
-:root[data-style="material"] .editor-segmented button[aria-checked="true"] {
+:root[data-style="material"] .editor-segmented button[aria-checked="true"],
+:root[data-style="material"] .graph-seg button[aria-pressed="true"] {
     background: var(--m3-primary-container);
     color: var(--m3-on-primary-container);
     box-shadow: none;
