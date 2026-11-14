@@ -159,7 +159,7 @@
 
 .header-done-button {
     background: var(--color-primary);
-    color: #fff;
+    color: var(--on-accent);
 }
 
 @media (pointer: fine) {

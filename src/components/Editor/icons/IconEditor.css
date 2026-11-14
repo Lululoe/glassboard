@@ -406,7 +406,7 @@
 
 .icon-grid > button[aria-pressed="true"] {
     background: var(--color-primary);
-    color: #fff;
+    color: var(--on-accent);
 }
 
 .icon-grid > button:focus-visible {

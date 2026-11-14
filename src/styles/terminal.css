@@ -122,7 +122,7 @@
 
 /* On tiles are filled with the accent, with dark ink */
 :root[data-style="terminal"] .ha-tile:not(.off) {
-    color: var(--term-bg);
+    color: var(--on-accent);
 }
 
 :root[data-style="terminal"] .ha-tile.off {
@@ -132,7 +132,7 @@
 :root[data-style="terminal"] .editor-segmented button[aria-checked="true"],
 :root[data-style="terminal"] .graph-seg button[aria-pressed="true"] {
     background: var(--color-primary);
-    color: var(--term-bg);
+    color: var(--on-accent);
     box-shadow: none;
 }
 

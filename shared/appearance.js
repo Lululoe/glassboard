@@ -36,6 +36,30 @@ export const ACCENT_PRESETS = [
 export const isAccent = (value) => typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value);
 
 /**
+ * Relative luminance of a color, as WCAG defines it.
+ * @param {string} hex - `#rrggbb`.
+ * @returns {number} From 0 (black) to 1 (white).
+ */
+export function luminance(hex) {
+    const [r, g, b] = [1, 3, 5].map(i => {
+        const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+        return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+/**
+ * The ink for labels on a fill of the accent color, such as the Done button or a selected
+ * segment. Those labels are bold, which needs a contrast of 3:1 (4.5:1 for regular text), so
+ * white stays wherever it reaches 3:1, as on Apple's blue; lighter accents get near-black.
+ * @param {string} accent - `#rrggbb`.
+ * @returns {string} `#fff` or `#1c1c1e`.
+ */
+export function onAccent(accent) {
+    return 1.05 / (luminance(accent) + 0.05) >= 3 ? '#fff' : '#1c1c1e';
+}
+
+/**
  * Reads an appearance setting, dropping what isn't valid.
  * @param {*} value - The `appearance` of the config.
  * @returns {{style: string, accent: string|null}} The style (Glass when unset) and the accent (null for the theme's).
@@ -55,6 +79,7 @@ export function accentVariables(accent) {
     if (!isAccent(accent)) return {};
     return {
         '--color-primary': accent,
+        '--on-accent': onAccent(accent),
         '--color-primary-light': `color-mix(in srgb, ${accent} 65%, #fff)`,
         '--color-primary-dark': `color-mix(in srgb, ${accent} 70%, #000)`,
         '--system-blue': accent,

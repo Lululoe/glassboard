@@ -13,7 +13,8 @@
     --liquid-blur: blur(12px) saturate(180%);
     --liquid-rim: inset 0 1px 0 rgba(255, 255, 255, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.13), inset 0 -1px 0 rgba(255, 255, 255, 0.1);
 
-    --bg-card-surface: rgba(20, 22, 32, 0.24);
+    /* Fills keep secondary text at 4.5:1 or better over the default gradient */
+    --bg-card-surface: rgba(20, 22, 32, 0.34);
     --bg-card-glass: transparent !important;
     --bg-card-glass-header: rgba(255, 255, 255, 0.08) !important;
     --bg-toolbar: rgba(24, 26, 36, 0.3);
@@ -27,7 +28,7 @@
 
 :root[data-style="liquid"][data-theme="light"] {
     --liquid-rim: inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 0 0 1px rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(255, 255, 255, 0.3);
-    --bg-card-surface: rgba(255, 255, 255, 0.4);
+    --bg-card-surface: rgba(255, 255, 255, 0.65);
     --bg-card-glass-header: rgba(255, 255, 255, 0.3) !important;
     --bg-toolbar: rgba(255, 255, 255, 0.42);
     --bg-popup: rgba(250, 250, 253, 0.82) !important;
@@ -104,4 +105,36 @@
 :root[data-style="liquid"] .editor-segmented button[aria-checked="true"],
 :root[data-style="liquid"] .graph-seg button[aria-pressed="true"] {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), inset 0 1px 0 #fff;
+}
+
+/* Reduce Transparency and Increase Contrast: solid surfaces with a visible edge instead of
+   glass. These win over the glass rules above, which use !important themselves. */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    :root[data-style="liquid"] {
+        --bg-card-surface: #1c1c1e;
+        --bg-card-glass-header: #2c2c2e !important;
+        --bg-toolbar: #1c1c1e;
+        --bg-popup: #1c1c1e !important;
+        --liquid-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+    }
+
+    :root[data-style="liquid"][data-theme="light"] {
+        --bg-card-surface: #ffffff;
+        --bg-card-glass-header: #f2f2f7 !important;
+        --bg-toolbar: #ffffff;
+        --bg-popup: #ffffff !important;
+        --liquid-rim: inset 0 0 0 1px rgba(0, 0, 0, 0.22);
+    }
+
+    :root[data-style="liquid"] .glass-card,
+    :root[data-style="liquid"] .glass-card.two-tone-card,
+    :root[data-style="liquid"] .ha-tile.off,
+    :root[data-style="liquid"] .sidebar-rail,
+    :root[data-style="liquid"] .app-header,
+    :root[data-style="liquid"] dialog.launcher-popup,
+    :root[data-style="liquid"] dialog.theme-menu {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        text-shadow: none;
+    }
 }

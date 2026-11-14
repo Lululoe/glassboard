@@ -54,6 +54,8 @@
 
   /* Default card primary color (defaults to global primary) */
   --card-primary: var(--color-primary);
+  /* Ink for bold labels on an accent fill; the Theme menu's accent sets it to match */
+  --on-accent: #fff;
   --text-accent: var(--card-primary);
 
   /* Design tokens with per-mode defaults (dark here, light below). A theme may override any

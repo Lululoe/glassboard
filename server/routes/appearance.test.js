@@ -50,6 +50,13 @@ describe('appearance API', () => {
         expect(readLayout().appearance).toBeUndefined();
     });
 
+    it('stores nothing for the default style when config.yaml sets none', async () => {
+        setConfig({ pages: [{ id: 'home', cards: [{ id: 'a', type: 'x' }] }] });
+        expect((await put(server, { style: 'liquid' })).status).toBe(200);
+        expect((await put(server, { style: 'glass' })).status).toBe(200);
+        expect(readLayout().appearance).toBeUndefined();
+    });
+
     it('refuses unknown styles, colors that are not #rrggbb and other settings', async () => {
         expect((await put(server, { style: 'neon' })).status).toBe(400);
         expect((await put(server, { accent: 'red' })).status).toBe(400);

@@ -24,3 +24,14 @@ describe('appearance', () => {
         expect(accentVariables(null)).toEqual({});
     });
 });
+
+describe('ink on the accent', () => {
+    it('keeps white where bold labels reach 3:1 and switches to dark on light accents', async () => {
+        const { onAccent } = await import('./appearance.js');
+        expect(onAccent('#0a84ff')).toBe('#fff');
+        expect(onAccent('#5e5ce6')).toBe('#fff');
+        expect(onAccent('#30d158')).toBe('#1c1c1e');
+        expect(onAccent('#ff9f0a')).toBe('#1c1c1e');
+        expect(onAccent('#40c8e0')).toBe('#1c1c1e');
+    });
+});

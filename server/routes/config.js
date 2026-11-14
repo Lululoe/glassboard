@@ -351,7 +351,8 @@ router.put('/appearance', (req, res, next) => {
             throw new HttpError(400, `Invalid appearance: ${issue.path.join('.')} ${issue.message}`.trim());
         }
         const previous = readLayout();
-        const base = getBaseConfig().appearance || {};
+        // Unset in config.yaml means the defaults: Glass and the theme's accent
+        const base = { style: 'glass', accent: null, ...getBaseConfig().appearance };
         const merged = { ...previous.appearance };
         Object.entries(parsed.data).forEach(([key, value]) => {
             if (value === null || value === base[key]) delete merged[key];

@@ -146,6 +146,7 @@
 .sidebar-badge.is-todo,
 .sidebar-tip-dot.is-todo {
     background: var(--system-blue);
+    color: var(--on-accent);
 }
 
 .sidebar-badge.is-activity,
