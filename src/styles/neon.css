@@ -31,11 +31,7 @@
     --border-popup: rgba(161, 161, 170, 0.24);
     --bg-fill: rgba(255, 255, 255, 0.1);
     --bg-fill-hover: rgba(255, 255, 255, 0.16);
-    /* Every card has a hairline edge tinted by the accent and glows in it from underneath; the
-       edge is an outline (see below), which is drawn over a card's own panels */
-    --neon-card-edge: color-mix(in srgb, var(--color-primary) 28%, var(--neon-edge));
-    --neon-card-glow: 0 18px 40px -28px color-mix(in srgb, var(--color-primary) 85%, transparent);
-    --shadow-tile: var(--neon-card-glow);
+    --shadow-tile: none;
     --shadow-popup: inset 0 0 0 1px rgba(161, 161, 170, 0.24), 0 24px 40px -24px rgba(0, 0, 0, 0.62), 0 10px 18px -14px rgba(0, 0, 0, 0.36);
     --shadow-app: rgba(0, 0, 0, 0.4);
     --scroll-shade: rgba(24, 24, 27, 0.95);
@@ -65,7 +61,6 @@
     --border-popup: rgba(24, 28, 40, 0.12);
     --bg-fill: rgba(0, 0, 0, 0.05);
     --bg-fill-hover: rgba(0, 0, 0, 0.09);
-    --neon-card-glow: 0 18px 40px -28px color-mix(in srgb, var(--color-primary) 60%, transparent), 0 1px 2px rgba(0, 0, 0, 0.04);
     --shadow-popup: inset 0 0 0 1px rgba(24, 28, 40, 0.12), 0 24px 40px -24px rgba(0, 0, 0, 0.25), 0 10px 18px -14px rgba(0, 0, 0, 0.15);
     --scroll-shade: rgba(255, 255, 255, 0.95);
     --bg-page-gradient: radial-gradient(ellipse 80% 60% at 0% 0%, color-mix(in srgb, var(--color-primary) 14%, var(--neon-page)) 0%, var(--neon-page) 70%) !important;
@@ -82,13 +77,36 @@
     backdrop-filter: none !important;
 }
 
-/* The card edge is a ring laid over the card, so it shows over the solid panels of two-tone
-   cards too */
+/* Every card has its own color: its icon's (passed in as --card-hue), else the accent. It tints
+   the card's hairline edge and selected controls, and the card glows in it from underneath. It is
+   worked out on each card, so each gets its own. */
 :root[data-style="neon"] .glass-card,
 :root[data-style="neon"] .ha-tile,
 :root[data-style="neon"] .container-card {
+    --neon-card-hue: var(--card-hue, var(--color-primary));
+    --neon-card-edge: color-mix(in srgb, var(--neon-card-hue) 30%, var(--neon-edge));
+    --shadow-tile: 0 18px 40px -28px color-mix(in srgb, var(--neon-card-hue) 85%, transparent);
+    --bg-tile: color-mix(in oklch, var(--neon-card-hue) 28%, #fff);
     position: relative;
 }
+
+:root[data-style="neon"][data-theme="light"] .glass-card,
+:root[data-style="neon"][data-theme="light"] .ha-tile,
+:root[data-style="neon"][data-theme="light"] .container-card {
+    --shadow-tile: 0 18px 40px -28px color-mix(in srgb, var(--neon-card-hue) 60%, transparent), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+/* Thermostats are warm, and cool while cooling */
+:root[data-style="neon"] .thermostat-card {
+    --card-hue: #ff9f0a;
+}
+
+:root[data-style="neon"] .thermostat-card:has(.thermo-slider.cooling) {
+    --card-hue: #40c8e0;
+}
+
+/* The card edge is a ring laid over the card, so it shows over the solid panels of two-tone
+   cards too */
 
 :root[data-style="neon"] .glass-card::after,
 :root[data-style="neon"] .ha-tile::after,
@@ -118,11 +136,9 @@
     letter-spacing: -0.01em;
 }
 
-/* Card icons sit in a ring of the accent, glowing faintly */
+/* Card icons are round */
 :root[data-style="neon"] .two-tone-header .app-icon-container {
     border-radius: var(--radius-round);
-    background: color-mix(in srgb, var(--color-primary) 18%, transparent);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-primary) 40%, transparent), 0 12px 30px color-mix(in srgb, var(--color-primary) 14%, transparent);
 }
 
 /* App icons glow in their own background color (worked out by the icon), wherever they appear */
@@ -318,14 +334,20 @@
 
 /* Increase Contrast: visible card edges and plain text on tiles */
 @media (prefers-contrast: more) {
-    :root[data-style="neon"] {
+    :root[data-style="neon"] :is(.glass-card, .ha-tile, .container-card) {
         --neon-card-edge: rgba(255, 255, 255, 0.45);
+    }
+
+    :root[data-style="neon"][data-theme="light"] :is(.glass-card, .ha-tile, .container-card) {
+        --neon-card-edge: rgba(0, 0, 0, 0.4);
+    }
+
+    :root[data-style="neon"] {
         --neon-edge: rgba(255, 255, 255, 0.45);
         --neon-line: rgba(255, 255, 255, 0.4);
     }
 
     :root[data-style="neon"][data-theme="light"] {
-        --neon-card-edge: rgba(0, 0, 0, 0.4);
         --neon-edge: rgba(0, 0, 0, 0.4);
         --neon-line: rgba(0, 0, 0, 0.35);
     }

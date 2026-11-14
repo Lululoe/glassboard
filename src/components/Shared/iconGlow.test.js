@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { iconGlow } from './iconGlow';
+import { dominantColor, iconGlow } from './iconGlow';
 
 describe('iconGlow', () => {
     it('glows in a plain background color', () => {
@@ -20,5 +20,23 @@ describe('iconGlow', () => {
         expect(iconGlow('transparent')).toBeNull();
         expect(iconGlow('var(--icon-background)')).toBeNull();
         expect(iconGlow('url(icon.png)')).toBeNull();
+    });
+});
+
+describe('dominantColor', () => {
+    const pixels = (...colors) => new Uint8ClampedArray(colors.flat());
+
+    it('finds the colored part of a logo, ignoring white, black and grey', () => {
+        const orange = [255, 140, 0, 255];
+        const logo = pixels(orange, orange, [255, 255, 255, 255], [0, 0, 0, 255], [128, 128, 128, 255]);
+        expect(dominantColor(logo)).toBe('rgb(255, 140, 0)');
+    });
+
+    it('leaves out see-through pixels', () => {
+        expect(dominantColor(pixels([0, 120, 255, 255], [255, 0, 0, 0]))).toBe('rgb(0, 120, 255)');
+    });
+
+    it('has no color for a grey or monochrome logo', () => {
+        expect(dominantColor(pixels([255, 255, 255, 255], [20, 20, 20, 255], [128, 128, 128, 255]))).toBeNull();
     });
 });
