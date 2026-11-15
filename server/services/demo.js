@@ -890,20 +890,33 @@ function homeassistant(params) {
 
 const CONDITIONS = ['Clear', 'Partly cloudy', 'Overcast', 'Rain', 'Partly cloudy', 'Clear', 'Heavy rain'];
 
-/** The demo's current weather changes every ten minutes, so the weather background shows each effect. */
-const CURRENT_WEATHER = [
-    { condition: 'Rain', cloudCover: 100 },
-    { condition: 'Clear', cloudCover: 5 },
-    { condition: 'Snow', cloudCover: 95 },
-    { condition: 'Partly cloudy', cloudCover: 45 },
-    { condition: 'Overcast', cloudCover: 100 },
+/**
+ * Today's weather in the demo: one of these a day, in turn, so over a few days the weather
+ * background shows each effect. The weather card's today and its next hours show the same.
+ */
+const TODAYS_WEATHER = [
+    { condition: 'Clear', cloudCover: 5, precipitation: 0 },
+    { condition: 'Rain', cloudCover: 100, precipitation: 80 },
+    { condition: 'Snow', cloudCover: 95, precipitation: 70 },
+    { condition: 'Partly cloudy', cloudCover: 45, precipitation: 0 },
+    { condition: 'Overcast', cloudCover: 100, precipitation: 10 },
 ];
 
+/**
+ * The demo's weather today.
+ * @returns {{condition: string, cloudCover: number, precipitation: number}} Today's weather.
+ */
+function todaysWeather() {
+    const now = new Date();
+    const day = Math.floor((now.getTime() - now.getTimezoneOffset() * 60000) / 86400000);
+    return TODAYS_WEATHER[day % TODAYS_WEATHER.length];
+}
+
 function weather({ cardId, type = 'daily' }) {
+    const today = todaysWeather();
     if (type === 'current') {
-        const now = CURRENT_WEATHER[Math.floor(Date.now() / 600000) % CURRENT_WEATHER.length];
         const hour = new Date().getHours();
-        return { ...now, isDay: hour >= 7 && hour < 19 };
+        return { condition: today.condition, cloudCover: today.cloudCover, isDay: hour >= 7 && hour < 19 };
     }
     if (cardId === undefined) throw new HttpError(400, 'cardId is required');
     const forecast = type === 'hourly'
@@ -914,18 +927,24 @@ function weather({ cardId, type = 'daily' }) {
             const hour = date.getHours();
             return {
                 datetime: date.toISOString(),
-                condition: hour < 6 || hour > 20 ? 'Clear' : CONDITIONS[Math.floor(h / 6) % CONDITIONS.length],
-                temperature: round(9 + 6 * Math.sin((hour - 9) / 24 * 2 * Math.PI), 0),
-                precipitation: h >= 12 && h < 16 ? 40 : 0,
+                // The next hours have today's weather, the later ones change
+                condition: h < 4 ? today.condition : hour < 6 || hour > 20 ? 'Clear' : CONDITIONS[Math.floor(h / 6) % CONDITIONS.length],
+                // A snowy day is cold all day
+                temperature: round((today.condition === 'Snow' ? -3 : 9) + (today.condition === 'Snow' ? 2 : 6) * Math.sin((hour - 9) / 24 * 2 * Math.PI), 0),
+                precipitation: h < 4 ? today.precipitation : h >= 12 && h < 16 ? 40 : 0,
             };
         })
-        : CONDITIONS.map((condition, d) => ({
-            datetime: dayAt(d, 12),
-            condition,
-            temperature: 14 - (d % 4),
-            templow: 6 - (d % 3),
-            precipitation: condition === 'Rain' ? 60 : condition === 'Heavy rain' ? 90 : 0,
-        }));
+        : CONDITIONS.map((later, d) => {
+            const condition = d === 0 ? today.condition : later;
+            return {
+                datetime: dayAt(d, 12),
+                condition,
+                // Snow comes with cold
+                temperature: condition === 'Snow' ? -1 : 14 - (d % 4),
+                templow: condition === 'Snow' ? -5 : 6 - (d % 3),
+                precipitation: d === 0 ? today.precipitation : condition === 'Rain' ? 60 : condition === 'Heavy rain' ? 90 : 0,
+            };
+        });
     return { forecast, units: 'metric' };
 }
 

@@ -144,6 +144,15 @@ describe('demo mode', () => {
         expect(hourly.forecast).toHaveLength(24);
     });
 
+    it("shows the same weather now on the card and in the background", async () => {
+        const current = await demoHandlers.weather({ type: 'current' });
+        const daily = await demoHandlers.weather({ cardId: 'weather' });
+        const hourly = await demoHandlers.weather({ cardId: 'weather', type: 'hourly' });
+        expect(daily.forecast[0].condition).toBe(current.condition);
+        expect(hourly.forecast[0].condition).toBe(current.condition);
+        expect(typeof current.isDay).toBe('boolean');
+    });
+
     it('routes /api to the simulated handlers and reports demo mode in /api/config', async () => {
         const server = await listenOnLoopback(await createApp({ frontend: false }));
         onTestFinished(() => { server.close(); });
