@@ -1,0 +1,12 @@
+/*
+ * Glass: the default style, defined by the base styles and the theme's colors. This file only
+ * holds what differs from the other styles.
+ */
+
+/* Small single-surface cards next to two-tone cards are as dark as a two-tone card's body:
+   off tiles, half and quarter thermostats, and the half media player */
+:root[data-style="glass"] .ha-tile.off,
+:root[data-style="glass"] .thermostat-card:is(.size-half, .size-quarter),
+:root[data-style="glass"] .media-player-card.size-half {
+    background: var(--bg-card-glass);
+}
