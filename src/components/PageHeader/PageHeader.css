@@ -1,0 +1,577 @@
+/* Optional header above a page's cards: title lines and Apple Watch style widgets.
+   It lines up with the card grid (same max width and side padding); the grid's top padding is
+   the gap below it. Every widget is --ph-size high at every width, and rectangles are as wide
+   as three circles and their gaps, so wrapped rows keep one rhythm. */
+.page-header {
+    --ph-size: 46px;
+    --ph-gap: 8px;
+    --ph-rect: calc(var(--ph-size) * 3 + var(--ph-gap) * 2);
+    width: 100%;
+    max-width: 1220px;
+    margin: 0 auto -6px;
+    padding: 26px calc(30px + env(safe-area-inset-right)) 0 calc(30px + env(safe-area-inset-left));
+    display: flex;
+    gap: 16px 24px;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+/* Only a header that is new or different enters; one that stays the same between pages holds still */
+.page-header.is-entering {
+    animation: ph-enter 0.4s var(--ease-standard) both;
+}
+
+@keyframes ph-enter {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .page-header.is-entering {
+        animation: none;
+    }
+}
+
+/* ---------- Title lines ---------- */
+.ph-lead {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: none;
+    min-width: 0;
+    max-width: 100%;
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.25);
+}
+
+.ph-subtitle {
+    font-size: var(--fs-15);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 0.1px;
+    overflow-wrap: anywhere;
+}
+
+.ph-title {
+    font-size: 3.5rem;
+    line-height: 1.05;
+    font-weight: 600;
+    letter-spacing: -1px;
+    overflow-wrap: anywhere;
+}
+
+.ph-title.ph-type-clock {
+    line-height: 1;
+    letter-spacing: -1.5px;
+}
+
+/* The last line's box is trimmed to its cap height and baseline, so the bottom of its letters
+   is the bottom of the block and the widgets beside it line up with it */
+.ph-lead > :last-child {
+    text-box: trim-both cap alphabetic;
+}
+
+/* ---------- Widgets ---------- */
+.ph-widgets {
+    display: flex;
+    align-items: flex-end;
+    align-content: flex-end;
+    flex-wrap: wrap;
+    gap: var(--ph-gap);
+    min-width: 0;
+}
+
+/* ---------- Side by side: lines and widgets in one row, bottoms aligned ---------- */
+.page-header.is-side {
+    align-items: flex-end;
+}
+
+.page-header.is-side .ph-widgets {
+    flex: 1 1 0;
+}
+
+/* Left: lines left, widgets pushed to the right edge */
+.page-header.is-side.ph-align-left .ph-widgets {
+    justify-content: flex-end;
+}
+
+/* Right: mirrored */
+.page-header.is-side.ph-align-right {
+    flex-direction: row-reverse;
+}
+
+.page-header.is-side.ph-align-right .ph-lead {
+    align-items: flex-end;
+    text-align: right;
+}
+
+.page-header.is-side.ph-align-right .ph-widgets {
+    justify-content: flex-start;
+}
+
+/* Center: lines and widgets together in the middle */
+.page-header.is-side.ph-align-center {
+    justify-content: center;
+}
+
+.page-header.is-side.ph-align-center .ph-widgets {
+    flex: 0 1 auto;
+    justify-content: center;
+}
+
+/* Browsers without text-box trimming: lift the widgets by the space under the title's baseline */
+@supports not (text-box: trim-both cap alphabetic) {
+    .page-header.is-side.has-title .ph-widgets {
+        margin-bottom: 11px;
+    }
+}
+
+/* ---------- Stacked: lines above, widgets below ---------- */
+.page-header.is-stacked {
+    flex-direction: column;
+    gap: 16px;
+}
+
+.page-header.is-stacked .ph-widgets {
+    width: 100%;
+}
+
+.page-header.is-stacked.ph-align-left {
+    align-items: flex-start;
+}
+
+.page-header.is-stacked.ph-align-center {
+    align-items: center;
+    text-align: center;
+}
+
+.page-header.is-stacked.ph-align-center .ph-lead {
+    align-items: center;
+}
+
+.page-header.is-stacked.ph-align-center .ph-widgets {
+    justify-content: center;
+}
+
+.page-header.is-stacked.ph-align-right {
+    align-items: flex-end;
+    text-align: right;
+}
+
+.page-header.is-stacked.ph-align-right .ph-lead {
+    align-items: flex-end;
+}
+
+.page-header.is-stacked.ph-align-right .ph-widgets {
+    justify-content: flex-end;
+}
+
+/* ---------- Edit mode ---------- */
+
+/* The header's area, drawn like the grid's tiles, with the card edit button on its corner */
+.page-header.is-editing {
+    position: relative;
+    animation: none;
+    /* Room for the edit button above the lines, and between the outlined lines */
+    padding-top: 52px;
+}
+
+.page-header.is-editing .ph-lead {
+    gap: 18px;
+}
+
+.page-header.is-editing::before {
+    content: '';
+    position: absolute;
+    inset: 14px calc(18px + env(safe-area-inset-right)) -12px calc(18px + env(safe-area-inset-left));
+    border-radius: var(--radius-card);
+    border: 1.5px dashed rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.04);
+    pointer-events: none;
+}
+
+.ph-edit-button {
+    left: calc(8px + env(safe-area-inset-left));
+    top: 4px;
+}
+
+/* Each line opens its own editor: outlined like a card's icon, with a pencil badge */
+.ph-line-button {
+    position: relative;
+    display: block;
+    color: inherit;
+    text-align: inherit;
+    border-radius: 8px;
+    cursor: pointer;
+    outline: 2px solid rgba(255, 255, 255, 0.85);
+    outline-offset: 5px;
+    transition: outline-color var(--duration-standard) var(--ease-standard);
+}
+
+.ph-line-button > .ph-title,
+.ph-line-button > .ph-subtitle {
+    display: block;
+}
+
+/* The trimmed last line is the line inside the button, so the widgets still line up with it */
+.ph-lead > .ph-line-button:last-child {
+    text-box: none;
+}
+
+.ph-lead > .ph-line-button:last-child > :first-child {
+    text-box: trim-both cap alphabetic;
+}
+
+.ph-line-badge {
+    right: -14px;
+    bottom: auto;
+    top: -14px;
+}
+
+.ph-align-right .ph-line-badge {
+    right: auto;
+    left: -14px;
+}
+
+@media (pointer: fine) {
+    .ph-line-button:hover {
+        outline-color: #fff;
+        outline-width: 3px;
+    }
+}
+
+.ph-line-button:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* A hidden line keeps a place where it can be added back */
+.ph-add-line {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1.5px dashed rgba(255, 255, 255, 0.55);
+    font-size: var(--fs-13);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+    text-shadow: none;
+}
+
+.ph-add-title {
+    min-height: 44px;
+    font-size: var(--fs-15);
+}
+
+.ph-align-center .ph-add-line {
+    align-self: center;
+}
+
+.ph-align-right .ph-add-line {
+    align-self: flex-end;
+}
+
+@media (pointer: fine) {
+    .ph-add-line:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}
+
+.ph-add-line:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* A page without a header: a dashed slot where it can be added */
+.page-header-add {
+    display: block;
+    animation: none;
+}
+
+.ph-add-header {
+    width: 100%;
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: var(--radius-card);
+    border: 1.5px dashed rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.04);
+    font-size: var(--fs-15);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+}
+
+@media (pointer: fine) {
+    .ph-add-header:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}
+
+.ph-add-header:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* ---------- Widgets ---------- */
+
+/* Widgets sit straight on the page, like lock screen widgets, in the header's text color */
+.ph-widgets {
+    color: var(--text-primary);
+    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.2);
+}
+
+.ph-s {
+    position: relative;
+    flex: none;
+    width: var(--ph-size);
+    height: var(--ph-size);
+    text-align: left;
+}
+
+.ph-ring {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.ph-s-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+}
+
+.ph-s-value,
+.ph-s-gauge-value {
+    font-size: var(--fs-13);
+    font-weight: 600;
+    line-height: 1;
+}
+
+.ph-s-gauge-value {
+    position: absolute;
+    inset: 0 0 3px;
+    display: grid;
+    place-items: center;
+}
+
+.ph-s-gauge-icon {
+    position: absolute;
+    left: 50%;
+    bottom: 2px;
+    transform: translateX(-50%);
+    color: var(--text-secondary);
+}
+
+/* Rectangular widget, three circles wide and as tall as one */
+.ph-r {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: none;
+    width: var(--ph-rect);
+    height: var(--ph-size);
+    text-align: left;
+}
+
+.ph-r-icon {
+    flex: none;
+}
+
+.ph-r-text {
+    /* The chart follows the text instead of the rectangle's far edge, which has no box to belong to */
+    flex: 0 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.ph-r-primary {
+    font-size: var(--fs-15);
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ph-r-primary small {
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
+}
+
+.ph-r-secondary {
+    font-size: var(--fs-12);
+    line-height: 1.25;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ph-bars {
+    display: flex;
+    align-items: flex-end;
+    flex: none;
+    gap: 2px;
+    height: 22px;
+}
+
+.ph-bars span {
+    width: 3px;
+    border-radius: 2px;
+}
+
+/* A number widget: a larger icon over its value, without a ring */
+.ph-type-number .ph-s-inner {
+    gap: 3px;
+}
+
+.ph-type-number .ph-s-value {
+    font-size: var(--fs-17);
+}
+
+/* Values that don't fit the ring at the usual size */
+.ph-s-value.is-long,
+.ph-s-gauge-value.is-long {
+    font-size: var(--fs-11);
+}
+
+/* Icons from Home Assistant or the picker, drawn like the line icons */
+.ph-s-gauge-icon {
+    display: block;
+}
+
+/* The icon stands beside both lines, centered on them, a little closer to the text */
+.ph-r-icon {
+    align-self: center;
+    margin-right: -2px;
+}
+
+/* ---------- Widgets in edit mode ---------- */
+
+/* Outlines reach 5px around each widget, so widgets move apart while editing; rectangles keep
+   their width, which follows --ph-gap */
+.page-header.is-editing .ph-widgets {
+    gap: 20px 18px;
+}
+/* Each widget opens its editor: outlined like the lines, with a pencil badge */
+.ph-widget-button {
+    position: relative;
+    flex: none;
+    color: inherit;
+    border-radius: 50%;
+    cursor: pointer;
+    outline: 2px solid rgba(255, 255, 255, 0.85);
+    outline-offset: 3px;
+}
+
+.ph-widget-button.is-wide {
+    border-radius: 10px;
+}
+
+.ph-widget-badge {
+    right: -10px;
+    top: -10px;
+    bottom: auto;
+}
+
+/* Hidden by its condition right now: shown dimmed while editing, with a crossed-out eye */
+.ph-widget-button.is-hidden > :first-child {
+    opacity: 0.4;
+}
+
+@media (pointer: fine) {
+    .ph-widget-button:hover {
+        outline-color: #fff;
+        outline-width: 3px;
+    }
+}
+
+.ph-widget-button:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* Adds a widget at the end */
+.ph-add-widget {
+    flex: none;
+    width: var(--ph-size);
+    height: var(--ph-size);
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1.5px dashed rgba(255, 255, 255, 0.55);
+    color: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+}
+
+@media (pointer: fine) {
+    .ph-add-widget:hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+}
+
+.ph-add-widget:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* ---------- Monochrome: everything in the text color, quieter where it was colored ---------- */
+.ph-style-monochrome .ph-subtitle {
+    color: var(--text-secondary);
+}
+
+.ph-style-monochrome .ph-r-icon,
+.ph-style-monochrome .ph-s-inner svg {
+    opacity: 0.85;
+}
+
+/* ---------- Phones ---------- */
+@media (max-width: 768px) {
+    /* While editing, the outlines and badges stay inside the dashed area */
+    .page-header.is-editing {
+        padding-left: calc(24px + env(safe-area-inset-left));
+        padding-right: calc(24px + env(safe-area-inset-right));
+    }
+
+    .page-header.is-editing::before {
+        left: calc(8px + env(safe-area-inset-left));
+        right: calc(8px + env(safe-area-inset-right));
+    }
+
+    .ph-edit-button {
+        left: calc(-2px + env(safe-area-inset-left));
+    }
+
+    .page-header {
+        padding: 20px calc(16px + env(safe-area-inset-right)) 0 calc(16px + env(safe-area-inset-left));
+        margin-bottom: 4px;
+    }
+
+    .page-header.is-stacked {
+        gap: 14px;
+    }
+
+    .ph-title.ph-type-clock {
+        font-size: 2.75rem;
+    }
+
+    /* Room for longer text such as "Good afternoon" */
+    .ph-title:not(.ph-type-clock) {
+        font-size: 2.25rem;
+        letter-spacing: -0.5px;
+    }
+}

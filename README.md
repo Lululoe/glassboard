@@ -45,6 +45,7 @@ This project was born out of a desire for a dashboard that didn't just function 
 -   **Weather**: Daily and hourly forecast from the free [Open-Meteo](https://open-meteo.com) API — no API key or Home Assistant needed.
 -   **App Grid**: Quick launcher for your self-hosted services (Plex, TrueNAS, etc.).
 -   **Global Launcher**: A persistent popup launcher in the header for quick access to apps from anywhere.
+-   **Page Header**: An optional clock, date, greeting, text or Home Assistant template above the cards, with lock screen style widgets for Home Assistant entities, for all pages or per page. See [Page Header](docs/HEADER_CONFIGURATION.md#page-header).
 
 ## Configuration
 

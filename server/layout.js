@@ -8,7 +8,9 @@ const HEADER = [
     '# It takes precedence over config.yaml: card order, sizes and visibility per page, cards',
     '# added or changed in the browser (under `config`), config.yaml cards that were removed, and',
     '# the header menu, icon background presets and page background when they were edited in the browser,',
-    '# pages added in the browser (`addedPages`) and backgrounds of single pages (`pageBackgrounds`).',
+    '# pages added in the browser (`addedPages`), backgrounds of single pages (`pageBackgrounds`), and the page',
+    '# header of all pages (`pageHeader`) and of single pages (`pageHeaders`). Header templates are always taken',
+    '# from config.yaml. `headerAutoHide` is when the header bar hides itself.',
     '# Delete this file to go back to the dashboard in config.yaml.',
     '',
 ].join('\n');
@@ -33,7 +35,7 @@ export function getLayoutPath() {
 
 /**
  * Reads the layout overlay. A missing, empty or invalid file counts as no overrides.
- * @returns {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>}} The overlay.
+ * @returns {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>, pageHeader?: *, pageHeaders?: Object<string, *>, headerAutoHide?: string}} The overlay.
  */
 export function readLayout() {
     const file = getLayoutPath();
@@ -49,6 +51,13 @@ export function readLayout() {
             ...(isPlainObject(data.background) ? { background: data.background } : {}),
             ...(Array.isArray(data.addedPages) ? { addedPages: data.addedPages.filter(p => isPlainObject(p) && typeof p.id === 'string') } : {}),
             ...(isPlainObject(data.pageBackgrounds) ? { pageBackgrounds: data.pageBackgrounds } : {}),
+            ...(isHeaderSetting(data.pageHeader) ? { pageHeader: stripTemplates(data.pageHeader) } : {}),
+            ...(typeof data.headerAutoHide === 'string' ? { headerAutoHide: data.headerAutoHide } : {}),
+            ...(isPlainObject(data.pageHeaders) ? {
+                pageHeaders: Object.fromEntries(Object.entries(data.pageHeaders)
+                    .filter(([, v]) => v === null || isHeaderSetting(v))
+                    .map(([k, v]) => [k, stripTemplates(v)])),
+            } : {}),
         };
     } catch (e) {
         logger.warn(`Error reading ${file}: ${e.message}`);
@@ -59,7 +68,7 @@ export function readLayout() {
 /**
  * Writes the layout overlay in place. Renaming a temp file over it would fail when the file
  * is a Docker bind mount, so this overwrites the existing file instead.
- * @param {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>}} layout - The overlay to store.
+ * @param {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>, pageHeader?: *, pageHeaders?: Object<string, *>, headerAutoHide?: string}} layout - The overlay to store.
  */
 export function writeLayout(layout) {
     const data = { pages: layout.pages };
@@ -69,6 +78,9 @@ export function writeLayout(layout) {
     if (layout.background) data.background = layout.background;
     if (layout.addedPages?.length > 0) data.addedPages = layout.addedPages;
     if (layout.pageBackgrounds && Object.keys(layout.pageBackgrounds).length > 0) data.pageBackgrounds = layout.pageBackgrounds;
+    if (layout.pageHeader !== undefined) data.pageHeader = layout.pageHeader;
+    if (layout.headerAutoHide) data.headerAutoHide = layout.headerAutoHide;
+    if (layout.pageHeaders && Object.keys(layout.pageHeaders).length > 0) data.pageHeaders = layout.pageHeaders;
     fs.writeFileSync(getLayoutPath(), HEADER + yaml.dump(data, { lineWidth: -1 }), 'utf8');
 }
 
@@ -186,7 +198,7 @@ function buildCard(entry, base) {
  * The header menu, icon background presets and page background saved in the browser replace those of config.yaml,
  * and pages added in the browser follow the pages of config.yaml.
  * @param {Object} config - The merged configuration.
- * @param {{pages?: Object<string, Array<Object>>, removed?: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>}} layout - The overlay.
+ * @param {{pages?: Object<string, Array<Object>>, removed?: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>, pageHeader?: *, pageHeaders?: Object<string, *>, headerAutoHide?: string}} layout - The overlay.
  * @returns {Object} The configuration with the overlay applied.
  */
 export function applyLayout(config, layout) {
@@ -195,8 +207,84 @@ export function applyLayout(config, layout) {
         ...(isPlainObject(layout?.launcher) ? { launcher: layout.launcher } : {}),
         ...(Array.isArray(layout?.iconBackgrounds) ? { iconBackgrounds: layout.iconBackgrounds } : {}),
         ...(isPlainObject(layout?.background) ? { background: layout.background } : {}),
+        ...(typeof layout?.headerAutoHide === 'string' ? { headerAutoHide: layout.headerAutoHide } : {}),
     };
-    return withPageBackgrounds({ ...applyCards(config, layout), ...shared }, layout?.pageBackgrounds);
+    const withBackgrounds = withPageBackgrounds({ ...applyCards(config, layout), ...shared }, layout?.pageBackgrounds);
+    return withPageHeaders(withBackgrounds, layout?.pageHeader, layout?.pageHeaders);
+}
+
+/** Header lines, the parts of a page header that can be templates. */
+const HEADER_LINES = ['title', 'subtitle'];
+
+/**
+ * Whether a value is a page header setting: on or off, or its options.
+ * @param {*} value - The value.
+ * @returns {boolean} True for booleans and plain objects.
+ */
+const isHeaderSetting = (value) => typeof value === 'boolean' || isPlainObject(value);
+
+/**
+ * Returns a page header setting without template texts. Templates are only ever taken from
+ * config.yaml, so none that came from the browser or layout.yaml can be rendered.
+ * @param {*} header - The setting.
+ * @returns {*} The setting without `template` on its lines; other values as they are.
+ */
+export function stripTemplates(header) {
+    if (!isPlainObject(header)) return header;
+    const result = { ...header };
+    HEADER_LINES.forEach((line) => {
+        if (isPlainObject(result[line])) {
+            const { template: _template, ...rest } = result[line];
+            result[line] = rest;
+        }
+    });
+    return result;
+}
+
+/**
+ * Gives the template lines of a header saved in the browser their template from config.yaml:
+ * from the first source that has a template on the same line.
+ * @param {*} header - The saved setting.
+ * @param {Array<*>} sources - Header settings of config.yaml, most specific first.
+ * @returns {*} The setting with templates.
+ */
+function withConfigTemplates(header, sources) {
+    if (!isPlainObject(header)) return header;
+    const result = stripTemplates(header);
+    HEADER_LINES.forEach((line) => {
+        if (!isPlainObject(result[line]) || result[line].type !== 'template') return;
+        const template = sources.map(s => (isPlainObject(s) && isPlainObject(s[line]) ? s[line].template : undefined))
+            .find(t => typeof t === 'string' && t);
+        if (template) result[line] = { ...result[line], template };
+    });
+    return result;
+}
+
+/**
+ * Returns the config with the page header saved in the browser: the one of all pages replaces
+ * `pageHeader`, and one of a page replaces that page's `pageHeader` (`null` removes one set in
+ * config.yaml, so the page follows all pages again). Template texts come from config.yaml only.
+ * @param {Object} config - The configuration.
+ * @param {*} header - The header of all pages, if it was saved.
+ * @param {Object<string, *>|undefined} headers - Headers of single pages by page key.
+ * @returns {Object} The configuration; the same object when nothing was saved.
+ */
+function withPageHeaders(config, header, headers) {
+    const baseHeader = config.pageHeader;
+    let result = config;
+    if (isHeaderSetting(header)) result = { ...result, pageHeader: withConfigTemplates(header, [baseHeader]) };
+    if (!isPlainObject(headers) || !Array.isArray(result.pages)) return result;
+    return {
+        ...result,
+        pages: result.pages.map((page, index) => {
+            const key = pageKey(page, index);
+            if (!Object.hasOwn(headers, key)) return page;
+            const { pageHeader: own, ...rest } = page;
+            return isHeaderSetting(headers[key])
+                ? { ...rest, pageHeader: withConfigTemplates(headers[key], [own, baseHeader]) }
+                : rest;
+        }),
+    };
 }
 
 /**

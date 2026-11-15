@@ -185,6 +185,57 @@
     box-shadow: var(--focus-ring);
 }
 
+/* Reset shows its label; on narrow screens only its icon (see below) */
+.header-reset-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.header-reset-icon {
+    display: none;
+}
+
+/* While editing, the title gives way before the buttons, so Done is always on screen */
+.app-header.is-editing .header-left {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.app-header.is-editing .header-right {
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+/* The status message shortens itself; the buttons keep their size */
+.app-header.is-editing .header-right > button {
+    flex: none;
+}
+
+@media (max-width: 640px) {
+    .app-header.is-editing .header-title,
+    .app-header.is-editing .header-demo-badge {
+        display: none;
+    }
+
+    .header-reset-button {
+        width: 32px;
+        min-height: 32px;
+        padding: 0;
+        border-radius: 9px;
+        margin-right: 6px;
+    }
+
+    .header-reset-icon {
+        display: block;
+    }
+
+    .header-reset-label {
+        display: none;
+    }
+}
+
 /* Small screens: room for the buttons, the status wraps under the title instead */
 @media (max-width: 480px) {
     .header-edit-status {
@@ -210,4 +261,60 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+/* ---------- Auto-hiding (headerAutoHide) ---------- */
+
+/* The bar floats over the page and slides up out of view until it is revealed */
+.app-header.is-auto-hide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    animation: none;
+    transition: transform 0.3s var(--ease-standard), opacity 0.3s var(--ease-standard);
+}
+
+.app-header.is-auto-hide.is-hidden {
+    transform: translateY(-100%);
+    opacity: 0;
+}
+
+/* Pointing at the top edge reveals it; on touch screens, tapping the handle there */
+.header-reveal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: calc(10px + env(safe-area-inset-top));
+    z-index: 99;
+}
+
+.header-reveal-handle {
+    display: none;
+}
+
+@media (pointer: coarse) {
+    .header-reveal {
+        height: calc(26px + env(safe-area-inset-top));
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .header-reveal-handle {
+        display: block;
+        width: 36px;
+        height: 5px;
+        margin-bottom: 8px;
+        border-radius: 3px;
+        background: rgba(255, 255, 255, 0.45);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-header.is-auto-hide {
+        transition: none;
+    }
 }

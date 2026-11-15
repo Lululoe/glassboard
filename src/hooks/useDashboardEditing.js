@@ -58,8 +58,11 @@ export function useDashboardEditing(config, pages) {
     const [editor, setEditor] = useState(/** @type {{key: string, index: number, isNew: boolean, mode?: 'card'|'icon'}|null} */ (null));
     const [adding, setAdding] = useState(false);
     const [carry, setCarry] = useState(null);
-    const [shared, setShared] = useState(/** @type {{launcher?: Object, iconBackgrounds: string[], background?: Object, pageBackgrounds: Object<string, Object>}|null} */ (null));
+    const [shared, setShared] = useState(/** @type {{launcher?: Object, iconBackgrounds: string[], background?: Object, pageBackgrounds: Object<string, Object>, pageHeader?: *, pageHeaders: Object<string, *>, headerAutoHide?: string}|null} */ (null));
     const [editingBackground, setEditingBackground] = useState(/** @type {false|'all'|'page'} */ (false));
+    const [editingHeader, setEditingHeader] = useState(/** @type {null|'layout'|'title'|'subtitle'|'widget'|'widget-add'} */ (null));
+    const [editingWidget, setEditingWidget] = useState(/** @type {number|null} */ (null));
+    const [newWidgetType, setNewWidgetType] = useState(/** @type {string|null} */ (null));
     const [pageDrafts, setPageDrafts] = useState(/** @type {Array<{id: string, name?: string}>|null} */ (null));
     const [pageDialog, setPageDialog] = useState(/** @type {{id?: string}|null} */ (null));
     const [editingMenu, setEditingMenu] = useState(false);
@@ -86,6 +89,9 @@ export function useDashboardEditing(config, pages) {
         iconBackgrounds: config.iconBackgrounds || [],
         background: config.background,
         pageBackgrounds: Object.fromEntries(gridPages.filter(({ page }) => page.background).map(({ page, key }) => [key, page.background])),
+        pageHeader: config.pageHeader,
+        pageHeaders: Object.fromEntries(gridPages.filter(({ page }) => page.pageHeader !== undefined).map(({ page, key }) => [key, page.pageHeader])),
+        headerAutoHide: config.headerAutoHide,
     };
 
     const cardsOf = (page, idx) => drafts?.[pageKey(page, idx)] ?? page.cards;
@@ -145,7 +151,8 @@ export function useDashboardEditing(config, pages) {
         });
         setShared(prev => {
             const { [id]: _removed, ...pageBackgrounds } = prev.pageBackgrounds;
-            return { ...prev, pageBackgrounds };
+            const { [id]: _header, ...pageHeaders } = prev.pageHeaders;
+            return { ...prev, pageBackgrounds, pageHeaders };
         });
         setPageDialog(null);
     };
@@ -213,7 +220,7 @@ export function useDashboardEditing(config, pages) {
     };
 
     const finish = async () => {
-        if (saving || editor || adding || editingMenu || editingBackground || pageDialog || confirmingReset) return;
+        if (saving || editor || adding || editingMenu || editingBackground || editingHeader || pageDialog || confirmingReset) return;
         const original = Object.fromEntries(gridPages.map(({ page, key }) => [key, page.cards || []]));
         const unchanged = JSON.stringify(drafts) === JSON.stringify(original)
             && JSON.stringify(shared) === JSON.stringify(savedShared)
@@ -242,7 +249,7 @@ export function useDashboardEditing(config, pages) {
         setSaving(true);
         setStatus('Saving…');
         try {
-            const { launcher, iconBackgrounds, background, pageBackgrounds } = shared;
+            const { launcher, iconBackgrounds, background, pageBackgrounds, pageHeader, pageHeaders, headerAutoHide } = shared;
             await saveLayout(drafts, {
                 ...(launcher ? { launcher } : {}),
                 iconBackgrounds,
@@ -250,6 +257,10 @@ export function useDashboardEditing(config, pages) {
                 addedPages: pageDrafts,
                 // Every page, so a page that follows the others again clears a background set in config.yaml
                 pageBackgrounds: Object.fromEntries(Object.keys(drafts).map(key => [key, pageBackgrounds[key] ?? null])),
+                // The same for page headers; templates are left to config.yaml by the server
+                pageHeader: pageHeader ?? null,
+                pageHeaders: Object.fromEntries(Object.keys(drafts).map(key => [key, pageHeaders[key] ?? null])),
+                headerAutoHide: headerAutoHide ?? null,
             });
             setSavedFor(config);
             setStatus(null);
@@ -297,8 +308,15 @@ export function useDashboardEditing(config, pages) {
         editingMenu,
         openMenuEditor: () => setEditingMenu(true),
         closeMenuEditor: () => setEditingMenu(false),
-        saveMenu: (launcher) => {
-            setShared(prev => ({ ...prev, launcher }));
+        /** When the header bar hides itself, as in the draft while editing. */
+        headerAutoHide: shared ? shared.headerAutoHide : config.headerAutoHide,
+        /**
+         * Keeps the header menu and the header bar's auto-hide in the draft.
+         * @param {Object} launcher - The header menu.
+         * @param {string} [headerAutoHide] - When the header bar hides itself.
+         */
+        saveMenu: (launcher, headerAutoHide) => {
+            setShared(prev => ({ ...prev, launcher, headerAutoHide }));
             setEditingMenu(false);
         },
         withDraftPages, addPage, renamePage, deletePage,
@@ -317,6 +335,53 @@ export function useDashboardEditing(config, pages) {
             setEditingBackground(scope || 'all');
         },
         closeBackgroundEditor: () => setEditingBackground(false),
+        /** The page header of all pages, as in the draft while editing. */
+        pageHeader: shared ? shared.pageHeader : config.pageHeader,
+        /**
+         * Returns a page's own page header setting, as in the draft while editing.
+         * @param {Object} page - The page.
+         * @param {number} idx - Its position.
+         * @returns {*} The setting, or undefined when the page follows all pages.
+         */
+        pageHeaderOf: (page, idx) => (shared ? shared.pageHeaders[pageKey(page, idx)] : page?.pageHeader),
+        editingHeader,
+        /** Position of the widget being edited, or null for a new one. */
+        editingWidget,
+        /** The kind picked for a new widget. */
+        newWidgetType,
+        /**
+         * Opens one of the page header's editors. Adding a widget first lists the kinds to pick from.
+         * @param {'layout'|'title'|'subtitle'|'widget'} part - The header's arrangement, one of its lines, or a widget.
+         * @param {number|null} [index] - For a widget, its position; null adds one.
+         */
+        openHeaderEditor: (part, index = null) => {
+            setEditingWidget(index);
+            setNewWidgetType(null);
+            setEditingHeader(part === 'widget' && index === null ? 'widget-add' : part);
+        },
+        /**
+         * Opens the editor of a new widget of the picked kind.
+         * @param {string} type - The kind.
+         */
+        pickWidgetType: (type) => {
+            setNewWidgetType(type);
+            setEditingHeader('widget');
+        },
+        closeHeaderEditor: () => setEditingHeader(null),
+        /**
+         * Keeps the page header of all pages and of one page in the draft.
+         * @param {{pageHeader: *, pageOwn: *}} saved - The setting of all pages, and the page's own
+         *   (undefined when it follows all pages).
+         * @param {string} [key] - The page the second one belongs to.
+         */
+        saveHeader: ({ pageHeader, pageOwn }, key) => {
+            setShared(prev => {
+                if (key === undefined) return { ...prev, pageHeader };
+                const { [key]: _old, ...others } = prev.pageHeaders;
+                return { ...prev, pageHeader, pageHeaders: pageOwn === undefined ? others : { ...others, [key]: pageOwn } };
+            });
+            setEditingHeader(null);
+        },
         /**
          * Returns a page's own background, as in the draft while editing.
          * @param {Object} page - The page.

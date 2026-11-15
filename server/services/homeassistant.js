@@ -1,4 +1,7 @@
-import { getAllCards, getServiceConfig } from '../config.js';
+import { getAllCards, getConfig, getServiceConfig } from '../config.js';
+import {
+    MIN_TEMPLATE_REFRESH, cleanTemplateOutput, findHeaderTemplate, headerWidgetEntityIds,
+} from '../../shared/pageHeader.js';
 import { HttpError, upstreamError } from '../errors.js';
 import { createHaSocket } from './haSocket.js';
 import { getGraphEntityIds, graphData } from './haGraph.js';
@@ -409,6 +412,8 @@ export function getValidEntityIds() {
     getGraphEntityIds().forEach(id => entityIds.add(id));
     getVacuumEntityIds().forEach(id => entityIds.add(id));
     getPrinterEntityIds().forEach(id => entityIds.add(id));
+    // Page header widgets only read their entities' states
+    headerWidgetEntityIds(getConfig()).forEach(id => entityIds.add(id));
     return entityIds;
 }
 
@@ -599,6 +604,58 @@ export function resetControlCache() {
     memberCache = { at: 0, ids: new Set(), key: '' };
 }
 
+const TEMPLATE_TIMEOUT = 5000;
+/** Rendered header templates by template text: `{at, text}` or the pending render. */
+const templateCache = new Map();
+
+/**
+ * Renders the Home Assistant template of a page header line.
+ *
+ * Templates are read-only in Home Assistant (they run in its sandbox and can't call services),
+ * but they can read any state the token can. So only templates written in the config are
+ * rendered: the browser names the page and the line, never the template. Each template is
+ * rendered at most once every MIN_TEMPLATE_REFRESH seconds however many browsers ask, and the
+ * result is cut to plain text on one line.
+ * @param {{page?: string, line?: string}} params - The page key and `title` or `subtitle`.
+ * @returns {Promise<{text: string}>} The rendered text.
+ * @throws {HttpError} 404 when that line of that page's header has no template.
+ */
+export async function renderHeaderTemplate(params) {
+    const found = findHeaderTemplate(getConfig(), String(params.page ?? ''), String(params.line ?? ''));
+    if (!found) throw new HttpError(404, 'No template for this header line');
+    const { template } = found;
+
+    const hit = templateCache.get(template);
+    if (hit?.pending) return hit.pending;
+    if (hit && Date.now() - hit.at < MIN_TEMPLATE_REFRESH * 1000) return { text: hit.text };
+
+    const pending = (async () => {
+        const { url, token } = getHaConfig();
+        const response = await fetch(`${url}/api/template`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ template }),
+            signal: AbortSignal.timeout(TEMPLATE_TIMEOUT),
+        });
+        if (!response.ok) throw await upstreamError('Home Assistant', response);
+        return { text: cleanTemplateOutput(await response.text()) };
+    })();
+    templateCache.set(template, { pending });
+    try {
+        const result = await pending;
+        templateCache.set(template, { at: Date.now(), text: result.text });
+        return result;
+    } catch (err) {
+        templateCache.delete(template);
+        throw err;
+    }
+}
+
+/** Forgets rendered header templates. Intended for tests. */
+export function resetTemplateCache() {
+    templateCache.clear();
+}
+
 /**
  * Handles Home Assistant requests.
  * - `endpoint: 'states'` with `entity_ids: string[]` returns `{ [entity_id]: state | null }`;
@@ -618,6 +675,8 @@ export function resetControlCache() {
  *   `entity_id` returns a robot's map (see vacuumMap).
  * - `endpoint: 'printer'` with `card_id` returns a printer card's printer (see printerData), and
  *   `printer_action` controls it (see printerAction).
+ * - `endpoint: 'template'` with `page` and `line` renders that page header line's template
+ *   (see renderHeaderTemplate).
  * @param {Object} params - Request parameters.
  * @returns {Promise<Object>} Home Assistant response data.
  */
@@ -677,6 +736,7 @@ export async function handleHaRequest(params) {
         return results.flat();
     }
 
+    if (endpoint === 'template') return renderHeaderTemplate(params);
     if (endpoint === 'graph') return graphData(params);
     if (endpoint === 'vacuum') return vacuumData(params);
     if (endpoint === 'vacuum_action') return vacuumAction(params);

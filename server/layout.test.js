@@ -2,7 +2,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { afterEach, beforeEach, describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, onTestFinished } from 'vitest';
 import {
     applyLayout, buildLayout, gridPages, readLayout, resetLayout, withAddedPages, writeLayout,
 } from './layout.js';
@@ -162,6 +162,65 @@ describe('page backgrounds', () => {
         const config = { pages: [{ id: 'a', background: { color: '#111111' }, cards: [] }, { id: 'b', cards: [] }, { id: 'c', cards: [] }] };
         const applied = applyLayout(config, { pages: {}, pageBackgrounds: { a: null, b: { theme: true } } });
         expect(applied.pages.map(p => p.background)).toEqual([undefined, { theme: true }, undefined]);
+    });
+});
+
+
+describe('page headers', () => {
+    const TEMPLATE = "{{ states('sensor.x') }}";
+
+    it('replaces the header of all pages and of single pages, and clears one set in config.yaml', () => {
+        const config = {
+            pageHeader: true,
+            pages: [{ id: 'a', pageHeader: { align: 'right' }, cards: [] }, { id: 'b', cards: [] }, { id: 'c', cards: [] }],
+        };
+        const applied = applyLayout(config, {
+            pages: {},
+            pageHeader: { align: 'center' },
+            pageHeaders: { a: null, b: false },
+        });
+        expect(applied.pageHeader).toEqual({ align: 'center' });
+        expect(applied.pages.map(p => p.pageHeader)).toEqual([undefined, false, undefined]);
+    });
+
+    it('takes templates only from config.yaml, never from layout.yaml', () => {
+        const config = {
+            pageHeader: { title: { type: 'template', template: TEMPLATE } },
+            pages: [{ id: 'a', pageHeader: { subtitle: { type: 'template', template: '{{ 1 }}' } }, cards: [] }, { id: 'b', cards: [] }],
+        };
+        const applied = applyLayout(config, {
+            pages: {},
+            pageHeader: { title: { type: 'template', template: '{{ states.lock }}', color: 'red' } },
+            pageHeaders: {
+                a: { subtitle: { type: 'template', template: '{{ evil }}' }, title: { type: 'template' } },
+                b: { subtitle: { type: 'template', template: '{{ evil }}' } },
+            },
+        });
+        expect(applied.pageHeader.title).toEqual({ type: 'template', template: TEMPLATE, color: 'red' });
+        expect(applied.pages[0].pageHeader).toEqual({
+            subtitle: { type: 'template', template: '{{ 1 }}' },
+            title: { type: 'template', template: TEMPLATE },
+        });
+        expect(applied.pages[1].pageHeader.subtitle).toEqual({ type: 'template' });
+    });
+
+    it('drops templates when reading layout.yaml', () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'glassboard-layout-'));
+        process.env.LAYOUT_FILE = path.join(dir, 'layout.yaml');
+        onTestFinished(() => {
+            delete process.env.LAYOUT_FILE;
+            fs.rmSync(dir, { recursive: true, force: true });
+        });
+        writeLayout({ pages: {}, removed: [], pageHeader: { title: { type: 'template', template: '{{ x }}' } }, pageHeaders: { a: false } });
+        expect(readLayout()).toMatchObject({ pageHeader: { title: { type: 'template' } }, pageHeaders: { a: false } });
+        expect(readLayout().pageHeader.title).not.toHaveProperty('template');
+    });
+});
+
+describe('header bar auto-hide', () => {
+    it('replaces the one of config.yaml', () => {
+        expect(applyLayout({ headerAutoHide: 'always' }, { pages: {}, headerAutoHide: 'never' }).headerAutoHide).toBe('never');
+        expect(applyLayout({ headerAutoHide: 'always' }, { pages: {} }).headerAutoHide).toBe('always');
     });
 });
 

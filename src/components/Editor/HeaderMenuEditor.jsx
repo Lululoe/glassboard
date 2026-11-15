@@ -4,7 +4,7 @@ import yaml from 'js-yaml';
 import AppIcon from '../Shared/AppIcon';
 import Icon from '../Shared/Icon';
 import '../Header/LauncherPopup.css';
-import { TextField } from './EditorFields';
+import { SegmentedField, TextField } from './EditorFields';
 import { Animated, StageHint } from './icons/AppGridStage';
 import ArrangeSlot from './icons/ArrangeSlot';
 import ItemInspector from './icons/ItemInspector';
@@ -17,6 +17,18 @@ const MAX_APPS = 12;
 const WIDTH = 323;
 
 const NEW_APP = { name: '', url: '', icon: 'lu-Globe' };
+
+const AUTO_HIDE_OPTIONS = [
+    { value: 'never', label: 'Never' },
+    { value: 'with-page-header', label: 'With Page Header' },
+    { value: 'always', label: 'Always' },
+];
+
+const AUTO_HIDE_HINTS = {
+    never: 'The bar always shows.',
+    'with-page-header': 'The bar hides on pages with a page header. Point at or tap the top of the screen to show it.',
+    always: 'The bar hides on every page. Point at or tap the top of the screen to show it.',
+};
 const NEW_LINK = { name: '', url: '', icon: 'lu-Link' };
 
 /**
@@ -25,11 +37,12 @@ const NEW_LINK = { name: '', url: '', icon: 'lu-Link' };
  * in the dashboard's draft, like a card; "Done" stores them in layout.yaml.
  * @param {Object} props
  * @param {Object} [props.launcher] - The header menu config.
- * @param {(launcher: Object) => void} props.onSave - Receives the edited menu.
+ * @param {string} [props.headerAutoHide] - When the header bar hides itself: never, with-page-header or always.
+ * @param {(launcher: Object, headerAutoHide: string) => void} props.onSave - Receives the edited menu and auto-hide.
  * @param {() => void} props.onCancel - Closes without changes.
  * @returns {JSX.Element} The dialog.
  */
-const HeaderMenuEditor = ({ launcher, onSave, onCancel }) => {
+const HeaderMenuEditor = ({ launcher, headerAutoHide, onSave, onCancel }) => {
     const dialogRef = useRef(null);
     const rootRef = useRef(null);
     const [draft, setDraft] = useState(() => ({ apps: [], links: [], ...launcher }));
@@ -38,6 +51,7 @@ const HeaderMenuEditor = ({ launcher, onSave, onCancel }) => {
     const [tab, setTab] = useState('settings');
     const [yamlText, setYamlText] = useState('');
     const [error, setError] = useState(null);
+    const [autoHide, setAutoHide] = useState(headerAutoHide || 'never');
 
     useEffect(() => {
         const dialog = dialogRef.current;
@@ -95,7 +109,7 @@ const HeaderMenuEditor = ({ launcher, onSave, onCancel }) => {
 
     const save = () => {
         try {
-            onSave(tab === 'yaml' ? parseYaml() : draft);
+            onSave(tab === 'yaml' ? parseYaml() : draft, autoHide);
         } catch (err) {
             setError(err.message);
         }
@@ -267,6 +281,16 @@ const HeaderMenuEditor = ({ launcher, onSave, onCancel }) => {
                             <p className="editor-note">
                                 An app grid set to the header menu's apps follows these.
                             </p>
+                        </section>
+                        <section className="editor-section" aria-label="Header bar">
+                            <h3 className="editor-section-title">Header bar</h3>
+                            <SegmentedField
+                                label="Hide"
+                                value={autoHide}
+                                options={AUTO_HIDE_OPTIONS}
+                                onChange={setAutoHide}
+                                hint={AUTO_HIDE_HINTS[autoHide]}
+                            />
                         </section>
                     </div>
                 </div>

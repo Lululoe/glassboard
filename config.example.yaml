@@ -14,6 +14,26 @@ themes: []
 # yet, so anyone who can open the dashboard can do this. Set to false to turn it off.
 # editable: false
 
+# The header bar (title, menu and edit buttons) can hide itself until you point at or tap the top of the
+# screen: never (default), with-page-header (on pages that show the page header below) or always.
+# headerAutoHide: with-page-header
+
+# An optional header above the cards: a clock under the date by default. Set it here for every
+# page, or as `pageHeader` on a page to change or turn it off there. See docs/HEADER_CONFIGURATION.md.
+# pageHeader:
+#   align: left          # left | center | right
+#   layout: auto         # auto | side-by-side | stacked
+#   style: colored       # colored | monochrome
+#   locale: en-GB        # for month and weekday names; the browser's language by default
+#   title:
+#     type: clock        # clock | date | text | greeting | template
+#     format: "HH:mm"    # e.g. "h:mm A" for 12-hour time
+#     color: text        # a name (red, blue, primary, …), #hex, rgb(), hsl() or var(--…)
+#   subtitle:            # the smaller line above; set to false to leave it out
+#     type: date
+#     format: "dddd, D MMMM"
+#     color: red
+
 pages:
   - id: home
     name: "Home"

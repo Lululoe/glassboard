@@ -32,4 +32,26 @@ describe('validateConfig', () => {
         expect(problems).toContain('pages[1].url: Iframe pages require a url');
         expect(problems).toContain('pages[1].cards[0].id: Duplicate card id "x"');
     });
+
+    it('accepts page headers and reports invalid header options', () => {
+        expect(validateConfig({
+            pageHeader: { align: 'center', layout: 'stacked', title: { type: 'clock', format: 'HH:mm', color: '#fff' }, subtitle: false },
+            pages: [{ id: 'home', pageHeader: false }, { id: 'more', pageHeader: { title: 'Hello' } }],
+        })).toEqual([]);
+
+        const problems = validateConfig({
+            pageHeader: { align: 'middle', title: { type: 'template' }, subtitle: { color: 'red; top: 0' } },
+            pages: [{ id: 'home', pageHeader: { layout: 'grid' } }],
+        });
+        expect(problems.some(p => p.startsWith('pageHeader.align:'))).toBe(true);
+        expect(problems.some(p => p.startsWith('pageHeader.title:'))).toBe(true);
+        expect(problems.some(p => p.startsWith('pageHeader.subtitle'))).toBe(true);
+        expect(problems.some(p => p.startsWith('pages[0].pageHeader'))).toBe(true);
+    });
+
+    it('accepts the header bar auto-hide modes only', () => {
+        expect(validateConfig({ headerAutoHide: 'with-page-header' })).toEqual([]);
+        expect(validateConfig({ headerAutoHide: 'sometimes' })[0]).toMatch(/^headerAutoHide:/);
+    });
 });
+
