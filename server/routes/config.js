@@ -343,13 +343,15 @@ const appearanceBody = z.object({
 }).partial().strict();
 
 /**
- * Saves the dashboard's style and accent color, as chosen in the Theme menu. They apply to every
- * browser showing the dashboard. Left out, a setting is kept; `null` goes back to config.yaml.
- * Only settings that differ from config.yaml are stored.
+ * Saves the dashboard's style, accent color and transparency, as chosen in the Theme menu. They
+ * apply to every browser showing the dashboard. Left out, a setting is kept; `null` goes back to
+ * config.yaml. Only settings that differ from config.yaml are stored. `appearance.locked` in
+ * config.yaml refuses every change.
  */
 router.put('/appearance', (req, res, next) => {
     try {
         assertEditable();
+        if (getBaseConfig().appearance?.locked === true) throw new HttpError(403, 'The theme is locked in config.yaml');
         const parsed = appearanceBody.safeParse(req.body);
         if (!parsed.success) {
             const issue = parsed.error.issues[0];

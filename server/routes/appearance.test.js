@@ -67,6 +67,14 @@ describe('appearance API', () => {
         expect((await put(server, { transparency: 'clear' })).status).toBe(400);
     });
 
+    it('refuses every change while config.yaml locks the theme', async () => {
+        setConfig({ appearance: { style: 'material', locked: true }, pages: [{ id: 'home', cards: [{ id: 'a', type: 'x' }] }] });
+        const res = await put(server, { style: 'liquid' });
+        expect(res.status).toBe(403);
+        expect(res.body.error).toContain('locked');
+        expect(readLayout().appearance).toBeUndefined();
+    });
+
     it('refuses unknown styles, colors that are not #rrggbb and other settings', async () => {
         expect((await put(server, { style: 'disco' })).status).toBe(400);
         expect((await put(server, { accent: 'red' })).status).toBe(400);

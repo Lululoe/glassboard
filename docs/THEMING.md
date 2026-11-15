@@ -29,6 +29,17 @@ appearance:
 The Theme menu offers Glass, Liquid Glass, Material and Neon. Terminal is held back from the menu for now: it can
 still be set in `config.yaml`, and the menu shows it while the dashboard uses it.
 
+To lock the theme, set `locked: true`. The style, accent and transparency of `config.yaml` then always apply: the
+Theme menu shows them but can't change them, and choices saved in the Theme menu before are ignored. Light and dark,
+refraction and screen effects stay a choice of each browser.
+
+```yaml
+appearance:
+  style: material
+  accent: "#30d158"
+  locked: true
+```
+
 A style chosen in the Theme menu is saved in `layout.yaml` and wins over `config.yaml`; picking the style of
 `config.yaml` again removes it from `layout.yaml`. When `editable: false` is set, the style can only be set in
 `config.yaml`. `themeToggle: false` hides the Theme button.

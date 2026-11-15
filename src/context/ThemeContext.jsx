@@ -13,6 +13,7 @@ export const ThemeContext = createContext({
     style: 'glass',
     accent: null,
     transparency: 0.5,
+    locked: false,
     setAppearance: async () => {},
     refraction: { supported: false, enabled: false, active: false, setEnabled: () => {} },
     screenEffects: { enabled: true, active: false, setEnabled: () => {} },
@@ -250,6 +251,8 @@ export const ThemeProvider = ({ children, config }) => {
             style,
             accent,
             transparency,
+            // config.yaml keeps the style, accent and transparency; the Theme menu can't change them
+            locked: config?.appearance?.locked === true,
             setAppearance,
             refraction: { supported, enabled: refractionOn, active: refractionActive, setEnabled: setRefractionEnabled },
             screenEffects: { enabled: effectsOn, active: effectsActive, setEnabled: setEffectsEnabled },

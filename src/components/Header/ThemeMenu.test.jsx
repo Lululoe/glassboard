@@ -157,6 +157,16 @@ describe('Theme menu', () => {
         expect(document.documentElement.style.getPropertyValue('--surface-clear')).toBe('');
     });
 
+    it("can't change a theme config.yaml locks, but still picks light or dark", () => {
+        openMenu({ appearance: { style: 'liquid', locked: true } });
+        expect(screen.getByRole('radio', { name: /Material/ })).toBeDisabled();
+        expect(screen.getByRole('radio', { name: 'Pink' })).toBeDisabled();
+        expect(screen.getByRole('slider', { name: 'Transparency' })).toBeDisabled();
+        expect(screen.getByText('The theme is locked in config.yaml.')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('radio', { name: 'Dark' }));
+        expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    });
+
     it('offers screen effects only with the Terminal style', () => {
         openMenu({ appearance: { style: 'material' } });
         expect(screen.queryByRole('switch', { name: 'Screen effects' })).toBeNull();

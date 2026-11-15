@@ -31,7 +31,9 @@ const MODE_OPTIONS = [
  */
 const ThemeMenu = ({ editable, onClose }) => {
     const dialogRef = useRef(null);
-    const { modeSetting, setMode, style, accent, transparency, setAppearance, refraction, screenEffects } = useTheme();
+    const { modeSetting, setMode, style, accent, transparency, locked, setAppearance, refraction, screenEffects } = useTheme();
+    // The dashboard's style, accent and transparency can be changed here
+    const changeable = editable && !locked;
     const transparencyId = useId();
     // The slider's value while it is dragged, shown on the page right away and saved once it stops
     const [dragged, setDragged] = useState(null);
@@ -103,7 +105,7 @@ const ThemeMenu = ({ editable, onClose }) => {
         <dialog className="theme-menu" ref={dialogRef} onClick={onClick} onClose={onClose} aria-label="Theme" tabIndex={-1}>
             <SegmentedField label="Appearance" value={modeSetting} options={MODE_OPTIONS} onChange={setMode} />
 
-            <fieldset className="theme-menu-styles" disabled={!editable}>
+            <fieldset className="theme-menu-styles" disabled={!changeable}>
                 <legend className="editor-label">Style</legend>
                 <div className="theme-menu-style-grid">
                     {(MENU_STYLES.includes(style) ? MENU_STYLES : [...MENU_STYLES, style]).map(id => (
@@ -136,7 +138,7 @@ const ThemeMenu = ({ editable, onClose }) => {
                         max={1}
                         step={0.05}
                         value={shownTransparency}
-                        disabled={!editable}
+                        disabled={!changeable}
                         aria-valuetext={`${Math.round(shownTransparency * 100)}%`}
                         onChange={(e) => slideTransparency(Number(e.target.value))}
                     />
@@ -147,7 +149,7 @@ const ThemeMenu = ({ editable, onClose }) => {
                 </div>
             )}
 
-            <fieldset className="theme-menu-accents" disabled={!editable}>
+            <fieldset className="theme-menu-accents" disabled={!changeable}>
                 <legend className="editor-label">Accent</legend>
                 <div className="theme-menu-swatches">
                     <label className="theme-menu-swatch is-theme" title="Theme color">
@@ -173,9 +175,11 @@ const ThemeMenu = ({ editable, onClose }) => {
                         />
                     </label>
                 </div>
-                <div className="editor-hint">{editable
-                    ? `Style, accent${TRANSPARENT_STYLES.includes(style) ? ' and transparency' : ''} are for everyone using this dashboard.`
-                    : 'Set in config.yaml.'}</div>
+                <div className="editor-hint">{locked
+                    ? 'The theme is locked in config.yaml.'
+                    : editable
+                        ? `Style, accent${TRANSPARENT_STYLES.includes(style) ? ' and transparency' : ''} are for everyone using this dashboard.`
+                        : 'Set in config.yaml.'}</div>
             </fieldset>
 
             {style === 'liquid' && (

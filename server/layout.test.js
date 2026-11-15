@@ -232,3 +232,14 @@ describe('sidebar', () => {
         expect(applyLayout({ sidebar: { enabled: false } }, { pages: {} }).sidebar).toEqual({ enabled: false });
     });
 });
+
+describe('applyLayout and a locked theme', () => {
+    it("keeps config.yaml's appearance when it is locked", () => {
+        const layout = { pages: {}, removed: [], appearance: { style: 'neon', accent: '#ff375f' } };
+        const config = { appearance: { style: 'material', locked: true }, pages: [{ id: 'home', cards: [] }] };
+        expect(applyLayout(config, layout).appearance).toEqual({ style: 'material', locked: true });
+        expect(applyLayout({ ...config, appearance: { style: 'material' } }, layout).appearance)
+            .toEqual({ style: 'neon', accent: '#ff375f' });
+    });
+});
+

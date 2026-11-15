@@ -214,7 +214,10 @@ export function applyLayout(config, layout) {
         ...(isPlainObject(layout?.background) ? { background: layout.background } : {}),
         ...(typeof layout?.headerAutoHide === 'string' ? { headerAutoHide: layout.headerAutoHide } : {}),
         ...(isPlainObject(layout?.sidebar) ? { sidebar: layout.sidebar } : {}),
-        ...(isPlainObject(layout?.appearance) ? { appearance: { ...config.appearance, ...layout.appearance } } : {}),
+        // A locked theme keeps config.yaml's appearance, whatever was chosen in the Theme menu before
+        ...(isPlainObject(layout?.appearance) && config.appearance?.locked !== true
+            ? { appearance: { ...config.appearance, ...layout.appearance } }
+            : {}),
     };
     const withBackgrounds = withPageBackgrounds({ ...applyCards(config, layout), ...shared }, layout?.pageBackgrounds);
     return withPageHeaders(withBackgrounds, layout?.pageHeader, layout?.pageHeaders);

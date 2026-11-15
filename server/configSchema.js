@@ -12,6 +12,8 @@ export const appearanceSchema = z.object({
     style: z.enum(APPEARANCE_STYLES).optional(),
     accent: z.string().refine(isAccent, 'Use a #rrggbb color').optional(),
     transparency: z.number().min(0).max(1).optional(),
+    /** Keeps the style, accent and transparency of config.yaml: the Theme menu can't change them. */
+    locked: z.boolean().optional(),
 });
 
 const id = z.union([z.string().min(1), z.number()]);
