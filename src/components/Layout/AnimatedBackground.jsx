@@ -67,7 +67,7 @@ const MatrixRain = () => {
  * their colors from the background's color when it has one. Nothing moves for people who asked
  * for less motion.
  * @param {Object} props
- * @param {{color?: string, motion?: string}|null|undefined} props.background - The background of the page shown.
+ * @param {{color?: string, motion?: string, weather?: string}|null|undefined} props.background - The background of the page shown.
  * @returns {JSX.Element|null} The layer, or null for a still background.
  */
 const AnimatedBackground = ({ background }) => {
@@ -81,11 +81,11 @@ const AnimatedBackground = ({ background }) => {
         );
     }
     const color = isBackgroundColor(background?.color) ? background.color : null;
-    const colors = color ? {
+    const colors = color ? /** @type {import('react').CSSProperties} */ ({
         '--motion-a': color,
         '--motion-b': `color-mix(in srgb, ${color} 55%, #8a5cff)`,
         '--motion-c': `color-mix(in srgb, ${color} 55%, #00d2b4)`,
-    } : undefined;
+    }) : undefined;
     return (
         <div className={`page-motion motion-${motion}`} style={colors} aria-hidden="true">
             {motion === 'matrix' ? <MatrixRain /> : <><i /><i /><i />{motion === 'blobs' && <><i /><i /><i /></>}</>}

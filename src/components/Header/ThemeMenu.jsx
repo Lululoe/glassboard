@@ -59,14 +59,14 @@ const ThemeMenu = ({ editable, onClose }) => {
     };
 
     // The color picker reports every color passed while dragging; only the one it stops at is saved
-    const pickTimer = useRef(0);
+    const pickTimer = useRef(/** @type {ReturnType<typeof setTimeout>|undefined} */ (undefined));
     const pickColor = (color) => {
         clearTimeout(pickTimer.current);
         pickTimer.current = setTimeout(() => save({ accent: color }), 400);
     };
     useEffect(() => () => clearTimeout(pickTimer.current), []);
 
-    const slideTimer = useRef(0);
+    const slideTimer = useRef(/** @type {ReturnType<typeof setTimeout>|undefined} */ (undefined));
     /**
      * Shows a transparency on the page.
      * @param {number} value - From 0 (solid) to 1 (clear).
@@ -156,7 +156,7 @@ const ThemeMenu = ({ editable, onClose }) => {
                         <input type="radio" name="glassboard-accent" checked={!accent} onChange={() => save({ accent: null })} aria-label="Theme color" />
                     </label>
                     {ACCENT_PRESETS.map(preset => (
-                        <label key={preset.color} className="theme-menu-swatch" style={{ '--swatch': preset.color }} title={preset.name}>
+                        <label key={preset.color} className="theme-menu-swatch" style={/** @type {import('react').CSSProperties} */ ({ '--swatch': preset.color })} title={preset.name}>
                             <input
                                 type="radio"
                                 name="glassboard-accent"
@@ -166,7 +166,7 @@ const ThemeMenu = ({ editable, onClose }) => {
                             />
                         </label>
                     ))}
-                    <label className={`theme-menu-swatch is-custom${custom ? ' is-checked' : ''}`} style={custom ? { '--swatch': accent } : undefined} title="Other color">
+                    <label className={`theme-menu-swatch is-custom${custom ? ' is-checked' : ''}`} style={custom ? /** @type {import('react').CSSProperties} */ ({ '--swatch': accent }) : undefined} title="Other color">
                         <input
                             type="color"
                             value={accent || '#0a84ff'}

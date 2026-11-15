@@ -46,7 +46,7 @@ const AppIcon = ({ icon, background, color, className = '', size = "100%", onGlo
         <div
             ref={ref}
             className={`app-icon-container${background === 'transparent' ? ' is-bare' : ''} ${className}`}
-            style={{ background: background || 'var(--icon-background)', '--icon-glow': glow ?? undefined }}
+            style={/** @type {import('react').CSSProperties} */ ({ background: background || 'var(--icon-background)', '--icon-glow': glow ?? undefined })}
         >
             <Icon icon={icon} size={size} className="app-icon" color={color} />
         </div>

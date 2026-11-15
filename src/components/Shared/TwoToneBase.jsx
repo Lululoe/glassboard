@@ -72,7 +72,7 @@ const TwoToneBase = ({
         : { href: url || undefined };
 
     return (
-        <div className={`glass-card two-tone-card${hue ? ' has-hue' : ''} ${className}`} style={hue ? { '--card-hue': hue } : undefined}>
+        <div className={`glass-card two-tone-card${hue ? ' has-hue' : ''} ${className}`} style={hue ? /** @type {import('react').CSSProperties} */ ({ '--card-hue': hue }) : undefined}>
             <div className="two-tone-header">
                 <HeaderInfo className={`two-tone-header-info${onHeaderClick && !url ? ' button-reset' : ''}`} {...headerProps}>
                     {icon && (

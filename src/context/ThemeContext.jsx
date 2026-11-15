@@ -3,7 +3,7 @@ import { SURFACE_TOKENS, accentVariables, fadeSurface, normalizeAppearance, tran
 import { refractionSupported } from '../styles/refraction.js';
 
 // eslint-disable-next-line react-refresh/only-export-components
-export const ThemeContext = createContext({
+export const ThemeContext = createContext(/** @type {any} */ ({
     mode: 'dark',
     modeSetting: 'system',
     setMode: () => {},
@@ -17,7 +17,7 @@ export const ThemeContext = createContext({
     setAppearance: async () => {},
     refraction: { supported: false, enabled: false, active: false, setEnabled: () => {} },
     screenEffects: { enabled: true, active: false, setEnabled: () => {} },
-});
+}));
 
 /**
  * Hook to access the current theme: light or dark, the dashboard's style and accent, and

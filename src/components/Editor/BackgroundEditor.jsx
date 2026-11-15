@@ -23,7 +23,7 @@ const IMAGE_TYPES = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
 
 /**
  * Reads a saved background setting into a form.
- * @param {{color?: string, image?: string, dim?: number, theme?: boolean, motion?: string}|null|undefined} background - The setting.
+ * @param {{color?: string, image?: string, dim?: number, theme?: boolean, motion?: string, weather?: string}|null|undefined} background - The setting.
  * @param {boolean} forPage - Whether it is a single page's, which can follow the dashboard's.
  * @returns {BackgroundForm} The form.
  */

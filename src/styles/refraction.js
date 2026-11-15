@@ -104,7 +104,7 @@ export function startRefraction(selector, options = {}) {
 
     /** @type {Map<string, {id: string, users: number}>} Filters by size and radius. */
     const filters = new Map();
-    /** @type {Map<Element, string>} The filter key each element uses. */
+    /** @type {Map<HTMLElement, string>} The filter key each element uses. */
     const elements = new Map();
     let count = 0;
 
@@ -159,7 +159,7 @@ export function startRefraction(selector, options = {}) {
     const resize = new ResizeObserver(entries => entries.forEach(entry => update(entry.target)));
 
     const scan = () => {
-        const found = new Set(document.querySelectorAll(selector));
+        const found = new Set(/** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(selector)));
         elements.forEach((key, el) => {
             if (found.has(el)) return;
             resize.unobserve(el);

@@ -29,7 +29,7 @@ function runLoop(canvas, setup) {
     resize();
     window.addEventListener('resize', resize);
     const still = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    let timer = 0;
+    let timer = /** @type {ReturnType<typeof setInterval>|undefined} */ (undefined);
     if (still) {
         // One settled frame: run the effect a little while, then stop
         for (let i = 0; i < 90; i++) effect.frame(i * 1000 / FPS);

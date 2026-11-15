@@ -52,7 +52,7 @@ const WeatherBackground = ({ fixed = null }) => {
     return (
         <div
             className={`weather-scene effect-${scene.effect}${scene.night ? ' is-night' : ''}${scene.fog ? ' is-fog' : ''}${wet ? ' is-wet' : ''}`}
-            style={{ '--clouds': scene.clouds, '--intensity': scene.intensity }}
+            style={/** @type {import('react').CSSProperties} */ ({ '--clouds': scene.clouds, '--intensity': scene.intensity })}
         >
             <div className="weather-veil" />
             {scene.effect === 'sun' && !scene.night && (
@@ -79,14 +79,14 @@ const WeatherBackground = ({ fixed = null }) => {
                         <i
                             key={`${y}-${base}`}
                             className="weather-cloud"
-                            style={{
+                            style={/** @type {import('react').CSSProperties} */ ({
                                 '--y': `${y}vh`,
                                 '--s': `${size}vmax`,
                                 '--d': `${duration}s`,
                                 '--delay': `${delay}s`,
                                 // Where it stands when nothing moves: as far across as it would have sailed
                                 '--x': `${(-delay / duration) * 100}vw`,
-                            }}
+                            })}
                         />
                         );
                     })}

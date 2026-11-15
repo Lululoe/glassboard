@@ -130,7 +130,7 @@ const HAControlCard = ({ config }) => {
                 if (hasDialog) {
                     // Two sibling buttons: the tile opens the controls, the icon switches
                     return (
-                        <div key={entity.entity_id ?? idx} className={tileClass} style={tileStyle}>
+                        <div key={entity.entity_id ?? idx} className={tileClass} style={/** @type {import('react').CSSProperties} */ (tileStyle)}>
                             <button
                                 type="button"
                                 className="button-reset ha-tile-open"
@@ -159,7 +159,7 @@ const HAControlCard = ({ config }) => {
                     <Tile
                         key={entity.entity_id ?? idx}
                         className={hasActions ? `button-reset ${tileClass}` : tileClass}
-                        style={tileStyle}
+                        style={/** @type {import('react').CSSProperties} */ (tileStyle)}
                         {...(hasActions && {
                             type: 'button',
                             'aria-pressed': isOn,
