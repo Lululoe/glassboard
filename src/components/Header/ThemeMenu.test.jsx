@@ -28,6 +28,8 @@ describe('Theme menu', () => {
         document.documentElement.removeAttribute('data-style');
         document.documentElement.removeAttribute('data-theme');
         document.documentElement.removeAttribute('data-effects');
+        document.documentElement.style.removeProperty('--surface-solid');
+        document.documentElement.style.removeProperty('--surface-clear');
     });
 
     it('picks light or dark for this browser only', () => {
@@ -129,6 +131,30 @@ describe('Theme menu', () => {
     it('still shows Terminal while the dashboard is set to it', () => {
         openMenu({ appearance: { style: 'terminal' } });
         expect(screen.getByRole('radio', { name: /Terminal/ })).toBeChecked();
+    });
+
+    it('makes Glass cards clearer while dragging and saves the transparency once it stops', async () => {
+        vi.useFakeTimers();
+        try {
+            openMenu({});
+            const slider = screen.getByRole('slider', { name: 'Transparency' });
+            expect(slider).toHaveValue('0.5');
+            fireEvent.change(slider, { target: { value: '0.7' } });
+            fireEvent.change(slider, { target: { value: '1' } });
+            expect(document.documentElement.style.getPropertyValue('--surface-clear')).toBe('0.25');
+            expect(fetch).not.toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(500);
+            expect(fetch).toHaveBeenCalledTimes(1);
+            expect(fetch).toHaveBeenLastCalledWith('/api/config/appearance', expect.objectContaining({ body: JSON.stringify({ transparency: 1 }) }));
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('offers the transparency for Glass and Liquid Glass only', () => {
+        openMenu({ appearance: { style: 'material' } });
+        expect(screen.queryByRole('slider', { name: 'Transparency' })).toBeNull();
+        expect(document.documentElement.style.getPropertyValue('--surface-clear')).toBe('');
     });
 
     it('offers screen effects only with the Terminal style', () => {

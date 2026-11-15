@@ -66,14 +66,64 @@ export function onAccent(accent) {
     return 1.05 / (luminance(accent) + 0.05) >= 3 ? '#fff' : '#1c1c1e';
 }
 
+/** Styles whose cards are see-through, with a transparency the Theme menu can change. */
+export const TRANSPARENT_STYLES = ['glass', 'liquid'];
+
+/** The transparency of a style's own look: the middle of the slider. */
+export const DEFAULT_TRANSPARENCY = 0.5;
+
+/**
+ * Whether a value is a transparency.
+ * @param {*} value - The value.
+ * @returns {boolean} True for a number from 0 (solid) to 1 (clearest).
+ */
+export const isTransparency = (value) => typeof value === 'number' && value >= 0 && value <= 1;
+
 /**
  * Reads an appearance setting, dropping what isn't valid.
  * @param {*} value - The `appearance` of the config.
- * @returns {{style: string, accent: string|null}} The style (Glass when unset) and the accent (null for the theme's).
+ * @returns {{style: string, accent: string|null, transparency: number}} The style (Glass when unset), the accent
+ *   (null for the theme's) and the transparency of Glass and Liquid Glass cards (0.5 when unset).
  */
 export function normalizeAppearance(value) {
     const style = APPEARANCE_STYLES.includes(value?.style) ? value.style : 'glass';
-    return { style, accent: isAccent(value?.accent) ? value.accent.toLowerCase() : null };
+    return {
+        style,
+        accent: isAccent(value?.accent) ? value.accent.toLowerCase() : null,
+        transparency: isTransparency(value?.transparency) ? value.transparency : DEFAULT_TRANSPARENCY,
+    };
+}
+
+/**
+ * The two CSS variables the card surfaces of Glass and Liquid Glass are faded with (see
+ * `fadeSurface`). Below the middle, `--surface-solid` brings their opacity up toward solid;
+ * above it, `--surface-clear` takes it down to a quarter.
+ * @param {string} style - The style.
+ * @param {number} transparency - From 0 (solid) to 1 (clearest); 0.5 is the style's own look.
+ * @returns {Object<string, string>} The variables, empty for styles without a transparency.
+ */
+export function transparencyVariables(style, transparency) {
+    if (!TRANSPARENT_STYLES.includes(style)) return {};
+    const t = isTransparency(transparency) ? transparency : DEFAULT_TRANSPARENCY;
+    const solid = Math.max(0, (0.5 - t) * 2);
+    const clear = 1 - Math.max(0, (t - 0.5) * 2) * 0.75;
+    return { '--surface-solid': String(Math.round(solid * 1000) / 1000), '--surface-clear': String(Math.round(clear * 1000) / 1000) };
+}
+
+/** Theme colors of the card surfaces that the transparency fades. */
+export const SURFACE_TOKENS = ['--bg-card-surface', '--bg-card-glass', '--bg-card-glass-header'];
+
+/**
+ * Makes the opacity of every rgba() color in a CSS value follow the transparency variables, so
+ * a theme's own surface colors and gradients can be faded or made solid.
+ * @param {string} value - A color or gradient, such as `rgba(0, 0, 0, 0.75)`.
+ * @returns {string} The value, with each rgba() opacity a calc() of the variables.
+ */
+export function fadeSurface(value) {
+    if (typeof value !== 'string') return value;
+    return value.replace(/rgba\(\s*([^,()]+),\s*([^,()]+),\s*([^,()]+),\s*([0-9.]+)\s*\)/g, (_m, r, g, b, a) => (
+        `rgba(${r}, ${g}, ${b}, calc((${a} + (1 - ${a}) * var(--surface-solid, 0)) * var(--surface-clear, 1)))`
+    ));
 }
 
 /**

@@ -264,3 +264,19 @@ dialog.theme-menu::backdrop {
     opacity: 0;
     cursor: inherit;
 }
+
+/* How see-through Glass and Liquid Glass cards are, from solid to clear */
+.theme-menu-transparency input[type="range"] {
+    width: 100%;
+    margin: 0;
+    accent-color: var(--color-primary);
+}
+
+.theme-menu-transparency-ends {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--fs-12);
+    line-height: 1rem;
+    color: var(--text-secondary);
+}
+

@@ -1,5 +1,5 @@
 import { backgroundCss } from '../shared/pageBackground.js';
-import { normalizeAppearance } from '../shared/appearance.js';
+import { normalizeAppearance, transparencyVariables } from '../shared/appearance.js';
 
 /**
  * Picks light or dark before anything is drawn, the way the app does once it runs: the
@@ -72,8 +72,11 @@ export function initialHead(config = {}, path = '/') {
         + 'html{background:var(--bg-page-base,#003780) var(--bg-page-custom,var(--bg-page-gradient)) center/cover fixed}'
         + 'body::before{content:"";position:fixed;inset:0;z-index:-1;background:rgba(0,0,0,var(--bg-page-dim,0));pointer-events:none}';
     // The style is one of a fixed list, so it can go into the script as it is
-    const { style: dashboardStyle } = normalizeAppearance(config.appearance);
-    const styleScript = `<script>document.documentElement.setAttribute('data-style','${dashboardStyle}')</script>`;
+    const { style: dashboardStyle, transparency } = normalizeAppearance(config.appearance);
+    // Numbers only, so they can go into the script as they are too
+    const surfaces = Object.entries(transparencyVariables(dashboardStyle, transparency))
+        .map(([name, value]) => `d.style.setProperty('${name}','${Number(value)}');`).join('');
+    const styleScript = `<script>(function(d){d.setAttribute('data-style','${dashboardStyle}');${surfaces}})(document.documentElement)</script>`;
     return `${MODE_SCRIPT}${styleScript}<style id="glassboard-initial">${style}</style>`;
 }
 

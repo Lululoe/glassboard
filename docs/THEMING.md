@@ -33,6 +33,20 @@ A style chosen in the Theme menu is saved in `layout.yaml` and wins over `config
 `config.yaml` again removes it from `layout.yaml`. When `editable: false` is set, the style can only be set in
 `config.yaml`. `themeToggle: false` hides the Theme button.
 
+### Transparency
+With Glass and Liquid Glass, the **Transparency** slider in the Theme menu sets how see-through the cards are: from
+solid on the left, through each style's own look in the middle, to clear glass on the right. Like the style, it applies
+to the whole dashboard. In `config.yaml` it is a number from `0` (solid) to `1` (clearest); `0.5` is the default:
+
+```yaml
+appearance:
+  style: liquid
+  transparency: 0.7
+```
+
+It changes the card surfaces only. Menus and pop-ups keep their own frosting, so they stay readable, and with
+Reduce Transparency every surface is solid whatever the slider says.
+
 ### Accent color
 The accent colors buttons, highlights, switches, selections and graphs. Pick a preset or any other color in the Theme
 menu, or set it in `config.yaml`; without one, the theme's `--color-primary` is used. Like the style, it applies to the

@@ -7,10 +7,11 @@ import { childCardsOf } from '../shared/containerCards.js';
 import { APPEARANCE_STYLES, isAccent } from '../shared/appearance.js';
 import { BACKGROUND_MOTIONS, WEATHER_EFFECTS } from '../shared/pageBackground.js';
 
-/** The dashboard's style and accent color. */
+/** The dashboard's style, accent color and the transparency of Glass and Liquid Glass cards. */
 export const appearanceSchema = z.object({
     style: z.enum(APPEARANCE_STYLES).optional(),
     accent: z.string().refine(isAccent, 'Use a #rrggbb color').optional(),
+    transparency: z.number().min(0).max(1).optional(),
 });
 
 const id = z.union([z.string().min(1), z.number()]);

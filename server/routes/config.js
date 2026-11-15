@@ -19,6 +19,7 @@ import logger from '../logger.js';
 import { flattenCards } from '../../shared/containerCards.js';
 import { isDemoMode } from '../services/demo.js';
 import { appearanceSchema } from '../configSchema.js';
+import { DEFAULT_TRANSPARENCY } from '../../shared/appearance.js';
 import { BACKGROUND_MOTIONS, WEATHER_EFFECTS } from '../../shared/pageBackground.js';
 
 const KEEP_ALIVE_INTERVAL = 30 * 1000;
@@ -334,10 +335,11 @@ router.get('/background/:name', (req, res) => {
     res.set('Cache-Control', 'public, max-age=31536000, immutable').sendFile(file);
 });
 
-/** Body of an appearance change: a style or accent, or null to go back to the one in config.yaml. */
+/** Body of an appearance change: a style, accent or transparency, or null to go back to the one in config.yaml. */
 const appearanceBody = z.object({
     style: appearanceSchema.shape.style.nullable(),
     accent: appearanceSchema.shape.accent.nullable(),
+    transparency: appearanceSchema.shape.transparency.nullable(),
 }).partial().strict();
 
 /**
@@ -354,8 +356,8 @@ router.put('/appearance', (req, res, next) => {
             throw new HttpError(400, `Invalid appearance: ${issue.path.join('.')} ${issue.message}`.trim());
         }
         const previous = readLayout();
-        // Unset in config.yaml means the defaults: Glass and the theme's accent
-        const base = { style: 'glass', accent: null, ...getBaseConfig().appearance };
+        // Unset in config.yaml means the defaults: Glass, the theme's accent and the style's own transparency
+        const base = { style: 'glass', accent: null, transparency: DEFAULT_TRANSPARENCY, ...getBaseConfig().appearance };
         const merged = { ...previous.appearance };
         Object.entries(parsed.data).forEach(([key, value]) => {
             if (value === null || value === base[key]) delete merged[key];

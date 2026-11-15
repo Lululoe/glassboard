@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import { accentVariables, normalizeAppearance } from '../../shared/appearance.js';
+import { SURFACE_TOKENS, accentVariables, fadeSurface, normalizeAppearance, transparencyVariables } from '../../shared/appearance.js';
 import { refractionSupported } from '../styles/refraction.js';
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -12,6 +12,7 @@ export const ThemeContext = createContext({
     particles: null,
     style: 'glass',
     accent: null,
+    transparency: 0.5,
     setAppearance: async () => {},
     refraction: { supported: false, enabled: false, active: false, setEnabled: () => {} },
     screenEffects: { enabled: true, active: false, setEnabled: () => {} },
@@ -113,7 +114,7 @@ export const ThemeProvider = ({ children, config }) => {
         setPendingFor(config?.appearance);
         setPending(null);
     }
-    const { style, accent } = normalizeAppearance({ ...saved, ...pending });
+    const { style, accent, transparency } = normalizeAppearance({ ...saved, ...pending });
 
     // Refraction: on where the browser can draw it, unless turned off in this browser or the
     // person asked for less transparency
@@ -146,8 +147,8 @@ export const ThemeProvider = ({ children, config }) => {
     };
 
     /**
-     * Changes the dashboard's style or accent and saves it for every browser.
-     * @param {{style?: string|null, accent?: string|null}} change - What to change; null goes back to config.yaml.
+     * Changes the dashboard's style, accent or transparency and saves it for every browser.
+     * @param {{style?: string|null, accent?: string|null, transparency?: number|null}} change - What to change; null goes back to config.yaml.
      * @returns {Promise<void>} Resolves once saved; rejects, showing the saved appearance again, when saving fails.
      */
     const setAppearance = async (change) => {
@@ -197,6 +198,8 @@ export const ThemeProvider = ({ children, config }) => {
             ...activeThemeConfig?.colors?.[mode],
             ...accentVariables(accent),
         };
+        // The theme's card surfaces follow the transparency of Glass and Liquid Glass
+        SURFACE_TOKENS.forEach(key => { if (key in finalColors) finalColors[key] = fadeSurface(finalColors[key]); });
 
         appliedVars.current
             .filter(key => !(key in finalColors))
@@ -213,6 +216,16 @@ export const ThemeProvider = ({ children, config }) => {
         if (effectsActive) root.setAttribute('data-effects', 'crt');
         else root.removeAttribute('data-effects');
     }, [style, refractionActive, effectsActive]);
+
+    // How see-through the cards of Glass and Liquid Glass are
+    useEffect(() => {
+        const root = document.documentElement;
+        const vars = transparencyVariables(style, transparency);
+        ['--surface-solid', '--surface-clear'].forEach(key => {
+            if (key in vars) root.style.setProperty(key, vars[key]);
+            else root.style.removeProperty(key);
+        });
+    }, [style, transparency]);
 
     // Custom CSS Injection
     useEffect(() => {
@@ -236,6 +249,7 @@ export const ThemeProvider = ({ children, config }) => {
             particles: activeParticles,
             style,
             accent,
+            transparency,
             setAppearance,
             refraction: { supported, enabled: refractionOn, active: refractionActive, setEnabled: setRefractionEnabled },
             screenEffects: { enabled: effectsOn, active: effectsActive, setEnabled: setEffectsEnabled },

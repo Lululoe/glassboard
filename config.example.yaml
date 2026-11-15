@@ -10,6 +10,7 @@ themes: []
 # appearance:
 #   style: glass
 #   accent: "#0a84ff"
+#   transparency: 0.5   # Glass and Liquid Glass cards: 0 solid to 1 clear
 
 # Fill every card with simulated data instead of calling your services, e.g. to try the
 # dashboard before setting anything up. Can also be set with GLASSBOARD_DEMO=true.

@@ -1,15 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { ACCENT_PRESETS, APPEARANCE_STYLES, accentVariables, isAccent, normalizeAppearance } from './appearance.js';
+import {
+    ACCENT_PRESETS, APPEARANCE_STYLES, accentVariables, fadeSurface, isAccent, normalizeAppearance, transparencyVariables,
+} from './appearance.js';
 
 describe('appearance', () => {
     it('defaults to Glass with the theme accent', () => {
-        expect(normalizeAppearance(undefined)).toEqual({ style: 'glass', accent: null });
-        expect(normalizeAppearance({ style: 'disco', accent: 'blue' })).toEqual({ style: 'glass', accent: null });
+        expect(normalizeAppearance(undefined)).toEqual({ style: 'glass', accent: null, transparency: 0.5 });
+        expect(normalizeAppearance({ style: 'disco', accent: 'blue', transparency: 2 })).toEqual({ style: 'glass', accent: null, transparency: 0.5 });
     });
 
     it('keeps known styles and #rrggbb accents', () => {
-        expect(normalizeAppearance({ style: 'terminal', accent: '#33FF66' })).toEqual({ style: 'terminal', accent: '#33ff66' });
+        expect(normalizeAppearance({ style: 'terminal', accent: '#33FF66', transparency: 0.8 })).toEqual({ style: 'terminal', accent: '#33ff66', transparency: 0.8 });
         APPEARANCE_STYLES.forEach(style => expect(normalizeAppearance({ style }).style).toBe(style));
+    });
+
+    it('fades Glass and Liquid Glass surfaces toward solid below the middle and toward clear above it', () => {
+        expect(transparencyVariables('glass', 0.5)).toEqual({ '--surface-solid': '0', '--surface-clear': '1' });
+        expect(transparencyVariables('glass', 0)).toEqual({ '--surface-solid': '1', '--surface-clear': '1' });
+        expect(transparencyVariables('liquid', 0.25)).toEqual({ '--surface-solid': '0.5', '--surface-clear': '1' });
+        expect(transparencyVariables('liquid', 1)).toEqual({ '--surface-solid': '0', '--surface-clear': '0.25' });
+        expect(transparencyVariables('material', 1)).toEqual({});
+    });
+
+    it("lets every rgba() opacity of a theme's surface follow the transparency", () => {
+        expect(fadeSurface('rgba(0, 0, 0, 0.75)')).toBe('rgba(0, 0, 0, calc((0.75 + (1 - 0.75) * var(--surface-solid, 0)) * var(--surface-clear, 1)))');
+        expect(fadeSurface('linear-gradient(rgba(1, 2, 3, 0.2), rgba(4, 5, 6, .6))').match(/var\(--surface-clear/g)).toHaveLength(2);
+        expect(fadeSurface('#123456')).toBe('#123456');
     });
 
     it('offers only valid accent presets', () => {

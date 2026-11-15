@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { SegmentedField, ToggleField } from '../Editor/EditorFields';
-import { ACCENT_PRESETS, MENU_STYLES, STYLE_NAMES } from '../../../shared/appearance.js';
+import { ACCENT_PRESETS, MENU_STYLES, STYLE_NAMES, TRANSPARENT_STYLES, transparencyVariables } from '../../../shared/appearance.js';
 import '../Editor/EditorFields.css';
 import './ThemeMenu.css';
 
@@ -22,7 +22,8 @@ const MODE_OPTIONS = [
 
 /**
  * Popover of the header's Theme button: light or dark, liquid glass refraction and terminal
- * screen effects for this browser, and the dashboard's style and accent color for everyone using it.
+ * screen effects for this browser, and the dashboard's style, accent color and (for Glass and
+ * Liquid Glass) transparency for everyone using it.
  * @param {Object} props
  * @param {boolean} props.editable - Whether the dashboard's style can be changed here.
  * @param {() => void} props.onClose - Closes the menu.
@@ -30,7 +31,11 @@ const MODE_OPTIONS = [
  */
 const ThemeMenu = ({ editable, onClose }) => {
     const dialogRef = useRef(null);
-    const { modeSetting, setMode, style, accent, setAppearance, refraction, screenEffects } = useTheme();
+    const { modeSetting, setMode, style, accent, transparency, setAppearance, refraction, screenEffects } = useTheme();
+    const transparencyId = useId();
+    // The slider's value while it is dragged, shown on the page right away and saved once it stops
+    const [dragged, setDragged] = useState(null);
+    const shownTransparency = dragged ?? transparency;
     const custom = accent && !ACCENT_PRESETS.some(p => p.color === accent);
     const [error, setError] = useState(null);
 
@@ -58,6 +63,32 @@ const ThemeMenu = ({ editable, onClose }) => {
         pickTimer.current = setTimeout(() => save({ accent: color }), 400);
     };
     useEffect(() => () => clearTimeout(pickTimer.current), []);
+
+    const slideTimer = useRef(0);
+    /**
+     * Shows a transparency on the page.
+     * @param {number} value - From 0 (solid) to 1 (clear).
+     */
+    const showTransparency = (value) => {
+        const root = document.documentElement;
+        Object.entries(transparencyVariables(style, value)).forEach(([key, v]) => root.style.setProperty(key, v));
+    };
+    const slideTransparency = (value) => {
+        setDragged(value);
+        showTransparency(value);
+        clearTimeout(slideTimer.current);
+        slideTimer.current = setTimeout(() => {
+            setError(null);
+            setAppearance({ transparency: value })
+                .catch(err => {
+                    // Back to the saved one
+                    showTransparency(transparency);
+                    setError(err.message);
+                })
+                .finally(() => setDragged(null));
+        }, 400);
+    };
+    useEffect(() => () => clearTimeout(slideTimer.current), []);
 
     // A click on the backdrop, outside the menu, closes it. Clicks on the menu's own controls
     // target those controls, so only clicks on the dialog element itself are checked.
@@ -95,6 +126,27 @@ const ThemeMenu = ({ editable, onClose }) => {
                 </div>
             </fieldset>
 
+            {TRANSPARENT_STYLES.includes(style) && (
+                <div className="editor-field theme-menu-transparency">
+                    <label className="editor-label" htmlFor={transparencyId}>Transparency</label>
+                    <input
+                        id={transparencyId}
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={shownTransparency}
+                        disabled={!editable}
+                        aria-valuetext={`${Math.round(shownTransparency * 100)}%`}
+                        onChange={(e) => slideTransparency(Number(e.target.value))}
+                    />
+                    <div className="theme-menu-transparency-ends" aria-hidden="true">
+                        <span>Solid</span>
+                        <span>Clear</span>
+                    </div>
+                </div>
+            )}
+
             <fieldset className="theme-menu-accents" disabled={!editable}>
                 <legend className="editor-label">Accent</legend>
                 <div className="theme-menu-swatches">
@@ -121,7 +173,9 @@ const ThemeMenu = ({ editable, onClose }) => {
                         />
                     </label>
                 </div>
-                <div className="editor-hint">{editable ? 'Style and accent are for everyone using this dashboard.' : 'Set in config.yaml.'}</div>
+                <div className="editor-hint">{editable
+                    ? `Style, accent${TRANSPARENT_STYLES.includes(style) ? ' and transparency' : ''} are for everyone using this dashboard.`
+                    : 'Set in config.yaml.'}</div>
             </fieldset>
 
             {style === 'liquid' && (

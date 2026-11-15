@@ -57,6 +57,16 @@ describe('appearance API', () => {
         expect(readLayout().appearance).toBeUndefined();
     });
 
+    it('saves the transparency, except the middle one, and refuses values outside 0 to 1', async () => {
+        setConfig({ pages: [{ id: 'home', cards: [{ id: 'a', type: 'x' }] }] });
+        expect((await put(server, { transparency: 0.8 })).status).toBe(200);
+        expect(readLayout().appearance).toEqual({ transparency: 0.8 });
+        expect((await put(server, { transparency: 0.5 })).status).toBe(200);
+        expect(readLayout().appearance).toBeUndefined();
+        expect((await put(server, { transparency: 1.5 })).status).toBe(400);
+        expect((await put(server, { transparency: 'clear' })).status).toBe(400);
+    });
+
     it('refuses unknown styles, colors that are not #rrggbb and other settings', async () => {
         expect((await put(server, { style: 'disco' })).status).toBe(400);
         expect((await put(server, { accent: 'red' })).status).toBe(400);
