@@ -89,7 +89,12 @@
 :root[data-style="neon"] .container-card {
     --neon-card-hue: var(--card-hue, var(--color-primary));
     --neon-card-edge: color-mix(in srgb, var(--neon-card-hue) 30%, var(--neon-edge));
-    --shadow-tile: 0 18px 40px -28px color-mix(in srgb, var(--neon-card-hue) 85%, transparent);
+    /* The glow: its color, and its size, which grows while the card is pointed at */
+    --neon-glow: color-mix(in srgb, var(--neon-card-hue) 85%, transparent);
+    --neon-glow-size: 0 18px 40px -28px;
+    --neon-glow-halo: 0 0 0 transparent;
+    --shadow-tile: var(--neon-glow-size) var(--neon-glow), var(--neon-glow-halo);
+    transition: box-shadow 0.25s var(--ease-standard), transform var(--duration-standard) var(--ease-standard), background var(--duration-standard) var(--ease-standard);
     --bg-tile: color-mix(in oklch, var(--neon-card-hue) 28%, #fff);
     --neon-selected: linear-gradient(135deg, color-mix(in oklch, var(--neon-card-hue) 60%, #fff) 0%, color-mix(in oklch, var(--neon-card-hue) 88%, #fff) 100%);
     --neon-selected-glow: color-mix(in srgb, var(--neon-card-hue) 70%, transparent);
@@ -104,7 +109,8 @@
 :root[data-style="neon"][data-theme="light"] .glass-card,
 :root[data-style="neon"][data-theme="light"] .ha-tile,
 :root[data-style="neon"][data-theme="light"] .container-card {
-    --shadow-tile: 0 18px 40px -28px color-mix(in srgb, var(--neon-card-hue) 60%, transparent), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --neon-glow: color-mix(in srgb, var(--neon-card-hue) 60%, transparent);
+    --shadow-tile: var(--neon-glow-size) var(--neon-glow), var(--neon-glow-halo), 0 1px 2px rgba(0, 0, 0, 0.04);
     --neon-band: linear-gradient(135deg, color-mix(in oklch, var(--neon-card-hue) 24%, #fff) 0%, color-mix(in oklch, var(--neon-card-hue) 12%, #fff) 100%);
     --neon-body: linear-gradient(135deg, color-mix(in oklch, var(--neon-card-hue) 10%, #fff) 0%, color-mix(in oklch, var(--neon-card-hue) 4%, #fff) 100%);
     --neon-lit: color-mix(in oklch, var(--neon-card-hue) 60%, #000);
@@ -117,13 +123,23 @@
 :root[data-style="neon"] .ha-tile.off,
 :root[data-style="neon"] .thermostat-card:not(:has(.thermo-slider:not(.off))) {
     --neon-card-edge: var(--neon-edge);
-    --shadow-tile: 0 18px 40px -28px rgba(170, 178, 194, 0.55);
+    --neon-glow: rgba(170, 178, 194, 0.55);
 }
 
 :root[data-style="neon"][data-theme="light"] .app-grid-card,
 :root[data-style="neon"][data-theme="light"] .ha-tile.off,
 :root[data-style="neon"][data-theme="light"] .thermostat-card:not(:has(.thermo-slider:not(.off))) {
-    --shadow-tile: 0 18px 40px -28px rgba(30, 36, 50, 0.4), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --neon-glow: rgba(30, 36, 50, 0.4);
+}
+
+/* Pointing at a card makes its glow larger and brighter */
+@media (pointer: fine) {
+    :root[data-style="neon"] .glass-card:hover,
+    :root[data-style="neon"] .ha-tile:hover,
+    :root[data-style="neon"] .container-card:hover {
+        --neon-glow-size: 0 22px 56px -22px;
+        --neon-glow-halo: 0 0 28px -10px var(--neon-glow);
+    }
 }
 
 /* Thermostats are warm, and cool while cooling */
@@ -228,7 +244,7 @@
     --neon-card-edge: color-mix(in srgb, var(--neon-hue) 40%, transparent);
     background: var(--neon-tile);
     color: color-mix(in oklch, var(--neon-hue) 30%, #fff);
-    box-shadow: 0 18px 40px -28px var(--neon-hue);
+    --neon-glow: var(--neon-hue);
 }
 
 :root[data-style="neon"] .ha-tile.on .ha-tile-name {
