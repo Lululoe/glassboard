@@ -15,6 +15,7 @@ This project was born out of a desire for a dashboard that didn't just function 
 -   **Multi-Page Support**:
     -   **Desktop**: Hover-triggered navigation zones on the screen edges.
     -   **Mobile**: Smooth swipe gestures to switch pages.
+    -   **Hide pages by URL**: `?hide=servers,media` leaves those pages (by id or name) out entirely on that device, for example a wall tablet.
 -   **Theming**: Unified color palette with support for Light/Dark modes (system adaptable).
 
 ### 🏠 Home Automation
