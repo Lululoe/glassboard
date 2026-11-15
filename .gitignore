@@ -29,3 +29,6 @@ backgrounds/
 *.njsproj
 *.sln
 *.sw?
+
+# Planning notes and mockups, kept locally
+docs/plans/
