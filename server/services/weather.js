@@ -1,10 +1,10 @@
-import { findCard } from '../config.js';
+import { findCard, getAllCards } from '../config.js';
 import { HttpError, upstreamError } from '../errors.js';
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/search';
 const CACHE_DURATION = 30 * 60 * 1000;
-const FORECAST_TYPES = new Set(['daily', 'hourly']);
+const FORECAST_TYPES = new Set(['daily', 'hourly', 'current']);
 const forecastCache = new Map();
 const geocodeCache = new Map();
 
@@ -143,26 +143,48 @@ function normalizeForecast(data, type) {
     }));
 }
 
+/** How long the current weather is kept before it is asked for again. */
+const CURRENT_DURATION = 15 * 60 * 1000;
+
 /**
  * Returns a forecast for a weather card from the public Open-Meteo API (no API key needed).
  * The location and units are read from the card's config. Cached for 30 minutes.
+ *
+ * `type: 'current'` returns the weather now instead, for the weather background; without a card
+ * id it uses the dashboard's first weather card. Cached for 15 minutes.
  * @param {Object} params
- * @param {string|number} params.cardId - Id of a weather card in config.yaml.
- * @param {string} [params.type='daily'] - 'daily' or 'hourly'.
- * @returns {Promise<{forecast: Array<Object>, units: string}>} Normalized forecast.
+ * @param {string|number} [params.cardId] - Id of a weather card in config.yaml; required except for `current`.
+ * @param {string} [params.type='daily'] - 'daily', 'hourly' or 'current'.
+ * @returns {Promise<{forecast: Array<Object>, units: string}|{condition: string, isDay: boolean, cloudCover: number}>}
+ *   Normalized forecast, or the current weather.
  */
 export async function handleWeatherRequest({ cardId, type = 'daily' }) {
-    if (cardId === undefined) throw new HttpError(400, 'cardId is required');
     if (!FORECAST_TYPES.has(type)) throw new HttpError(400, `Invalid forecast type: ${type}`);
-    const card = findCard(cardId);
-    if (card?.type !== 'weather') throw new HttpError(404, `Weather card not found: ${cardId}`);
+    if (cardId === undefined && type !== 'current') throw new HttpError(400, 'cardId is required');
+    const card = cardId === undefined ? getAllCards().find(c => c.type === 'weather') : findCard(cardId);
+    if (card?.type !== 'weather') {
+        throw new HttpError(404, cardId === undefined ? 'No weather card on the dashboard' : `Weather card not found: ${cardId}`);
+    }
 
     const units = String(card.units ?? card.data?.units ?? 'metric').toLowerCase() === 'imperial' ? 'imperial' : 'metric';
     const { latitude, longitude } = await resolveCoordinates(card);
 
     const cacheKey = `${latitude},${longitude}:${type}:${units}`;
     const cached = forecastCache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) return cached.data;
+    if (cached && Date.now() - cached.timestamp < (type === 'current' ? CURRENT_DURATION : CACHE_DURATION)) return cached.data;
+
+    if (type === 'current') {
+        const { current = {} } = await openMeteoFetch(FORECAST_URL, {
+            latitude, longitude, timezone: 'auto', current: 'weather_code,is_day,cloud_cover',
+        });
+        const data = {
+            condition: describeWeatherCode(current.weather_code),
+            isDay: current.is_day !== 0,
+            cloudCover: current.cloud_cover ?? 0,
+        };
+        forecastCache.set(cacheKey, { timestamp: Date.now(), data });
+        return data;
+    }
 
     const params = {
         latitude,

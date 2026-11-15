@@ -173,6 +173,14 @@ A web address set in `config.yaml` is used as it is, without downloading it.
 - **Aurora**: soft color fields drifting slowly; with a **Color** background they take its colors.
 - **Blobs**: shapes floating behind the cards, which the [Liquid Glass](THEMING#styles) style bends at its edges.
 - **Matrix**: characters falling in the accent color, made for the Terminal style.
+- **Weather**: the weather outside, at the location of the dashboard's first [weather card](#weather-weather):
+  - rain, drizzle and storms: rain running down a misted window, harder the heavier it rains
+  - snow: falling snow
+  - overcast and fog: clouds drifting across, larger and lower in fog
+  - clear and partly cloudy: the sun with turning rays, with as many clouds as there are; at night, the moon and stars
+
+  It checks the weather every 15 minutes. **Effect** in the background editor (`weather` in `config.yaml`) can always
+  show one of them instead: `rain`, `snow`, `cover` (clouds) or `sun`. Without a weather card, Live shows nothing.
 
 ```yaml
 background:
@@ -183,10 +191,15 @@ pages:
       theme: true
       motion: matrix
     cards: []
+  - id: outside
+    background:
+      motion: weather
+      weather: snow     # optional: always snow
+    cards: []
 ```
 
-Aurora and Blobs only move with the graphics card (no repainting), and Matrix draws 20 frames a second and pauses in
-hidden tabs, so they also run on a Raspberry Pi. Nothing moves when the device asks for reduced motion.
+Aurora, Blobs, the clouds and the sun only move with the graphics card (no repainting); Matrix draws 20 frames a
+second, and rain and snow 30 at a reduced resolution, and they pause in hidden tabs, so they also run on a Raspberry Pi. Nothing moves when the device asks for reduced motion.
 
 Uploaded and downloaded pictures are stored in a `backgrounds` folder next to `layout.yaml` (or in `BACKGROUNDS_DIR`), named by
 their content, and removed when no saved background uses them any more.

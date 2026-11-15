@@ -890,7 +890,21 @@ function homeassistant(params) {
 
 const CONDITIONS = ['Clear', 'Partly cloudy', 'Overcast', 'Rain', 'Partly cloudy', 'Clear', 'Heavy rain'];
 
+/** The demo's current weather changes every ten minutes, so the weather background shows each effect. */
+const CURRENT_WEATHER = [
+    { condition: 'Rain', cloudCover: 100 },
+    { condition: 'Clear', cloudCover: 5 },
+    { condition: 'Snow', cloudCover: 95 },
+    { condition: 'Partly cloudy', cloudCover: 45 },
+    { condition: 'Overcast', cloudCover: 100 },
+];
+
 function weather({ cardId, type = 'daily' }) {
+    if (type === 'current') {
+        const now = CURRENT_WEATHER[Math.floor(Date.now() / 600000) % CURRENT_WEATHER.length];
+        const hour = new Date().getHours();
+        return { ...now, isDay: hour >= 7 && hour < 19 };
+    }
     if (cardId === undefined) throw new HttpError(400, 'cardId is required');
     const forecast = type === 'hourly'
         ? Array.from({ length: 24 }, (_v, h) => {

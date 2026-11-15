@@ -41,6 +41,21 @@ describe('Weather service', () => {
         expect(fetch).not.toHaveBeenCalled();
     });
 
+    it('returns the current weather of the first weather card, without a card id', async () => {
+        fetch.mockImplementation(async () => okResponse({ current: { weather_code: 71, is_day: 0, cloud_cover: 90 } }));
+        expect(await handleWeatherRequest({ type: 'current' })).toEqual({ condition: 'Light snow', isDay: false, cloudCover: 90 });
+        const url = new URL(fetch.mock.calls[0][0]);
+        expect(url.searchParams.get('latitude')).toBe('52.52');
+        expect(url.searchParams.get('current')).toBe('weather_code,is_day,cloud_cover');
+        await handleWeatherRequest({ type: 'current' });
+        expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('has no current weather without a weather card', async () => {
+        setConfig({ pages: [{ cards: [{ id: 'other', type: 'proxmox' }] }] });
+        await expect(handleWeatherRequest({ type: 'current' })).rejects.toMatchObject({ status: 404 });
+    });
+
     it('normalizes the daily forecast and caches it', async () => {
         const result = await handleWeatherRequest({ cardId: 'coords' });
         expect(result.units).toBe('metric');

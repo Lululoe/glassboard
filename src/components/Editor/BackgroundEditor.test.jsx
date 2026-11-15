@@ -37,6 +37,16 @@ describe('BackgroundEditor', () => {
 
     });
 
+    it('shows the weather, live or with a fixed effect', async () => {
+        const onSave = vi.fn();
+        render(<BackgroundEditor onSave={onSave} onCancel={() => {}} />);
+        fireEvent.click(screen.getByRole('radio', { name: 'Weather' }));
+        expect(screen.getByRole('radio', { name: 'Live' })).toHaveAttribute('aria-checked', 'true');
+        fireEvent.click(screen.getByRole('radio', { name: 'Snow' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+        await waitFor(() => expect(onSave).toHaveBeenCalledWith({ background: { motion: 'weather', weather: 'snow' }, pageBackground: undefined }));
+    });
+
     it("can move the theme's own gradient", async () => {
         const onSave = vi.fn();
         render(<BackgroundEditor onSave={onSave} onCancel={() => {}} />);

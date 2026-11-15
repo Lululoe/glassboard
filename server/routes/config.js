@@ -19,7 +19,7 @@ import logger from '../logger.js';
 import { flattenCards } from '../../shared/containerCards.js';
 import { isDemoMode } from '../services/demo.js';
 import { appearanceSchema } from '../configSchema.js';
-import { BACKGROUND_MOTIONS } from '../../shared/pageBackground.js';
+import { BACKGROUND_MOTIONS, WEATHER_EFFECTS } from '../../shared/pageBackground.js';
 
 const KEEP_ALIVE_INTERVAL = 30 * 1000;
 
@@ -64,16 +64,19 @@ const launcherItem = z.looseObject({ name: z.string(), url: z.string() });
 
 /** A page background: a color its gradient is made from, or a picture (a web or uploaded URL). */
 const motion = z.enum(Object.keys(BACKGROUND_MOTIONS)).optional();
+/** The weather effect the weather motion always shows; without it, the current weather's. */
+const weather = z.enum(Object.keys(WEATHER_EFFECTS)).optional();
 
 const background = z.object({
     color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
     image: z.string().max(2000).regex(/^(https?:\/\/|\/)/).optional(),
     dim: z.number().min(0).max(0.8).optional(),
     motion,
+    weather,
 }).refine(b => !(b.color && b.image) && Boolean(b.color || b.image || b.motion), 'needs a color, a picture or a motion');
 
 /** A single page's background: its own, or `{ theme: true }` for the theme's gradient on that page, which may move. */
-const pageBackground = z.union([z.object({ theme: z.literal(true), motion }), background]);
+const pageBackground = z.union([z.object({ theme: z.literal(true), motion, weather }), background]);
 
 /**
  * A line of the page header as the browser saves it. There is no `template`: the object drops

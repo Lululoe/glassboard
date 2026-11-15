@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { backgroundMotion, isBackgroundColor } from '../../../shared/pageBackground.js';
+import { backgroundMotion, backgroundWeather, isBackgroundColor } from '../../../shared/pageBackground.js';
+import WeatherBackground from './WeatherBackground';
 import './AnimatedBackground.css';
 
 /** Characters the matrix rain is made of. */
@@ -61,7 +62,8 @@ const MatrixRain = () => {
 
 /**
  * A moving layer over the page background: soft drifting color fields (`aurora`), shapes
- * floating behind the cards (`blobs`), or falling characters (`matrix`). Aurora and blobs take
+ * floating behind the cards (`blobs`), falling characters (`matrix`), or the weather outside
+ * (`weather`, see WeatherBackground). Aurora and blobs take
  * their colors from the background's color when it has one. Nothing moves for people who asked
  * for less motion.
  * @param {Object} props
@@ -71,6 +73,13 @@ const MatrixRain = () => {
 const AnimatedBackground = ({ background }) => {
     const motion = backgroundMotion(background);
     if (!motion) return null;
+    if (motion === 'weather') {
+        return (
+            <div className="page-motion motion-weather" aria-hidden="true">
+                <WeatherBackground fixed={backgroundWeather(background)} />
+            </div>
+        );
+    }
     const color = isBackgroundColor(background?.color) ? background.color : null;
     const colors = color ? {
         '--motion-a': color,

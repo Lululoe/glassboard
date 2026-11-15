@@ -5,7 +5,7 @@ import {
 } from '../shared/pageHeader.js';
 import { childCardsOf } from '../shared/containerCards.js';
 import { APPEARANCE_STYLES, isAccent } from '../shared/appearance.js';
-import { BACKGROUND_MOTIONS } from '../shared/pageBackground.js';
+import { BACKGROUND_MOTIONS, WEATHER_EFFECTS } from '../shared/pageBackground.js';
 
 /** The dashboard's style and accent color. */
 export const appearanceSchema = z.object({
@@ -123,6 +123,7 @@ export const configSchema = z.looseObject({
         image: z.string().optional(),
         dim: z.number().min(0).max(1).optional(),
         motion: z.enum(Object.keys(BACKGROUND_MOTIONS)).optional(),
+        weather: z.enum(Object.keys(WEATHER_EFFECTS)).optional(),
     }).optional(),
     services: z.record(z.string(), z.unknown()).optional(),
 }).superRefine((config, ctx) => {
