@@ -10,20 +10,3 @@
 :root[data-style="glass"] .media-player-card.size-half {
     background: var(--bg-card-glass);
 }
-
-/* The app grid is a panel like a container: a light tint without a blur of its own */
-:root[data-style="glass"] .app-grid-card {
-    background: rgba(255, 255, 255, 0.08);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-}
-
-:root[data-style="glass"][data-theme="light"] .app-grid-card {
-    background: rgba(255, 255, 255, 0.22);
-}
-
-@media (prefers-reduced-transparency: reduce) {
-    :root[data-style="glass"] .app-grid-card {
-        background: var(--solid-surface);
-    }
-}
