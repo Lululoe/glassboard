@@ -64,6 +64,17 @@
     -webkit-backdrop-filter: none;
 }
 
+/* The glass is clear, so a list with more to scroll to fades out at its bottom edge instead of
+   being shaded over, which would show as a dark band */
+:root[data-style="liquid"] .two-tone-content.has-more {
+    -webkit-mask-image: linear-gradient(#000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(#000 calc(100% - 36px), transparent);
+}
+
+:root[data-style="liquid"] .two-tone-more {
+    display: none;
+}
+
 :root[data-style="liquid"] .two-tone-header {
     box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.1);
 }

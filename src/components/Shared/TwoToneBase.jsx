@@ -99,7 +99,7 @@ const TwoToneBase = ({
                     </div>
                 )}
             </div>
-            <div className="two-tone-content scrollable" ref={contentRef}>
+            <div className={`two-tone-content scrollable${hasMore ? ' has-more' : ''}`} ref={contentRef}>
                 {children}
             </div>
             {hasMore && <div className="two-tone-more" aria-hidden="true" />}
