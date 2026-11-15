@@ -1,3 +1,5 @@
+import { useCardNotice } from '../../context/notices';
+import { haControlNotices } from '../cardNotices';
 import { useState } from 'react';
 import { isControllable, useHomeAssistant } from './useHomeAssistant';
 import ControlDialog from './controls/ControlDialog';
@@ -17,7 +19,8 @@ import Icon from '../../components/Shared/Icon';
 const HAControlCard = ({ config }) => {
     const displayEntities = (config.data?.entities || []).slice(0, 1).filter(e => e?.entity_id);
 
-    const { entityStates, loading, toggleEntity, refresh } = useHomeAssistant(displayEntities);
+    const { entityStates, loading, error, toggleEntity, refresh } = useHomeAssistant(displayEntities);
+    useCardNotice(haControlNotices(displayEntities, entityStates, !loading && !error));
     const [openId, setOpenId] = useState(/** @type {string|null} */ (null));
     const openEntity = displayEntities.find(e => e.entity_id === openId);
 

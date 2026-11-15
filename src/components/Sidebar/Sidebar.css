@@ -1,0 +1,549 @@
+/* The sidebar floats over the page as a frosted pill, vertically centred under the header bar.
+   It has no entrance animation, so it stays put while pages change and folders open. */
+.sidebar {
+    --sb-button: 46px;
+    position: fixed;
+    left: calc(16px + env(safe-area-inset-left));
+    top: calc(50% + 22px + env(safe-area-inset-top) / 2);
+    transform: translateY(-50%);
+    z-index: 90;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.sidebar-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 68px;
+    padding: 11px 0;
+    border-radius: 24px;
+    background: var(--bg-toolbar);
+    border: 1px solid var(--border-popup);
+    box-shadow: var(--shadow-popup);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+.sidebar-item,
+.sidebar-fly-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sidebar-button {
+    position: relative;
+    display: block;
+    width: var(--sb-button);
+    height: var(--sb-button);
+    border-radius: 14px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.sidebar-tile {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--bg-fill);
+    color: var(--text-primary);
+    overflow: hidden;
+    transition: background var(--duration-standard) var(--ease-standard), box-shadow var(--duration-standard) var(--ease-standard);
+}
+
+.sidebar .sidebar-icon {
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    border-radius: inherit;
+    padding: 11px;
+}
+
+.sidebar .sidebar-icon .app-icon {
+    width: 100%;
+    height: 100%;
+}
+
+.sidebar-letter {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    font-size: var(--fs-17);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+@media (pointer: fine) {
+    .sidebar-button:hover .sidebar-tile {
+        background: var(--bg-fill-hover);
+    }
+}
+
+.sidebar-button:active .sidebar-tile {
+    opacity: 0.7;
+}
+
+.sidebar-button:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* The page shown, or the folder holding it, gets a ring that works on any icon background */
+.sidebar-item.is-active .sidebar-tile,
+.sidebar-fly-item.is-active .sidebar-tile {
+    box-shadow: inset 0 0 0 2px var(--text-primary);
+}
+
+/* A folder looks like a small stack of tiles */
+.sidebar-item.is-folder .sidebar-tile {
+    box-shadow: 3px 3px 0 -1px var(--bg-fill-hover), 6px 6px 0 -2px var(--bg-fill);
+}
+
+.sidebar-item.is-folder.is-active .sidebar-tile {
+    box-shadow: inset 0 0 0 2px var(--text-primary), 3px 3px 0 -1px var(--bg-fill-hover), 6px 6px 0 -2px var(--bg-fill);
+}
+
+.sidebar-item.is-folder.is-open .sidebar-tile {
+    background: var(--bg-fill-hover);
+}
+
+/* Notice bubbles: red for alerts, blue for things to do, green for things that are running */
+.sidebar-badge {
+    position: absolute;
+    top: -5px;
+    right: -7px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    font-size: var(--fs-11);
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    box-shadow: 0 0 0 2px var(--sb-badge-ring, rgba(40, 40, 46, 0.95));
+    pointer-events: none;
+    /* Bubbles reach into the space of the next icon, which would otherwise be drawn over them */
+    z-index: 2;
+}
+
+:root[data-theme="light"] .sidebar-badge {
+    --sb-badge-ring: rgba(248, 248, 252, 0.95);
+}
+
+.sidebar-badge.is-alert,
+.sidebar-tip-dot.is-alert {
+    background: var(--system-red);
+}
+
+.sidebar-badge.is-todo,
+.sidebar-tip-dot.is-todo {
+    background: var(--system-blue);
+}
+
+.sidebar-badge.is-activity,
+.sidebar-tip-dot.is-activity {
+    background: var(--system-green);
+}
+
+/* Name and notices of an icon, beside it on hover or keyboard focus */
+.sidebar-tip {
+    position: absolute;
+    left: calc(100% + 18px);
+    top: 50%;
+    transform: translate(-4px, -50%);
+    min-width: 160px;
+    max-width: 280px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: var(--bg-popup, var(--bg-toolbar));
+    border: 1px solid var(--border-popup);
+    box-shadow: var(--shadow-popup);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    color: var(--text-primary);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.15s, transform 0.15s var(--ease-standard), visibility 0.15s;
+    z-index: 1;
+}
+
+@media (hover: hover) {
+    .sidebar-item:hover .sidebar-tip {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(0, -50%);
+    }
+}
+
+.sidebar-button:focus-visible + .sidebar-badge + .sidebar-tip,
+.sidebar-button:focus-visible ~ .sidebar-tip {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(0, -50%);
+}
+
+.sidebar-tip-name {
+    font-size: var(--fs-14);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.sidebar-tip ul {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sidebar-tip li {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: var(--fs-12);
+    line-height: 1rem;
+    color: var(--text-secondary);
+}
+
+.sidebar-tip-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* A folder opens beside the rail, level with its icon, as a small piece of rail of its own: the
+   same material, edge and spacing, with the icons in a row. Names show on hover, as on the rail. */
+.sidebar-flyout {
+    /* Where it sits, and the direction it grows from: out of the rail's right side */
+    --fly-place: translateY(-50%);
+    --fly-from: translateX(-10px);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: var(--sb-anchor, 50%);
+    transform: var(--fly-place);
+    transform-origin: left center;
+    padding: 11px;
+    border-radius: 24px;
+    background: var(--bg-toolbar);
+    border: 1px solid var(--border-popup);
+    box-shadow: var(--shadow-popup);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    animation: sidebar-fly-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* It grows out of the folder's side, and shrinks back into it when it closes */
+.sidebar-flyout.is-closing {
+    pointer-events: none;
+    animation: sidebar-fly-out 0.16s var(--ease-standard) both;
+}
+
+@keyframes sidebar-fly-in {
+    from {
+        opacity: 0;
+        transform: var(--fly-place) var(--fly-from) scale(0.86);
+    }
+}
+
+@keyframes sidebar-fly-out {
+    to {
+        opacity: 0;
+        transform: var(--fly-place) var(--fly-from) scale(0.92);
+    }
+}
+
+/* The icons follow one after the other as it opens */
+.sidebar-flyout:not(.is-closing) .sidebar-fly-item {
+    animation: sidebar-fly-item-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sidebar-flyout .sidebar-fly-item:nth-child(2) { animation-delay: 0.025s; }
+.sidebar-flyout .sidebar-fly-item:nth-child(3) { animation-delay: 0.05s; }
+.sidebar-flyout .sidebar-fly-item:nth-child(4) { animation-delay: 0.075s; }
+.sidebar-flyout .sidebar-fly-item:nth-child(5) { animation-delay: 0.1s; }
+.sidebar-flyout .sidebar-fly-item:nth-child(n + 6) { animation-delay: 0.12s; }
+
+@keyframes sidebar-fly-item-in {
+    from {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-flyout,
+    .sidebar-flyout.is-closing,
+    .sidebar-flyout:not(.is-closing) .sidebar-fly-item {
+        animation-duration: 0.01s;
+        animation-delay: 0s;
+    }
+}
+
+.sidebar-flyout-row {
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+}
+
+/* Names show above the icons in a folder, so they don't cover the icons next to them */
+.sidebar-fly-item .sidebar-tip {
+    left: 50%;
+    top: auto;
+    bottom: calc(100% + 16px);
+    transform: translate(-50%, 4px);
+}
+
+@media (hover: hover) {
+    .sidebar-fly-item:hover .sidebar-tip {
+        opacity: 1;
+        visibility: visible;
+        transform: translate(-50%, 0);
+    }
+}
+
+.sidebar-fly-item .sidebar-button:focus-visible ~ .sidebar-tip {
+    transform: translate(-50%, 0);
+}
+
+/* In edit mode the folder's own settings are the last button of the row */
+.sidebar-fly-edit .sidebar-tile {
+    background: transparent;
+    outline: 1.5px dashed var(--text-tertiary);
+    outline-offset: -1.5px;
+    color: var(--text-secondary);
+}
+
+.sidebar.is-editing .sidebar-fly-edit .sidebar-button {
+    cursor: pointer;
+}
+
+/* Edit mode: icons can be picked up; hidden pages show, dimmed */
+.sidebar.is-editing .sidebar-button {
+    touch-action: none;
+    cursor: grab;
+}
+
+.sidebar.is-editing .sidebar-tile {
+    outline: 1.5px dashed var(--text-tertiary);
+    outline-offset: 3px;
+}
+
+.sidebar-item.is-hidden-page .sidebar-tile,
+.sidebar-fly-item.is-hidden-page .sidebar-tile {
+    opacity: 0.5;
+}
+
+.sidebar.is-dragging,
+.sidebar.is-dragging .sidebar-button {
+    cursor: grabbing;
+}
+
+.is-placeholder > .sidebar-button {
+    opacity: 0.25;
+}
+
+/* Where a dragged icon would land: a line between icons, or a ring on the icon it would join */
+.sidebar-item.is-drop-before::before,
+.sidebar-item.is-drop-after::after,
+.sidebar-fly-item.is-drop-before::before,
+.sidebar-fly-item.is-drop-after::after {
+    content: '';
+    position: absolute;
+    border-radius: 2px;
+    background: var(--system-blue);
+    pointer-events: none;
+}
+
+.sidebar-item.is-drop-before::before,
+.sidebar-item.is-drop-after::after {
+    left: 50%;
+    width: 34px;
+    height: 3px;
+    transform: translateX(-50%);
+}
+
+.sidebar-item.is-drop-before::before {
+    top: -6px;
+}
+
+.sidebar-item.is-drop-after::after {
+    bottom: -6px;
+}
+
+.sidebar-fly-item.is-drop-before::before,
+.sidebar-fly-item.is-drop-after::after {
+    top: 6px;
+    width: 3px;
+    height: 34px;
+}
+
+.sidebar-fly-item.is-drop-before::before {
+    left: -5px;
+}
+
+.sidebar-fly-item.is-drop-after::after {
+    right: -5px;
+}
+
+.sidebar-item.is-drop-merge .sidebar-tile {
+    box-shadow: 0 0 0 3px var(--system-blue);
+    background: var(--bg-fill-hover);
+}
+
+/* The copy of the icon that follows the pointer while dragging */
+.sidebar-ghost {
+    position: fixed;
+    z-index: 10000;
+    pointer-events: none;
+    opacity: 0.92;
+    transform: scale(1.08);
+    filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.4));
+    --sb-button: 46px;
+}
+
+.sidebar-ghost .sidebar-tile {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 14px;
+    background: var(--bg-toolbar);
+    overflow: hidden;
+}
+
+.sidebar-ghost .sidebar-icon {
+    width: 100%;
+    height: 100%;
+    padding: 11px;
+}
+
+.sidebar-ghost .sidebar-badge {
+    display: none;
+}
+
+/* Phones: a floating pill above the bottom edge; folders open above it */
+@media (max-width: 639px) {
+    .sidebar {
+        top: auto;
+        left: 50%;
+        bottom: calc(12px + env(safe-area-inset-bottom));
+        transform: translateX(-50%);
+        max-width: calc(100vw - 24px);
+    }
+
+    .sidebar-rail {
+        flex-direction: row;
+        width: auto;
+        max-width: 100%;
+        /* Room at the end for the last icon's bubble, which the scrolling bar would cut off */
+        padding: 9px 12px 9px 10px;
+        gap: 6px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .sidebar-rail::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sidebar-tip {
+        display: none;
+    }
+
+    /* Above the bar, growing up out of it */
+    .sidebar-flyout {
+        --fly-place: translateX(-50%);
+        --fly-from: translateY(10px);
+        left: 50%;
+        top: auto;
+        bottom: calc(100% + 10px);
+        transform-origin: bottom center;
+        padding: 10px;
+        max-width: calc(100vw - 24px);
+    }
+
+    /* The row scrolls when it's too wide, which clips what sticks out of it: room for the
+       bubbles above and right of the icons keeps them whole, without moving the icons */
+    .sidebar-flyout-row {
+        overflow-x: auto;
+        scrollbar-width: none;
+        padding: 7px 9px 0 0;
+        margin: -7px -9px 0 0;
+    }
+
+    .sidebar-flyout-row::-webkit-scrollbar {
+        display: none;
+    }
+
+    .sidebar-item.is-drop-before::before,
+    .sidebar-item.is-drop-after::after {
+        left: auto;
+        top: 6px;
+        width: 3px;
+        height: 34px;
+        transform: none;
+    }
+
+    .sidebar-item.is-drop-before::before {
+        left: -5px;
+    }
+
+    .sidebar-item.is-drop-after::after {
+        right: -5px;
+        bottom: auto;
+    }
+}
+
+/* The icon in its editor, on a piece of rail */
+.sidebar-preview {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.sidebar-preview .sidebar-item {
+    padding: 16px;
+    border-radius: 24px;
+    background: var(--bg-toolbar);
+    border: 1px solid var(--border-popup);
+    box-shadow: var(--shadow-popup);
+}
+
+.sidebar-preview .sidebar-icon {
+    padding: 11px;
+}
+
+.sidebar-preview .sidebar-icon .app-icon {
+    width: 100%;
+    height: 100%;
+}
+
+.sidebar-editor-page {
+    margin: 0;
+    font-size: var(--fs-15);
+    color: var(--text-primary);
+}
+
+.sidebar-editor-icon-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.sidebar-editor-ungroup {
+    align-self: flex-start;
+    margin-top: 8px;
+}

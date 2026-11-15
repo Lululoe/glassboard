@@ -4,6 +4,7 @@ import yaml from 'js-yaml';
 import logger from './logger.js';
 import { validateConfig } from './configSchema.js';
 import { applyLayout, getLayoutPath, readLayout } from './layout.js';
+import { flattenCards } from '../shared/containerCards.js';
 
 const configPath = path.resolve(process.cwd(), 'config.yaml');
 const servicesPath = path.resolve(process.cwd(), 'services.yaml');
@@ -239,12 +240,13 @@ export function setConfig(config, base = config) {
 }
 
 /**
- * Returns every card in the configuration, flattened across pages.
+ * Returns every card in the configuration, flattened across pages, with the cards inside
+ * container cards included.
  * @returns {Array<Object>} All configured cards.
  */
 export function getAllCards() {
-    if (Array.isArray(CONFIG.pages)) return CONFIG.pages.flatMap(p => p.cards || []);
-    if (Array.isArray(CONFIG.cards)) return CONFIG.cards;
+    if (Array.isArray(CONFIG.pages)) return flattenCards(CONFIG.pages.flatMap(p => p.cards || []));
+    if (Array.isArray(CONFIG.cards)) return flattenCards(CONFIG.cards);
     return [];
 }
 

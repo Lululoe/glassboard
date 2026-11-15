@@ -16,6 +16,7 @@ import {
     WIDGET_TYPES, isHeaderColor,
 } from '../../shared/pageHeader.js';
 import logger from '../logger.js';
+import { flattenCards } from '../../shared/containerCards.js';
 import { isDemoMode } from '../services/demo.js';
 
 const KEEP_ALIVE_INTERVAL = 30 * 1000;
@@ -72,9 +73,9 @@ const pageBackground = z.union([background, z.object({ theme: z.literal(true) })
 /**
  * A line of the page header as the browser saves it. There is no `template`: the object drops
  * unknown keys, so template texts sent by the browser are never stored. A template line keeps
- * the template written for it in config.yaml.
+ * the template written for it in config.yaml. A string is a text line, as config.yaml allows.
  */
-const headerLine = z.union([z.literal(false), z.object({
+const headerLine = z.union([z.literal(false), z.string().max(MAX_TEXT_LENGTH), z.object({
     type: z.enum(LINE_TYPES),
     format: z.string().max(100).optional(),
     text: z.string().max(MAX_TEXT_LENGTH).optional(),
@@ -84,11 +85,12 @@ const headerLine = z.union([z.literal(false), z.object({
 
 /**
  * A page header widget as the browser saves it. Its entities become readable by the browser,
- * like those of cards added in the browser.
+ * like those of cards added in the browser. Widgets written in config.yaml may have no `id` or
+ * `type`, and the browser sends them back as they are.
  */
 const headerWidget = z.object({
-    id: z.string().regex(/^[a-z0-9_-]{1,40}$/i),
-    type: z.enum(WIDGET_TYPES),
+    id: z.string().regex(/^[a-z0-9_-]{1,40}$/i).optional(),
+    type: z.enum(WIDGET_TYPES).optional(),
     entity_id: z.string().regex(ENTITY_ID).max(255),
     entity_id2: z.string().regex(ENTITY_ID).max(255).optional(),
     name: z.string().trim().max(60).optional(),
@@ -114,6 +116,29 @@ const pageHeader = z.union([z.boolean(), z.object({
     widgets: z.array(headerWidget).max(MAX_WIDGETS).optional(),
 })]);
 
+/** The icon of a sidebar page or folder, as the browser saves it. */
+const sidebarIcon = {
+    icon: z.string().max(500).optional(),
+    iconColor: z.string().max(100).optional(),
+    iconBackground: z.string().max(2000).optional(),
+};
+
+const sidebarPage = z.object({ page: z.string().min(1).max(100), ...sidebarIcon });
+
+/** The sidebar as the browser saves it: whether it shows, and its pages and folders in order. */
+const sidebar = z.object({
+    enabled: z.boolean().optional(),
+    items: z.array(z.union([
+        sidebarPage,
+        z.object({
+            folder: z.string().regex(/^[a-z0-9_-]{1,48}$/i),
+            name: z.string().trim().max(60).optional(),
+            pages: z.array(sidebarPage).max(100),
+            ...sidebarIcon,
+        }),
+    ])).max(200).optional(),
+});
+
 const layoutBody = z.object({
     pages: z.record(z.string(), z.array(layoutCard).max(500)),
     launcher: z.looseObject({
@@ -131,6 +156,7 @@ const layoutBody = z.object({
     pageHeader: pageHeader.nullable().optional(),
     pageHeaders: z.record(z.string(), pageHeader.nullable()).optional(),
     headerAutoHide: z.enum(HEADER_AUTO_HIDE).nullable().optional(),
+    sidebar: sidebar.nullable().optional(),
 });
 
 /**
@@ -144,7 +170,7 @@ function assertEditable() {
  * Saves the whole dashboard as edited in the browser: the cards of every grid page, in order,
  * with their full properties. Every grid page must be included and every card id may appear
  * only once. Credential-like keys the browser never received are restored from the server's copy.
- * The header menu, icon background presets, page background and page header are optional; left out,
+ * The header menu, icon background presets, page background, page header and sidebar are optional; left out,
  * the saved ones are kept. A `null` background or page header goes back to the one in config.yaml.
  * Page header templates are never taken from the browser, only from config.yaml.
  */
@@ -177,7 +203,7 @@ router.put('/layout', (req, res, next) => {
         if (unknown) throw new HttpError(400, `Unknown page: ${unknown}`);
 
         const seen = new Set();
-        Object.values(sent).flat().forEach(card => {
+        flattenCards(Object.values(sent).flat()).forEach(card => {
             if (seen.has(String(card.id))) throw new HttpError(400, `Duplicate card id "${card.id}"`);
             seen.add(String(card.id));
         });
@@ -220,6 +246,10 @@ router.put('/layout', (req, res, next) => {
         const sentAutoHide = parsed.data.headerAutoHide;
         const autoHide = sentAutoHide === undefined ? previous.headerAutoHide : sentAutoHide ?? undefined;
 
+        // The sidebar is stored where it differs from config.yaml; null goes back to config.yaml
+        const sentSidebar = parsed.data.sidebar;
+        const sidebarSetting = sentSidebar === undefined ? previous.sidebar : sentSidebar ?? undefined;
+
         const sentBackground = parsed.data.background;
         const pageBackground = sentBackground === undefined ? previous.background : sentBackground ?? undefined;
         writeLayout({
@@ -232,6 +262,7 @@ router.put('/layout', (req, res, next) => {
             pageHeader: header === undefined || deepEqual(header, baseHeader) ? undefined : header,
             pageHeaders,
             headerAutoHide: autoHide === (getBaseConfig().headerAutoHide ?? 'never') ? undefined : autoHide,
+            sidebar: sidebarSetting && !deepEqual(sidebarSetting, getBaseConfig().sidebar) ? sidebarSetting : undefined,
         });
         // A reset keeps a copy of the layout it removed, so its pictures stay until that copy is gone
         const backup = readLayoutBackup();

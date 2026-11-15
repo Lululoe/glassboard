@@ -1,3 +1,5 @@
+import { useCardNotice } from '../../context/notices';
+import { vacuumNotices } from '../cardNotices';
 import { useState } from 'react';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
 import EmptyState from '../../components/Shared/EmptyState';
@@ -63,6 +65,7 @@ const WideSections = ({ layout, robot, cardId, run, selected, onToggleRoom }) =>
 const VacuumCard = ({ config }) => {
     const half = config.tileSize === 'half';
     const { robots, loading, error, selection, toggleRoom, run } = useVacuums(config.id, Boolean(config.entity_id));
+    useCardNotice(vacuumNotices(robots));
     const robot = robots[0];
     const [open, setOpen] = useState(false);
     const selected = robot ? selection[robot.entity_id] || [] : [];

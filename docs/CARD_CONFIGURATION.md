@@ -14,8 +14,10 @@ All cards support these base options:
 | `type` | string | required | The component type of the card. |
 | `colSpan` | number | 1 | Width of the card in grid columns (1-3). |
 | `tileSize` | string | | `half` or `quarter` for a card smaller than one tile (see below). Overrides `colSpan`. |
+| `rowSpan` | number | 1 | Height in grid rows (1-3), for cards that can be taller, such as `container`. |
 | `hideOn` | array | | Screen sizes the card is hidden on: `phone`, `tablet` and/or `desktop`. |
 | `primaryColor` | string | | Sets `--card-primary` for the card (overrides theme/default). |
+| `notify` | boolean / object | `true` | Whether the card's notices show in the [sidebar](SIDEBAR#notifications). `false` turns them off, `{ activity: false }` only those of one level (`alert`, `todo`, `activity`). |
 
 ---
 
@@ -39,7 +41,7 @@ two- and three-wide cards are one wide on a phone. The card is told its narrower
 layout rather than a squeezed wide one. On tablets later cards move up to fill gaps left by wide cards.
 
 Not every card works at every size. In edit mode each card only offers the sizes its type supports; most cards
-support one to three wide, `spacer` also supports half and quarter, `hacontrol` is always a quarter tile, and `thermostat` and
+support one to three wide, `container` also one to three rows tall, `spacer` also supports half and quarter, `hacontrol` is always a quarter tile, and `thermostat` and
 `mediaplayer` support quarter, half and one wide, `vacuum` half and one to three wide, and `printer` half and one wide. A size set in
 `config.yaml` is always used, even if edit mode would not offer it.
 
@@ -54,7 +56,8 @@ can go:
   dragging, so a quick swipe still scrolls the page.
 - **Move to another page**: drag a card to the left or right edge of the screen and hold it there. The edge
   lights up, and after a moment the previous or next page opens with the card still under your finger.
-- **Resize**: drag the round handle in a card's bottom-right corner, or tap it to step through the sizes.
+- **Resize**: drag the round handle in a card's bottom-right corner, or tap it to step through the sizes. Cards that
+  can be taller, such as containers, also get more rows when the handle is dragged down.
 - **Edit**: tap the pencil on a card's top-left corner. The editor shows a live preview of the card next to its
   settings, in three tabs. **Settings** has the card's options, grouped into sections; lists such as sensors, rooms
   or presets show one row per item, which opens to edit it and can be moved up or down or removed. **Layout** has the
@@ -174,7 +177,7 @@ formatting stay untouched. Every device sees the saved dashboard. For cards from
 only stores the page, position, size and visibility, unless the card's options were changed in the browser; then
 it stores the whole card, and later edits to that card in `config.yaml` are ignored until you reset. Cards added
 in the browser live only in `layout.yaml`, and cards removed in the browser are listed under `removed`. A header menu
-edited in the browser replaces `launcher` from `config.yaml` as a whole, as do `iconBackgrounds` and `background`.
+edited in the browser replaces `launcher` from `config.yaml` as a whole, as do `iconBackgrounds`, `background` and `sidebar`.
 Pages added in the browser are listed under `addedPages` (id and name) and come after the pages of `config.yaml`;
 their cards are stored like other cards added in the browser. Cards added
 to `config.yaml` later appear after the saved ones. Deleting `layout.yaml` (or **Reset…**) restores the dashboard
@@ -744,6 +747,55 @@ unavailable in Home Assistant stays hidden.
 - id: printer
   type: printer
   printer: p2s
+```
+
+---
+
+## Container (`container`)
+Holds several other cards in one panel, for example everything of one room. The container is one to three columns
+wide and one to three rows tall (`colSpan` and `rowSpan`; drag its resize handle sideways and down in edit mode, or
+set them in its Layout tab). Inside, its cards fill a grid with as many columns and rows as the container is large,
+and are drawn a little smaller than on the page, so a container two wide and two tall holds what would otherwise take
+two by two tiles, with room for its frame.
+
+The cards inside are configured like cards on a page, under `cards`, and every card type except a container can be
+used. Half and quarter cards share tiles as on the page, and cards wider than the container are narrowed to it.
+Cards that don't fit in the container's rows scroll inside it. On smaller screens the container is narrowed like any
+card, and its cards with it. Hiding on screen sizes (`hideOn`) applies to the container, not to the cards inside.
+
+In edit mode each card inside a container has a thin outline and can be grabbed on its own: drag it to take it out
+of the container and put it anywhere on the page (or hold it at the screen edge to carry it to another page).
+Grabbing the container's edges, its title or the gaps between its cards moves the whole container. To put a card
+into a container, drag it over the container: the container lights up and the card shrinks, and releasing it
+places it before the card inside under the pointer, or last. Containers can't be dropped into other containers. With the
+keyboard, focus a card inside and press Enter to take it out; it goes on the page right after the container. The
+mouse wheel scrolls a container's cards while editing.
+
+The container's **Settings** tab lists its cards: **Add card** picks a type and opens its editor, a row
+opens the card's editor, and the cards can be moved up or down or removed. The size offered for a card is limited to
+the container's width. Card ids must be unique across the whole dashboard, including the cards in containers.
+
+### Configuration
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `cards` | array | `[]` | The cards inside, configured like any card (each needs its own `id`). |
+| `title` | string | | Shown small above the cards. |
+| `scale` | number | `0.88` | How large the cards inside are drawn compared to the page, from `0.6` to `1`. |
+| `background` | boolean | `true` | `false` leaves out the panel behind the cards, so they only share a frame. |
+
+### Example
+```yaml
+- id: living-room
+  type: container
+  title: Living room
+  colSpan: 2
+  rowSpan: 2
+  cards:
+    - { id: lr-climate, type: thermostat, entity_id: climate.living_room }
+    - { id: lr-music, type: mediaplayer, entities: [media_player.living_room] }
+    - { id: lr-light, type: hacontrol, tileSize: quarter, data: { entities: [{ entity_id: light.living_room }] } }
+    - { id: lr-lamp, type: hacontrol, tileSize: quarter, data: { entities: [{ entity_id: light.floor_lamp }] } }
+    - { id: lr-weather, type: weather, location: Berlin }
 ```
 
 ---

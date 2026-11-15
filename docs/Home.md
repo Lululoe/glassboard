@@ -12,6 +12,7 @@ Navigate through the wiki using the sidebar or the links below to configure and 
 - 🛠️ **[Card Configuration](CARD_CONFIGURATION)**: Detailed reference for setting up dashboard cards (Weather, Media, Proxmox, Git, etc.).
 - 🎨 **[Theming Guide](THEMING)**: Learn how to customize colors, aesthetics, and create your own themes.
 - ⚙️ **[Header Configuration](HEADER_CONFIGURATION)**: Configure the persistent popup launcher and top bar.
+- 🧭 **[Sidebar](SIDEBAR)**: The optional sidebar of pages and folders, with notification bubbles from cards.
 - 🖥️ **[Server API](SERVER_API)**: Documentation for the Node.js backend API endpoints and services proxy.
 - 🧱 **[Shared Components](SHARED_COMPONENTS)**: Component library reference (`BaseCard`, `TwoToneBase`, etc.) for building your own elements.
 - 🚀 **[Creating New Cards](CREATING_NEW_CARDS)**: Developer guide for extending the dashboard with completely new custom cards.

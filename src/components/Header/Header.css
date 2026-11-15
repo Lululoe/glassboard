@@ -318,3 +318,9 @@
         transition: none;
     }
 }
+
+/* The sidebar toggle in edit mode shows whether the sidebar is on */
+.icon-button.header-sidebar-toggle.is-on {
+    background: var(--bg-fill-hover);
+    color: var(--color-primary, var(--system-blue));
+}

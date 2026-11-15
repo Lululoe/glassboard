@@ -28,6 +28,10 @@ import { HeaderEntitiesContext } from './context/headerEntities';
 import { headerBarHides, headerWidgetEntityIds, resolvePageHeader } from '../shared/pageHeader';
 import PageBackground from './components/Layout/PageBackground';
 import ParticlesBackground from './components/Layout/ParticlesBackground';
+import Sidebar from './components/Sidebar/Sidebar';
+import SidebarItemEditor from './components/Editor/SidebarItemEditor';
+import { entryAt, isFolder, normalizeItems, replaceEntry, ungroup } from './components/Sidebar/sidebarModel';
+import { NoticePage, NoticesProvider } from './context/NoticeScopes';
 import './App.css';
 
 /**
@@ -78,6 +82,13 @@ function Dashboard({ config }) {
     // Single pages can have their own header only in configs with `pages`
     const activePageName = Array.isArray(config.pages) && activePage ? activePage.name || String(activePage.id ?? pageIndex + 1) : undefined;
     const editable = config.editable !== false && !!activePage && activePage.type !== 'iframe';
+    const sidebarOn = layout.sidebar?.enabled === true;
+    const sidebarPages = useMemo(
+        () => pages.map((page, idx) => ({ key: pageKey(page, idx), index: idx, name: page.name || String(page.id ?? idx + 1), hidden: !!page.hidden })),
+        [pages],
+    );
+    const sidebarItems = normalizeItems(sidebarPages.map(p => p.key), layout.sidebar?.items);
+    const sidebarEntry = layout.editingSidebar ? entryAt(sidebarItems, layout.editingSidebar) : undefined;
 
     /**
      * Index of the page a card dragged to the screen edge would move to, or -1 if there is none.
@@ -94,7 +105,7 @@ function Dashboard({ config }) {
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
         if (layout.editing) {
             if (e.key === 'Escape' && !layout.editor && !layout.adding && !layout.editingMenu && !layout.editingBackground
-                && !layout.pageDialog && !layout.confirmingReset && !layout.editingHeader) layout.finish();
+                && !layout.pageDialog && !layout.confirmingReset && !layout.editingHeader && !layout.editingSidebar) layout.finish();
             return;
         }
         if (e.key === 'ArrowRight') next();
@@ -119,7 +130,7 @@ function Dashboard({ config }) {
 
     return (
         <HeaderEntitiesContext value={headerEntities}>
-            <div className={`App${layout.editing ? ' is-editing' : ''}${headerBarHidden ? ' has-hidden-header-bar' : ''}`} {...(layout.editing ? {} : swipeHandlers)}>
+            <div className={`App${layout.editing ? ' is-editing' : ''}${headerBarHidden ? ' has-hidden-header-bar' : ''}${sidebarOn ? ' has-sidebar' : ''}`} {...(layout.editing ? {} : swipeHandlers)}>
                 <PageBackground background={activeBackground ?? layout.background} />
                 <ParticlesBackground />
                 <Header
@@ -140,8 +151,22 @@ function Dashboard({ config }) {
                         onEditMenu: layout.openMenuEditor,
                         onEditBackground: () => layout.openBackgroundEditor(),
                         onEditPage: () => layout.openPageSettings(activeKey),
+                        sidebar: sidebarOn,
+                        onToggleSidebar: config.editable !== false ? () => layout.setSidebarEnabled(!sidebarOn) : undefined,
                     }}
                 />
+
+                {sidebarOn && (
+                    <Sidebar
+                        pages={sidebarPages}
+                        activeIndex={pageIndex}
+                        onNavigate={goTo}
+                        items={layout.sidebar?.items}
+                        editing={layout.editing}
+                        onChange={layout.setSidebarItems}
+                        onEditEntry={layout.openSidebarEditor}
+                    />
+                )}
 
                 <div className="app-content" ref={contentRef}>
                     {hasPrev && (
@@ -156,39 +181,41 @@ function Dashboard({ config }) {
                             className={`scroll-content ${idx === pageIndex ? 'page-active' : 'page-hidden'}`}
                         >
                             <PageActiveContext value={idx === pageIndex}>
-                                {idx === pageIndex && activeHeader && (
-                                    <PageHeader
-                                        header={activeHeader}
-                                        pageKey={activeKey}
-                                        entering={headerEntering}
-                                        onEdit={layout.editing && editable ? layout.openHeaderEditor : undefined}
-                                    />
-                                )}
-                                {idx === pageIndex && !activeHeader && layout.editing && editable && (
-                                    <AddPageHeader onAdd={() => layout.openHeaderEditor('layout')} />
-                                )}
-                                {page.type === 'iframe'
-                                    ? <IframeView config={page} />
-                                    : (
-                                        <BentoGrid
-                                            cards={layout.cardsOf(page, idx)}
-                                            globalConfig={liveConfig}
-                                            editing={layout.editing && idx === pageIndex}
-                                            onLayoutChange={(cards) => layout.change(pageKey(page, idx), cards)}
-                                            onRequestEdit={config.editable !== false ? layout.start : undefined}
-                                            onExitEdit={layout.finish}
-                                            onEditCard={(index) => layout.openEditor(pageKey(page, idx), index)}
-                                            onEditIcon={(index) => layout.openIconEditor(pageKey(page, idx), index)}
-                                            canMoveToPage={(dir) => pageInDirection(idx, dir) >= 0}
-                                            onMoveToPage={(dir, index, carry) => {
-                                                const target = pageInDirection(idx, dir);
-                                                layout.moveToPage(pageKey(page, idx), index, pageKey(pages[target], target), carry);
-                                                goTo(target);
-                                            }}
-                                            incomingDrag={idx === pageIndex ? layout.carry : null}
-                                            onIncomingDragTaken={layout.clearCarry}
+                                <NoticePage page={pageKey(page, idx)}>
+                                    {idx === pageIndex && activeHeader && (
+                                        <PageHeader
+                                            header={activeHeader}
+                                            pageKey={activeKey}
+                                            entering={headerEntering}
+                                            onEdit={layout.editing && editable ? layout.openHeaderEditor : undefined}
                                         />
                                     )}
+                                    {idx === pageIndex && !activeHeader && layout.editing && editable && (
+                                        <AddPageHeader onAdd={() => layout.openHeaderEditor('layout')} />
+                                    )}
+                                    {page.type === 'iframe'
+                                        ? <IframeView config={page} />
+                                        : (
+                                            <BentoGrid
+                                                cards={layout.cardsOf(page, idx)}
+                                                globalConfig={liveConfig}
+                                                editing={layout.editing && idx === pageIndex}
+                                                onLayoutChange={(cards) => layout.change(pageKey(page, idx), cards)}
+                                                onRequestEdit={config.editable !== false ? layout.start : undefined}
+                                                onExitEdit={layout.finish}
+                                                onEditCard={(index) => layout.openEditor(pageKey(page, idx), index)}
+                                                onEditIcon={(index) => layout.openIconEditor(pageKey(page, idx), index)}
+                                                canMoveToPage={(dir) => pageInDirection(idx, dir) >= 0}
+                                                onMoveToPage={(dir, index, carry) => {
+                                                    const target = pageInDirection(idx, dir);
+                                                    layout.moveToPage(pageKey(page, idx), index, pageKey(pages[target], target), carry);
+                                                    goTo(target);
+                                                }}
+                                                incomingDrag={idx === pageIndex ? layout.carry : null}
+                                                onIncomingDragTaken={layout.clearCarry}
+                                            />
+                                        )}
+                                </NoticePage>
                             </PageActiveContext>
                         </div>
                     ))}
@@ -276,6 +303,16 @@ function Dashboard({ config }) {
                     />
                 )}
 
+                {sidebarEntry && (
+                    <SidebarItemEditor
+                        entry={sidebarEntry}
+                        pageName={isFolder(sidebarEntry) ? undefined : sidebarPages.find(p => p.key === sidebarEntry.page)?.name}
+                        onSave={(entry) => layout.saveSidebarItems(replaceEntry(sidebarItems, layout.editingSidebar, entry))}
+                        onCancel={layout.closeSidebarEditor}
+                        onUngroup={isFolder(sidebarEntry) ? () => layout.saveSidebarItems(ungroup(sidebarItems, sidebarEntry.folder)) : undefined}
+                    />
+                )}
+
                 {layout.adding && activePage && (
                     <AddCardDialog
                         onPick={(type) => layout.addCard(pageKey(activePage, pageIndex), type)}
@@ -316,7 +353,7 @@ function Dashboard({ config }) {
                     )}
                 </IconBackgroundsContext>
 
-                {(pages.length > 1 || layout.editing) && (
+                {((pages.length > 1 && !sidebarOn) || layout.editing) && (
                     <nav className={`page-indicators${layout.editing ? ' is-editing' : ''}`} aria-label="Pages">
                         {pages.map((page, idx) => (!page.hidden || layout.editing) && (
                             <button
@@ -364,7 +401,9 @@ function App() {
 
     return (
         <ThemeProvider config={config}>
-            <Dashboard config={config} />
+            <NoticesProvider>
+                <Dashboard config={config} />
+            </NoticesProvider>
         </ThemeProvider>
     );
 }

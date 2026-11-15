@@ -3,6 +3,7 @@ import {
     ALIGNMENTS, CONDITION_OPERATORS, HEADER_AUTO_HIDE, ENTITY_ID, LAYOUTS, LINE_TYPES, MAX_TEMPLATE_LENGTH, MAX_WIDGETS, STYLES, WIDGET_TYPES,
     isHeaderColor,
 } from '../shared/pageHeader.js';
+import { childCardsOf } from '../shared/containerCards.js';
 
 const id = z.union([z.string().min(1), z.number()]);
 
@@ -54,6 +55,7 @@ const card = z.looseObject({
     id,
     type: z.string().min(1),
     colSpan: z.number().int().min(1).max(3).optional(),
+    rowSpan: z.number().int().min(1).max(3).optional(),
     tileSize: z.enum(['half', 'quarter']).optional(),
     hideOn: z.array(z.enum(['phone', 'tablet', 'desktop'])).optional(),
     primaryColor: z.string().optional(),
@@ -74,6 +76,23 @@ const launcherItem = z.looseObject({
     url: z.string(),
 });
 
+const sidebarIcon = {
+    icon: z.string().optional(),
+    iconColor: z.string().optional(),
+    iconBackground: z.string().optional(),
+};
+
+const sidebarPage = z.looseObject({ page: z.union([z.string(), z.number()]), ...sidebarIcon });
+
+/** The sidebar: whether it shows, and its pages and folders in order. */
+const sidebar = z.looseObject({
+    enabled: z.boolean().optional(),
+    items: z.array(z.union([
+        sidebarPage,
+        z.looseObject({ folder: z.string().min(1), name: z.string().optional(), pages: z.array(sidebarPage), ...sidebarIcon }),
+    ])).optional(),
+});
+
 export const configSchema = z.looseObject({
     theme: z.string().optional(),
     themeToggle: z.boolean().optional(),
@@ -89,6 +108,7 @@ export const configSchema = z.looseObject({
         links: z.array(launcherItem).optional(),
         links_title: z.string().optional(),
     }).optional(),
+    sidebar: sidebar.optional(),
     background: z.looseObject({
         color: z.string().optional(),
         image: z.string().optional(),
@@ -114,17 +134,17 @@ export const configSchema = z.looseObject({
             ctx.addIssue({ code: 'custom', path: [...pagePath, 'url'], message: 'Iframe pages require a url' });
         }
 
-        (p.cards || []).forEach((c, cardIdx) => {
-            if (c.id === undefined) return;
-            if (seenCardIds.has(c.id)) {
-                ctx.addIssue({
-                    code: 'custom',
-                    path: [...pagePath, 'cards', cardIdx, 'id'],
-                    message: `Duplicate card id "${c.id}"`,
-                });
+        const checkCards = (cards, path) => (cards || []).forEach((c, cardIdx) => {
+            const cardPath = [...path, 'cards', cardIdx];
+            if (c?.id !== undefined) {
+                if (seenCardIds.has(c.id)) {
+                    ctx.addIssue({ code: 'custom', path: [...cardPath, 'id'], message: `Duplicate card id "${c.id}"` });
+                }
+                seenCardIds.add(c.id);
             }
-            seenCardIds.add(c.id);
+            checkCards(childCardsOf(c), cardPath);
         });
+        checkCards(p.cards, pagePath);
     });
 });
 

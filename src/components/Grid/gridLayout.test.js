@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-    buildEntries, deviceFor, dropIndex, fitToColumns, isHiddenAt, layoutCards, moveItem, nearestSize, rowCount, sizeOf,
-    usableSizes, withSize,
+    buildEntries, deviceFor, dropIndex, fitToColumns, isHiddenAt, layoutCards, moveItem, nearestSize, rowCount, rowSpanOf, sizeOf,
+    usableSizes, withRows, withSize,
 } from './gridLayout';
 
 describe('sizeOf / withSize', () => {
@@ -142,5 +142,31 @@ describe('dropIndex', () => {
     it('stays put while the card is closest to where it already is', () => {
         const cards = [card('a', 1), card('b', 1), card('c', 1)];
         expect(dropIndex(cards, 1, { x: 1.6, y: 0.5 }, 3)).toBe(1);
+    });
+});
+
+describe('row spans', () => {
+    it('reads and clamps rowSpan for full-height cards only', () => {
+        expect(rowSpanOf({ colSpan: 2, rowSpan: 2 })).toBe(2);
+        expect(rowSpanOf({ rowSpan: 9 })).toBe(3);
+        expect(rowSpanOf({})).toBe(1);
+        expect(rowSpanOf({ tileSize: 'half', rowSpan: 2 })).toBe(1);
+    });
+
+    it('sets rows and drops them for one row or a sub-tile size', () => {
+        expect(withRows({ id: 'a' }, 2)).toEqual({ id: 'a', rowSpan: 2 });
+        expect(withRows({ id: 'a', rowSpan: 2 }, 1)).toEqual({ id: 'a' });
+        expect(withSize({ id: 'a', colSpan: 2, rowSpan: 2 }, 'half')).toEqual({ id: 'a', colSpan: 2, tileSize: 'half' });
+        expect(withSize({ id: 'a', rowSpan: 2 }, '2')).toEqual({ id: 'a', rowSpan: 2, colSpan: 2 });
+    });
+
+    it('places cards around a taller card', () => {
+        const cards = [{ colSpan: 2, rowSpan: 2 }, { colSpan: 1 }, { colSpan: 1 }, { colSpan: 3 }];
+        const areas = layoutCards(cards, 3);
+        expect(areas.get(0)).toEqual({ x: 0, y: 0, w: 2, h: 2 });
+        expect(areas.get(1)).toEqual({ x: 2, y: 0, w: 1, h: 1 });
+        expect(areas.get(2)).toEqual({ x: 2, y: 1, w: 1, h: 1 });
+        expect(areas.get(3)).toEqual({ x: 0, y: 2, w: 3, h: 1 });
+        expect(rowCount(cards, 3)).toBe(3);
     });
 });

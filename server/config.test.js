@@ -99,4 +99,10 @@ describe('getServiceConfig', () => {
         expect(findCard('px').type).toBe('proxmox');
         expect(findCard('nope')).toBeUndefined();
     });
+
+    it('finds cards inside container cards', () => {
+        setConfig({ pages: [{ cards: [{ id: 'box', type: 'container', cards: [{ id: 'w1', type: 'weather' }] }] }] });
+        expect(findCard('w1').type).toBe('weather');
+        expect(findCard('box').type).toBe('container');
+    });
 });

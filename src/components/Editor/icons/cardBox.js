@@ -1,4 +1,4 @@
-import { sizeOf } from '../../Grid/gridLayout';
+import { rowSpanOf, sizeOf } from '../../Grid/gridLayout';
 
 const TILE = 315;
 const GAP = 30;
@@ -13,5 +13,6 @@ export function boxOf(card) {
     const size = sizeOf(card);
     if (size === 'quarter') return { width: HALF_TILE, height: HALF_TILE };
     if (size === 'half') return { width: TILE, height: HALF_TILE };
-    return { width: TILE * Number(size) + GAP * (Number(size) - 1), height: TILE };
+    const rows = rowSpanOf(card);
+    return { width: TILE * Number(size) + GAP * (Number(size) - 1), height: TILE * rows + GAP * (rows - 1) };
 }

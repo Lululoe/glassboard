@@ -127,7 +127,7 @@ const WeekChart = ({ parts, times, wide, breakdown = true }) => {
                             </span>
                         );
                     })}
-                    <div className="graph-week-average" style={{ bottom: `calc(34px + (100% - 34px) * ${average / top})` }} aria-hidden="true" />
+                    <div className="graph-week-average" style={{ bottom: `calc(var(--week-axis) + (100% - var(--week-axis)) * ${average / top})` }} aria-hidden="true" />
                     {tipPart && (
                         <div ref={tipRef} className="graph-part-tip" role="status">
                             <div className="graph-tip-when">{weekDayName(times[part.day], part.day)}</div>

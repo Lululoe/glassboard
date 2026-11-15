@@ -7,6 +7,7 @@ vi.mock('../../features/registry', () => ({
         ok: ({ config }) => <div>ok card {config.id} span {config.colSpan ?? 1}</div>,
         header: () => <div className="two-tone-header"><span className="app-icon-container" /></div>,
         crash: () => { throw new Error('kaboom'); },
+        container: ({ config }) => <section className="container-card">container {config.id}</section>,
     })[type] || null,
     getCardSizes: (type) => (type === 'ok' ? ['quarter', 'half', '1', '2', '3'] : undefined),
     getCardInfo: (type) => (type === 'header' ? { headerIcon: true } : undefined),
@@ -105,6 +106,81 @@ describe('BentoGrid', () => {
 
     describe('edit mode', () => {
         const cards = [{ id: 'a', type: 'ok' }, { id: 'b', type: 'ok', colSpan: 2 }, { id: 'c', type: 'ok' }];
+
+        describe('containers', () => {
+            const box = {
+                id: 'box', type: 'container', colSpan: 2, rowSpan: 2,
+                cards: [{ id: 'in1', type: 'ok', tileSize: 'quarter' }, { id: 'in2', type: 'ok' }],
+            };
+            const page = [{ id: 'a', type: 'ok' }, box, { id: 'c', type: 'ok' }];
+            const takenOut = [
+                { id: 'a', type: 'ok' },
+                { ...box, cards: [box.cards[0]] },
+                { id: 'in2', type: 'ok' },
+                { id: 'c', type: 'ok' },
+            ];
+
+            it('spans its rows and gives each card inside its own grab area', () => {
+                const { container } = render(<BentoGrid cards={page} editing />);
+                expect(container.querySelector('[data-key="id:box"]').style.gridRow).toBe('span 2');
+                expect(container.querySelectorAll('[data-key="id:box"] .grid-child-surface')).toHaveLength(2);
+                expect(screen.getByRole('button', { name: /^box, two wide/ })).toBeInTheDocument();
+            });
+
+            it('takes a card out onto the page with Enter', () => {
+                const onLayoutChange = vi.fn();
+                const { container } = render(<BentoGrid cards={page} editing onLayoutChange={onLayoutChange} />);
+                const surface = container.querySelector('[data-key="id:box"] [data-child="1"]');
+                expect(surface).toHaveAttribute('aria-label', expect.stringMatching(/^in2, in box/));
+                fireEvent.keyDown(surface, { key: 'Enter' });
+                expect(onLayoutChange).toHaveBeenCalledWith(takenOut);
+            });
+
+            it('drops a dragged page card into a container', () => {
+                const onLayoutChange = vi.fn();
+                const { container } = render(<BentoGrid cards={page} editing onLayoutChange={onLayoutChange} />);
+                const surface = container.querySelector('[data-key="id:a"] .grid-edit-surface');
+
+                // jsdom has no layout: every box is empty at 0,0, so the pointer there is over the container
+                fireEvent.pointerDown(surface, { button: 0, pointerId: 3, clientX: 10, clientY: 10 });
+                fireEvent.pointerMove(window, { pointerId: 3, clientX: 0, clientY: 0 });
+                expect(container.querySelector('[data-key="id:box"]')).toHaveClass('drop-target');
+                expect(container.querySelector('[data-key="id:a"]')).toHaveClass('over-container');
+                fireEvent.pointerUp(window, { pointerId: 3, clientX: 0, clientY: 0 });
+
+                expect(onLayoutChange).toHaveBeenLastCalledWith([
+                    { ...box, cards: [...box.cards, { id: 'a', type: 'ok' }] },
+                    { id: 'c', type: 'ok' },
+                ]);
+                expect(container.querySelector('.drop-target')).toBeNull();
+            });
+
+            it('does not drop a container into another container', () => {
+                const onLayoutChange = vi.fn();
+                const other = { id: 'box2', type: 'container', cards: [] };
+                const { container } = render(<BentoGrid cards={[other, ...page]} editing onLayoutChange={onLayoutChange} />);
+                fireEvent.pointerDown(container.querySelector('[data-key="id:box2"] .grid-edit-surface'), { button: 0, pointerId: 4, clientX: 10, clientY: 10 });
+                fireEvent.pointerMove(window, { pointerId: 4, clientX: 0, clientY: 0 });
+                expect(container.querySelector('.drop-target')).toBeNull();
+                fireEvent.pointerUp(window, { pointerId: 4, clientX: 0, clientY: 0 });
+                expect(onLayoutChange.mock.calls.every(([cards]) => cards.some(c => c.id === 'box2'))).toBe(true);
+            });
+
+            it('takes a card out once it is dragged, but not on a tap', () => {
+                const onLayoutChange = vi.fn();
+                const { container } = render(<BentoGrid cards={page} editing onLayoutChange={onLayoutChange} />);
+                const surface = container.querySelector('[data-key="id:box"] [data-child="1"]');
+
+                fireEvent.pointerDown(surface, { button: 0, pointerId: 1, clientX: 10, clientY: 10 });
+                fireEvent.pointerUp(window, { pointerId: 1, clientX: 10, clientY: 10 });
+                expect(onLayoutChange).not.toHaveBeenCalled();
+
+                fireEvent.pointerDown(surface, { button: 0, pointerId: 2, clientX: 10, clientY: 10 });
+                fireEvent.pointerMove(window, { pointerId: 2, clientX: 60, clientY: 40 });
+                expect(onLayoutChange).toHaveBeenCalledWith(takenOut);
+                fireEvent.pointerUp(window, { pointerId: 2, clientX: 60, clientY: 40 });
+            });
+        });
 
         it('makes cards inert and movable', () => {
             const { container } = render(<BentoGrid cards={cards} editing />);

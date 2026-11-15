@@ -10,7 +10,7 @@ const HEADER = [
     '# the header menu, icon background presets and page background when they were edited in the browser,',
     '# pages added in the browser (`addedPages`), backgrounds of single pages (`pageBackgrounds`), and the page',
     '# header of all pages (`pageHeader`) and of single pages (`pageHeaders`). Header templates are always taken',
-    '# from config.yaml. `headerAutoHide` is when the header bar hides itself.',
+    '# from config.yaml. `headerAutoHide` is when the header bar hides itself, `sidebar` the sidebar and its icons.',
     '# Delete this file to go back to the dashboard in config.yaml.',
     '',
 ].join('\n');
@@ -35,7 +35,7 @@ export function getLayoutPath() {
 
 /**
  * Reads the layout overlay. A missing, empty or invalid file counts as no overrides.
- * @returns {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>, pageHeader?: *, pageHeaders?: Object<string, *>, headerAutoHide?: string}} The overlay.
+ * @returns {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>, pageHeader?: *, pageHeaders?: Object<string, *>, headerAutoHide?: string, sidebar?: Object}} The overlay.
  */
 export function readLayout() {
     const file = getLayoutPath();
@@ -53,6 +53,7 @@ export function readLayout() {
             ...(isPlainObject(data.pageBackgrounds) ? { pageBackgrounds: data.pageBackgrounds } : {}),
             ...(isHeaderSetting(data.pageHeader) ? { pageHeader: stripTemplates(data.pageHeader) } : {}),
             ...(typeof data.headerAutoHide === 'string' ? { headerAutoHide: data.headerAutoHide } : {}),
+            ...(isPlainObject(data.sidebar) ? { sidebar: data.sidebar } : {}),
             ...(isPlainObject(data.pageHeaders) ? {
                 pageHeaders: Object.fromEntries(Object.entries(data.pageHeaders)
                     .filter(([, v]) => v === null || isHeaderSetting(v))
@@ -68,7 +69,7 @@ export function readLayout() {
 /**
  * Writes the layout overlay in place. Renaming a temp file over it would fail when the file
  * is a Docker bind mount, so this overwrites the existing file instead.
- * @param {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>, pageHeader?: *, pageHeaders?: Object<string, *>, headerAutoHide?: string}} layout - The overlay to store.
+ * @param {{pages: Object<string, Array<Object>>, removed: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>, pageHeader?: *, pageHeaders?: Object<string, *>, headerAutoHide?: string, sidebar?: Object}} layout - The overlay to store.
  */
 export function writeLayout(layout) {
     const data = { pages: layout.pages };
@@ -80,6 +81,7 @@ export function writeLayout(layout) {
     if (layout.pageBackgrounds && Object.keys(layout.pageBackgrounds).length > 0) data.pageBackgrounds = layout.pageBackgrounds;
     if (layout.pageHeader !== undefined) data.pageHeader = layout.pageHeader;
     if (layout.headerAutoHide) data.headerAutoHide = layout.headerAutoHide;
+    if (layout.sidebar) data.sidebar = layout.sidebar;
     if (layout.pageHeaders && Object.keys(layout.pageHeaders).length > 0) data.pageHeaders = layout.pageHeaders;
     fs.writeFileSync(getLayoutPath(), HEADER + yaml.dump(data, { lineWidth: -1 }), 'utf8');
 }
@@ -195,10 +197,10 @@ function buildCard(entry, base) {
  * Returns a copy of the config with the layout overlay applied. Pages with a saved layout
  * list their cards in saved order (cards may come from other pages); config.yaml cards not
  * mentioned anywhere stay on their own page, after the saved ones. Removed cards are left out.
- * The header menu, icon background presets and page background saved in the browser replace those of config.yaml,
+ * The header menu, icon background presets, page background and sidebar saved in the browser replace those of config.yaml,
  * and pages added in the browser follow the pages of config.yaml.
  * @param {Object} config - The merged configuration.
- * @param {{pages?: Object<string, Array<Object>>, removed?: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>, pageHeader?: *, pageHeaders?: Object<string, *>, headerAutoHide?: string}} layout - The overlay.
+ * @param {{pages?: Object<string, Array<Object>>, removed?: Array<string|number>, launcher?: Object, iconBackgrounds?: string[], background?: Object, addedPages?: Array<{id: string, name?: string}>, pageBackgrounds?: Object<string, Object|null>, pageHeader?: *, pageHeaders?: Object<string, *>, headerAutoHide?: string, sidebar?: Object}} layout - The overlay.
  * @returns {Object} The configuration with the overlay applied.
  */
 export function applyLayout(config, layout) {
@@ -208,6 +210,7 @@ export function applyLayout(config, layout) {
         ...(Array.isArray(layout?.iconBackgrounds) ? { iconBackgrounds: layout.iconBackgrounds } : {}),
         ...(isPlainObject(layout?.background) ? { background: layout.background } : {}),
         ...(typeof layout?.headerAutoHide === 'string' ? { headerAutoHide: layout.headerAutoHide } : {}),
+        ...(isPlainObject(layout?.sidebar) ? { sidebar: layout.sidebar } : {}),
     };
     const withBackgrounds = withPageBackgrounds({ ...applyCards(config, layout), ...shared }, layout?.pageBackgrounds);
     return withPageHeaders(withBackgrounds, layout?.pageHeader, layout?.pageHeaders);

@@ -1,3 +1,5 @@
+import { useCardNotice } from '../../context/notices';
+import { vacuumNotices } from '../cardNotices';
 import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
@@ -21,6 +23,7 @@ const ICON_BACKGROUND = 'linear-gradient(180deg, #5fd8ea, #1aa3c0)';
 const VacuumsCard = ({ config }) => {
     const hasRobots = Array.isArray(config.robots) && config.robots.length > 0;
     const { robots, loading, error, selection, toggleRoom, run } = useVacuums(config.id, hasRobots);
+    useCardNotice(vacuumNotices(robots));
     const [openId, setOpenId] = useState(/** @type {string|null} */ (null));
     const openRobot = robots.find(r => r.entity_id === openId);
     const columns = (config.colSpan || 1) >= 2 && robots.length <= (config.colSpan || 1);

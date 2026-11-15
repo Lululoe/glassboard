@@ -1,3 +1,5 @@
+import { useCardNotice } from '../../context/notices';
+import { proxmoxNotices } from '../cardNotices';
 import { useState, useMemo } from 'react';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
 import StatusPill from '../../components/Shared/StatusPill';
@@ -70,7 +72,8 @@ const ProxmoxItem = ({ node }) => {
  * @returns {JSX.Element} The rendered card.
  */
 const ProxmoxCard = ({ config }) => {
-    const { nodes, summary } = useProxmox();
+    const { nodes, summary, error } = useProxmox();
+    useCardNotice(proxmoxNotices(error));
     const url = config.url || '';
 
     const [sortMode, setSortMode] = useState('id-asc');

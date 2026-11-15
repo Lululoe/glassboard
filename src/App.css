@@ -257,3 +257,52 @@
 .App.has-hidden-header-bar .app-content {
     padding-top: env(safe-area-inset-top);
 }
+
+/* With the sidebar, pages keep clear of it and it takes over from the page control and arrows */
+.App.has-sidebar .nav-zone {
+    display: none;
+}
+
+/* The cards keep their place when the space beside the grid already clears the sidebar, and only
+   move over as far as they have to otherwise. The sidebar ends 84px from the left (16px margin and
+   its 68px rail); cards should start 16px after that, at 100px. The grid is at most 1220px wide
+   with 30px of its own padding and is centred beside the page's 8px scrollbar, so it clears the
+   sidebar from a 1368px wide window on (1220 + 2 × (100 − 30) + 8); narrower, it moves over by
+   up to 70px. */
+@media (min-width: 640px) {
+    .App.has-sidebar {
+        --sidebar-shift: clamp(0px, 1368px - 100vw, 70px);
+    }
+
+    .App.has-sidebar .app-content {
+        padding-left: calc(var(--sidebar-shift) + env(safe-area-inset-left));
+    }
+
+    /* An embedded page has no gutter of its own, so it always starts after the sidebar */
+    .App.has-sidebar .iframe-view-container {
+        box-sizing: border-box;
+        padding-left: calc(84px - var(--sidebar-shift));
+    }
+}
+
+/* Here the grid's own padding is 16px, so it moves over by the sidebar's full width */
+@media (min-width: 640px) and (max-width: 768px) {
+    .App.has-sidebar {
+        --sidebar-shift: 84px;
+    }
+}
+
+@media (max-width: 639px) {
+    .App.has-sidebar .scroll-content {
+        padding-bottom: calc(84px + env(safe-area-inset-bottom));
+    }
+
+    /* In edit mode the page control is back at the bottom, so the sidebar sits above it */
+    .App.has-sidebar.is-editing .sidebar {
+        bottom: calc(64px + env(safe-area-inset-bottom));
+    }
+
+    .App.has-sidebar.is-editing .scroll-content {
+        padding-bottom: calc(140px + env(safe-area-inset-bottom));
+    }
+}

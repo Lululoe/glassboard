@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { callService } from '../../lib/api';
-import { usePolling } from '../../hooks/usePolling';
+import { BACKGROUND_FAST, usePolling } from '../../hooks/usePolling';
 
 const POLL_INTERVAL = 3000;
 const REFRESH_DELAY = 800;
@@ -17,7 +17,7 @@ const OVERRIDE_GRACE = 2500;
 export function useVacuums(cardId, enabled) {
     const { data, loading, error, updatedAt, refresh } = usePolling(
         () => callService('homeassistant', { endpoint: 'vacuum', card_id: cardId }),
-        { interval: POLL_INTERVAL, enabled: enabled && cardId !== undefined, key: String(cardId) },
+        { interval: POLL_INTERVAL, backgroundInterval: BACKGROUND_FAST, enabled: enabled && cardId !== undefined, key: String(cardId) },
     );
     const [overrides, setOverrides] = useState(/** @type {Object<string, Object>} */ ({}));
     const [selection, setSelection] = useState(/** @type {Object<string, string[]>} */ ({}));

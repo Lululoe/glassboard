@@ -1,5 +1,5 @@
 import { callService } from '../../lib/api';
-import { usePolling } from '../../hooks/usePolling';
+import { BACKGROUND_SLOW, usePolling } from '../../hooks/usePolling';
 
 const EMPTY = { nodes: [], summary: { running: 0, total: 0, cpuAvg: 0 } };
 
@@ -9,7 +9,7 @@ const EMPTY = { nodes: [], summary: { running: 0, total: 0, cpuAvg: 0 } };
  * @returns {{nodes: Array<Object>, summary: Object, error: string|null}} Guests, summary and the last error.
  */
 const useProxmox = (interval = 3000) => {
-    const { data = EMPTY, error } = usePolling(() => callService('proxmox'), { interval });
+    const { data = EMPTY, error } = usePolling(() => callService('proxmox'), { interval, backgroundInterval: BACKGROUND_SLOW });
     return { ...data, error };
 };
 

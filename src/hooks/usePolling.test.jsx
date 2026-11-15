@@ -71,4 +71,42 @@ describe('usePolling', () => {
         await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
         visibility.mockRestore();
     });
+
+    it('keeps polling at the background pace on inactive pages', async () => {
+        vi.useFakeTimers();
+        const fetcher = vi.fn(async () => 'x');
+        /**
+         * Polls fast while shown and slowly while not.
+         * @param {Object} props
+         * @param {boolean} props.active - Whether the page is shown.
+         * @returns {JSX.Element} The probe.
+         */
+        const Inner = () => {
+            usePolling(fetcher, { interval: 1000, backgroundInterval: 10000 });
+            return null;
+        };
+        const Background = ({ active }) => <PageActiveContext value={active}><Inner /></PageActiveContext>;
+
+        const { rerender } = render(<Background active={false} />);
+        await act(async () => {});
+        expect(fetcher).toHaveBeenCalledTimes(1);
+        await act(async () => { await vi.advanceTimersByTimeAsync(9000); });
+        expect(fetcher).toHaveBeenCalledTimes(1);
+        await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+        expect(fetcher).toHaveBeenCalledTimes(2);
+
+        // Shown, it fetches right away and then at the normal pace
+        rerender(<Background active />);
+        await act(async () => {});
+        expect(fetcher).toHaveBeenCalledTimes(3);
+        await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+        expect(fetcher).toHaveBeenCalledTimes(4);
+
+        // Hidden again, it doesn't fetch the same data again right away
+        rerender(<Background active={false} />);
+        await act(async () => {});
+        expect(fetcher).toHaveBeenCalledTimes(4);
+        await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
+        expect(fetcher).toHaveBeenCalledTimes(5);
+    });
 });
