@@ -46,15 +46,6 @@ button.ha-tile:active {
     transform: scale(0.97);
 }
 
-/* In Glass and Liquid Glass a tile that does something grows a little under the pointer, like the
-   app icons */
-@media (pointer: fine) and (prefers-reduced-motion: no-preference) {
-    :root:is([data-style="glass"], [data-style="liquid"]) button.ha-tile:hover:not(:active),
-    :root:is([data-style="glass"], [data-style="liquid"]) .ha-tile.has-dialog:hover:not(:has(:active)) {
-        transform: scale(1.04);
-    }
-}
-
 button.ha-tile:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
