@@ -3,10 +3,27 @@
  * holds what differs from the other styles.
  */
 
-/* Small single-surface cards next to two-tone cards are as dark as a two-tone card's body:
-   off tiles, half and quarter thermostats, and the half media player */
+/* Single-surface cards next to two-tone cards are as dark as a two-tone card's body: off tiles,
+   thermostats, and the half media player */
 :root[data-style="glass"] .ha-tile.off,
-:root[data-style="glass"] .thermostat-card:is(.size-half, .size-quarter),
+:root[data-style="glass"] .thermostat-card,
 :root[data-style="glass"] .media-player-card.size-half {
     background: var(--bg-card-glass);
+}
+
+/* The app grid is a panel like a container: a light tint without a blur of its own */
+:root[data-style="glass"] .app-grid-card {
+    background: rgba(255, 255, 255, 0.08);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+
+:root[data-style="glass"][data-theme="light"] .app-grid-card {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    :root[data-style="glass"] .app-grid-card {
+        background: var(--solid-surface);
+    }
 }
