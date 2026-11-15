@@ -7,6 +7,29 @@
 /** Colors offered for the page gradient; the first is the default theme's. */
 export const BACKGROUND_COLORS = ['#0061d4', '#5e3bd1', '#a0309c', '#c2372f', '#d26b12', '#1f8a4c', '#0f7c8c', '#3c4250'];
 
+/** Moving layers a background can add over its gradient or picture, with their names. */
+export const BACKGROUND_MOTIONS = { aurora: 'Aurora', blobs: 'Blobs', matrix: 'Matrix', weather: 'Weather' };
+
+/**
+ * Effects of the weather motion, with their names. It shows the one for the current weather,
+ * unless the background fixes one (`weather`), which also previews it.
+ */
+export const WEATHER_EFFECTS = { rain: 'Rain', snow: 'Snow', cover: 'Clouds', sun: 'Sun' };
+
+/**
+ * Returns the weather effect a background fixes.
+ * @param {{weather?: string}|null|undefined} background - The setting.
+ * @returns {string|null} One of `WEATHER_EFFECTS`, or null to follow the current weather.
+ */
+export const backgroundWeather = (background) => (Object.hasOwn(WEATHER_EFFECTS, background?.weather ?? '') ? background.weather : null);
+
+/**
+ * Returns the moving layer of a background setting.
+ * @param {{motion?: string}|null|undefined} background - The setting.
+ * @returns {string|null} One of `BACKGROUND_MOTIONS`, or null for a still background.
+ */
+export const backgroundMotion = (background) => (Object.hasOwn(BACKGROUND_MOTIONS, background?.motion ?? '') ? background.motion : null);
+
 /**
  * Whether a value is a color the page gradient can be made from.
  * @param {*} value - The value.

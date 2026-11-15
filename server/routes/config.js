@@ -16,7 +16,11 @@ import {
     WIDGET_TYPES, isHeaderColor,
 } from '../../shared/pageHeader.js';
 import logger from '../logger.js';
+import { flattenCards } from '../../shared/containerCards.js';
 import { isDemoMode } from '../services/demo.js';
+import { appearanceSchema } from '../configSchema.js';
+import { DEFAULT_TRANSPARENCY } from '../../shared/appearance.js';
+import { BACKGROUND_MOTIONS, WEATHER_EFFECTS } from '../../shared/pageBackground.js';
 
 const KEEP_ALIVE_INTERVAL = 30 * 1000;
 
@@ -60,21 +64,27 @@ const layoutCard = z.looseObject({
 const launcherItem = z.looseObject({ name: z.string(), url: z.string() });
 
 /** A page background: a color its gradient is made from, or a picture (a web or uploaded URL). */
+const motion = z.enum(Object.keys(BACKGROUND_MOTIONS)).optional();
+/** The weather effect the weather motion always shows; without it, the current weather's. */
+const weather = z.enum(Object.keys(WEATHER_EFFECTS)).optional();
+
 const background = z.object({
     color: z.string().regex(/^#[0-9a-f]{6}$/i).optional(),
     image: z.string().max(2000).regex(/^(https?:\/\/|\/)/).optional(),
     dim: z.number().min(0).max(0.8).optional(),
-}).refine(b => Boolean(b.color) !== Boolean(b.image), 'needs either a color or a picture');
+    motion,
+    weather,
+}).refine(b => !(b.color && b.image) && Boolean(b.color || b.image || b.motion), 'needs a color, a picture or a motion');
 
-/** A single page's background: its own, or `{ theme: true }` for the theme's gradient on that page. */
-const pageBackground = z.union([background, z.object({ theme: z.literal(true) })]);
+/** A single page's background: its own, or `{ theme: true }` for the theme's gradient on that page, which may move. */
+const pageBackground = z.union([z.object({ theme: z.literal(true), motion, weather }), background]);
 
 /**
  * A line of the page header as the browser saves it. There is no `template`: the object drops
  * unknown keys, so template texts sent by the browser are never stored. A template line keeps
- * the template written for it in config.yaml.
+ * the template written for it in config.yaml. A string is a text line, as config.yaml allows.
  */
-const headerLine = z.union([z.literal(false), z.object({
+const headerLine = z.union([z.literal(false), z.string().max(MAX_TEXT_LENGTH), z.object({
     type: z.enum(LINE_TYPES),
     format: z.string().max(100).optional(),
     text: z.string().max(MAX_TEXT_LENGTH).optional(),
@@ -84,11 +94,12 @@ const headerLine = z.union([z.literal(false), z.object({
 
 /**
  * A page header widget as the browser saves it. Its entities become readable by the browser,
- * like those of cards added in the browser.
+ * like those of cards added in the browser. Widgets written in config.yaml may have no `id` or
+ * `type`, and the browser sends them back as they are.
  */
 const headerWidget = z.object({
-    id: z.string().regex(/^[a-z0-9_-]{1,40}$/i),
-    type: z.enum(WIDGET_TYPES),
+    id: z.string().regex(/^[a-z0-9_-]{1,40}$/i).optional(),
+    type: z.enum(WIDGET_TYPES).optional(),
     entity_id: z.string().regex(ENTITY_ID).max(255),
     entity_id2: z.string().regex(ENTITY_ID).max(255).optional(),
     name: z.string().trim().max(60).optional(),
@@ -114,6 +125,29 @@ const pageHeader = z.union([z.boolean(), z.object({
     widgets: z.array(headerWidget).max(MAX_WIDGETS).optional(),
 })]);
 
+/** The icon of a sidebar page or folder, as the browser saves it. */
+const sidebarIcon = {
+    icon: z.string().max(500).optional(),
+    iconColor: z.string().max(100).optional(),
+    iconBackground: z.string().max(2000).optional(),
+};
+
+const sidebarPage = z.object({ page: z.string().min(1).max(100), ...sidebarIcon });
+
+/** The sidebar as the browser saves it: whether it shows, and its pages and folders in order. */
+const sidebar = z.object({
+    enabled: z.boolean().optional(),
+    items: z.array(z.union([
+        sidebarPage,
+        z.object({
+            folder: z.string().regex(/^[a-z0-9_-]{1,48}$/i),
+            name: z.string().trim().max(60).optional(),
+            pages: z.array(sidebarPage).max(100),
+            ...sidebarIcon,
+        }),
+    ])).max(200).optional(),
+});
+
 const layoutBody = z.object({
     pages: z.record(z.string(), z.array(layoutCard).max(500)),
     launcher: z.looseObject({
@@ -131,6 +165,7 @@ const layoutBody = z.object({
     pageHeader: pageHeader.nullable().optional(),
     pageHeaders: z.record(z.string(), pageHeader.nullable()).optional(),
     headerAutoHide: z.enum(HEADER_AUTO_HIDE).nullable().optional(),
+    sidebar: sidebar.nullable().optional(),
 });
 
 /**
@@ -144,7 +179,7 @@ function assertEditable() {
  * Saves the whole dashboard as edited in the browser: the cards of every grid page, in order,
  * with their full properties. Every grid page must be included and every card id may appear
  * only once. Credential-like keys the browser never received are restored from the server's copy.
- * The header menu, icon background presets, page background and page header are optional; left out,
+ * The header menu, icon background presets, page background, page header and sidebar are optional; left out,
  * the saved ones are kept. A `null` background or page header goes back to the one in config.yaml.
  * Page header templates are never taken from the browser, only from config.yaml.
  */
@@ -177,7 +212,7 @@ router.put('/layout', (req, res, next) => {
         if (unknown) throw new HttpError(400, `Unknown page: ${unknown}`);
 
         const seen = new Set();
-        Object.values(sent).flat().forEach(card => {
+        flattenCards(Object.values(sent).flat()).forEach(card => {
             if (seen.has(String(card.id))) throw new HttpError(400, `Duplicate card id "${card.id}"`);
             seen.add(String(card.id));
         });
@@ -220,6 +255,10 @@ router.put('/layout', (req, res, next) => {
         const sentAutoHide = parsed.data.headerAutoHide;
         const autoHide = sentAutoHide === undefined ? previous.headerAutoHide : sentAutoHide ?? undefined;
 
+        // The sidebar is stored where it differs from config.yaml; null goes back to config.yaml
+        const sentSidebar = parsed.data.sidebar;
+        const sidebarSetting = sentSidebar === undefined ? previous.sidebar : sentSidebar ?? undefined;
+
         const sentBackground = parsed.data.background;
         const pageBackground = sentBackground === undefined ? previous.background : sentBackground ?? undefined;
         writeLayout({
@@ -232,6 +271,8 @@ router.put('/layout', (req, res, next) => {
             pageHeader: header === undefined || deepEqual(header, baseHeader) ? undefined : header,
             pageHeaders,
             headerAutoHide: autoHide === (getBaseConfig().headerAutoHide ?? 'never') ? undefined : autoHide,
+            sidebar: sidebarSetting && !deepEqual(sidebarSetting, getBaseConfig().sidebar) ? sidebarSetting : undefined,
+            appearance: previous.appearance,
         });
         // A reset keeps a copy of the layout it removed, so its pictures stay until that copy is gone
         const backup = readLayoutBackup();
@@ -292,6 +333,45 @@ router.get('/background/:name', (req, res) => {
     const file = backgroundImagePath(req.params.name);
     if (!file || !fs.existsSync(file)) return res.status(404).end();
     res.set('Cache-Control', 'public, max-age=31536000, immutable').sendFile(file);
+});
+
+/** Body of an appearance change: a style, accent or transparency, or null to go back to the one in config.yaml. */
+const appearanceBody = z.object({
+    style: appearanceSchema.shape.style.nullable(),
+    accent: appearanceSchema.shape.accent.nullable(),
+    transparency: appearanceSchema.shape.transparency.nullable(),
+}).partial().strict();
+
+/**
+ * Saves the dashboard's style, accent color and transparency, as chosen in the Theme menu. They
+ * apply to every browser showing the dashboard. Left out, a setting is kept; `null` goes back to
+ * config.yaml. Only settings that differ from config.yaml are stored. `appearance.locked` in
+ * config.yaml refuses every change.
+ */
+router.put('/appearance', (req, res, next) => {
+    try {
+        assertEditable();
+        if (getBaseConfig().appearance?.locked === true) throw new HttpError(403, 'The theme is locked in config.yaml');
+        const parsed = appearanceBody.safeParse(req.body);
+        if (!parsed.success) {
+            const issue = parsed.error.issues[0];
+            throw new HttpError(400, `Invalid appearance: ${issue.path.join('.')} ${issue.message}`.trim());
+        }
+        const previous = readLayout();
+        // Unset in config.yaml means the defaults: Glass, the theme's accent and the style's own transparency
+        const base = { style: 'glass', accent: null, transparency: DEFAULT_TRANSPARENCY, ...getBaseConfig().appearance };
+        const merged = { ...previous.appearance };
+        Object.entries(parsed.data).forEach(([key, value]) => {
+            if (value === null || value === base[key]) delete merged[key];
+            else merged[key] = value;
+        });
+        writeLayout({ ...previous, appearance: Object.keys(merged).length > 0 ? merged : undefined });
+        logger.info('Saved dashboard appearance');
+        loadConfig();
+        res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
 });
 
 /** Removes everything saved from the browser, so the dashboard goes back to config.yaml. */

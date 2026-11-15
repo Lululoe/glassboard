@@ -35,6 +35,17 @@ describe('initialHead', () => {
         expect(head).not.toContain('<script>alert');
     });
 
+    it("sets the dashboard's style before the first paint", () => {
+        expect(initialHead({ appearance: { style: 'terminal' } })).toContain("setAttribute('data-style','terminal')");
+        expect(initialHead({ appearance: { style: "x');alert(1)//" } })).toContain("setAttribute('data-style','glass')");
+    });
+
+    it('sets the transparency of Glass and Liquid Glass before the first paint', () => {
+        expect(initialHead({ appearance: { style: 'liquid', transparency: 1 } })).toContain("setProperty('--surface-clear','0.25')");
+        expect(initialHead({ appearance: { style: 'material', transparency: 1 } })).not.toContain('--surface-clear');
+        expect(initialHead({ appearance: { transparency: "1');alert(1)//" } })).toContain("setProperty('--surface-clear','1')");
+    });
+
     it('goes before </head>', () => {
         expect(withInitialHead('<html><head><title>x</title></head><body></body></html>', {}))
             .toMatch(/<title>x<\/title><script>.*<\/style><\/head>/);

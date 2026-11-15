@@ -63,6 +63,8 @@ const TwoToneBase = ({
 }) => {
     const contentRef = useRef(null);
     const hasMore = useHasMoreBelow(contentRef);
+    // The color of the card's icon, which styles can tint the card with (Neon does)
+    const [hue, setHue] = useState(null);
     const HeaderInfo = url ? 'a' : onHeaderClick ? 'button' : 'div';
     /** @type {Object} */
     const headerProps = onHeaderClick && !url
@@ -70,7 +72,7 @@ const TwoToneBase = ({
         : { href: url || undefined };
 
     return (
-        <div className={`glass-card two-tone-card ${className}`}>
+        <div className={`glass-card two-tone-card${hue ? ' has-hue' : ''} ${className}`} style={hue ? /** @type {import('react').CSSProperties} */ ({ '--card-hue': hue }) : undefined}>
             <div className="two-tone-header">
                 <HeaderInfo className={`two-tone-header-info${onHeaderClick && !url ? ' button-reset' : ''}`} {...headerProps}>
                     {icon && (
@@ -79,6 +81,7 @@ const TwoToneBase = ({
                             background={iconBackground}
                             color={iconColor}
                             size="100%"
+                            onGlow={setHue}
                         />
                     )}
                     <div className="two-tone-titles">
@@ -96,7 +99,7 @@ const TwoToneBase = ({
                     </div>
                 )}
             </div>
-            <div className="two-tone-content scrollable" ref={contentRef}>
+            <div className={`two-tone-content scrollable${hasMore ? ' has-more' : ''}`} ref={contentRef}>
                 {children}
             </div>
             {hasMore && <div className="two-tone-more" aria-hidden="true" />}

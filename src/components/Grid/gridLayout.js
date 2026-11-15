@@ -37,6 +37,32 @@ export function sizeOf(card) {
     return String(Math.min(3, Math.max(1, span)));
 }
 
+/** Most rows a card can span. */
+export const MAX_ROWS = 3;
+
+/**
+ * Returns how many rows a card spans: its `rowSpan` (1 to 3) for full-height cards, else 1.
+ * @param {Object} card - The card config.
+ * @returns {number} Rows the card covers.
+ */
+export function rowSpanOf(card) {
+    if (isSubTile(sizeOf(card))) return 1;
+    const rows = Math.round(Number(card?.rowSpan) || 1);
+    return Math.min(MAX_ROWS, Math.max(1, rows));
+}
+
+/**
+ * Returns a copy of the card spanning the given number of rows; one row drops `rowSpan`.
+ * @param {Object} card - The card config.
+ * @param {number} rows - Rows to span.
+ * @returns {Object} The changed card.
+ */
+export function withRows(card, rows) {
+    const { rowSpan: _rowSpan, ...rest } = card;
+    const n = Math.min(MAX_ROWS, Math.max(1, Math.round(rows) || 1));
+    return n > 1 ? { ...rest, rowSpan: n } : rest;
+}
+
 /**
  * Returns a copy of the card with the given size applied.
  * @param {Object} card - The card config.
@@ -45,7 +71,10 @@ export function sizeOf(card) {
  */
 export function withSize(card, size) {
     const { tileSize: _tileSize, ...rest } = card;
-    if (size === 'quarter' || size === 'half') return { ...rest, tileSize: size };
+    if (size === 'quarter' || size === 'half') {
+        const { rowSpan: _rowSpan, ...flat } = rest;
+        return { ...flat, tileSize: size };
+    }
     return { ...rest, colSpan: Number(size) };
 }
 
@@ -208,36 +237,42 @@ export function isHiddenAt(card, columns) {
 }
 
 /**
- * Works out where every grid entry lands, the way CSS grid auto-placement does: one row
- * tall entries of their column span, either in order (`dense` off) or each in the first
- * gap that fits (`dense` on, as on tablets).
+ * Works out where every grid entry lands, the way CSS grid auto-placement does: entries of
+ * their column and row span, either in order (`dense` off) or each in the first gap that fits
+ * (`dense` on, as on tablets).
  * @param {ReturnType<typeof buildEntries>} entries - Entries from `buildEntries`.
  * @param {Array<Object>} cards - The cards the entries refer to.
  * @param {number} columns - Columns in the grid.
  * @param {boolean} [dense=false] - Whether later entries fill earlier gaps.
- * @returns {Array<{col: number, row: number, w: number}>} The tile each entry starts at, and its width.
+ * @returns {Array<{col: number, row: number, w: number, h: number}>} The tile each entry starts at, and its size.
  */
 export function placeEntries(entries, cards, columns, dense = false) {
     const rows = [];
-    const free = (row, col, w) => {
-        for (let x = col; x < col + w; x++) if (rows[row]?.[x]) return false;
+    const free = (row, col, w, h) => {
+        for (let y = row; y < row + h; y++) {
+            for (let x = col; x < col + w; x++) if (rows[y]?.[x]) return false;
+        }
         return true;
     };
     let cursor = { row: 0, col: 0 };
     return entries.map(entry => {
-        const w = entry.kind === 'card' ? Number(sizeOf(fitToColumns(cards[entry.index], columns))) : 1;
+        const card = entry.kind === 'card' ? fitToColumns(cards[entry.index], columns) : null;
+        const w = card ? Number(sizeOf(card)) : 1;
+        const h = card ? rowSpanOf(card) : 1;
         let { row, col } = dense ? { row: 0, col: 0 } : cursor;
-        while (col + w > columns || !free(row, col, w)) {
+        while (col + w > columns || !free(row, col, w, h)) {
             col += 1;
             if (col + w > columns) {
                 row += 1;
                 col = 0;
             }
         }
-        rows[row] = rows[row] || [];
-        for (let x = col; x < col + w; x++) rows[row][x] = true;
+        for (let y = row; y < row + h; y++) {
+            rows[y] = rows[y] || [];
+            for (let x = col; x < col + w; x++) rows[y][x] = true;
+        }
         cursor = { row, col: col + w };
-        return { col, row, w };
+        return { col, row, w, h };
     });
 }
 
@@ -254,9 +289,9 @@ export function layoutCards(cards, columns, include) {
     const places = placeEntries(entries, cards, columns, columns === 2);
     const areas = new Map();
     entries.forEach((entry, i) => {
-        const { col, row, w } = places[i];
+        const { col, row, w, h } = places[i];
         if (entry.kind === 'card') {
-            areas.set(entry.index, { x: col, y: row, w, h: 1 });
+            areas.set(entry.index, { x: col, y: row, w, h });
             return;
         }
         entry.items.forEach(item => {

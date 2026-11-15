@@ -57,7 +57,7 @@
     flex: 1 1 auto;
     height: 6px;
     background: var(--bg-fill);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     overflow: hidden;
 }
 
@@ -66,7 +66,7 @@
     width: 0%;
     /* Paused and stopped torrents */
     background: var(--text-tertiary);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     transition: width 300ms var(--ease-standard);
 }
 

@@ -1,0 +1,132 @@
+/*
+ * Material: Material Design 3. Opaque, neutral surfaces without frosting, raised by tone and a
+ * soft elevation shadow; round icon buttons and pills; regular-weight titles. Only the accent
+ * colors interactive parts (on tiles, buttons, switches, selections) — surfaces stay neutral.
+ *
+ * Theme colors are set inline on the root, so the tokens a theme also sets need !important.
+ */
+:root[data-style="material"] {
+    --font-family: "Roboto Flex", Roboto, "Google Sans Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --radius-scale: 1.35;
+    --radius-card: 16px;
+    --blur-scale: 0;
+
+    --m3-surface: #1d1e21;
+    --m3-container: #212226;
+    --m3-container-high: #2b2c31;
+    --m3-container-highest: #36373c;
+    --m3-primary-container: color-mix(in srgb, var(--color-primary) 24%, #fff);
+    --m3-on-primary-container: color-mix(in srgb, var(--color-primary) 55%, #000);
+
+    --bg-card-surface: var(--m3-container);
+    --bg-card-glass: var(--m3-container) !important;
+    --bg-card-glass-header: var(--m3-container-high) !important;
+    --bg-toolbar: var(--m3-surface);
+    --bg-popup: var(--m3-container-high) !important;
+    --bg-tile: var(--m3-primary-container) !important;
+    --border-popup: transparent;
+    --bg-fill: rgba(255, 255, 255, 0.08);
+    --bg-fill-hover: rgba(255, 255, 255, 0.12);
+    --shadow-tile: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+    --shadow-popup: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 8px 3px rgba(0, 0, 0, 0.15);
+    --shadow-app: rgba(0, 0, 0, 0.3);
+    --scroll-shade: rgba(33, 34, 38, 0.95);
+}
+
+:root[data-style="material"][data-theme="light"] {
+    --m3-surface: #f8f9fb;
+    --m3-container: #f3f4f7;
+    --m3-container-high: #e9eaee;
+    --m3-container-highest: #e1e2e7;
+    --bg-fill: rgba(0, 0, 0, 0.06);
+    --bg-fill-hover: rgba(0, 0, 0, 0.1);
+    --shadow-tile: 0 1px 2px rgba(0, 0, 0, 0.18), 0 1px 3px 1px rgba(0, 0, 0, 0.1);
+    --shadow-popup: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 8px 3px rgba(0, 0, 0, 0.1);
+    --scroll-shade: rgba(243, 244, 247, 0.95);
+}
+
+/* No frosting anywhere: every surface is solid */
+:root[data-style="material"] .glass-card,
+:root[data-style="material"] .two-tone-header,
+:root[data-style="material"] .two-tone-content,
+:root[data-style="material"] .ha-tile,
+:root[data-style="material"] .app-header,
+:root[data-style="material"] .sidebar-rail,
+:root[data-style="material"] dialog {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+:root[data-style="material"] .sidebar-rail,
+:root[data-style="material"] dialog.launcher-popup,
+:root[data-style="material"] dialog.theme-menu {
+    border: 0;
+}
+
+/* Titles use regular and medium weights, like Material's title and headline type */
+:root[data-style="material"] .header-title,
+:root[data-style="material"] .card-header {
+    font-weight: 500;
+    letter-spacing: 0;
+}
+
+:root[data-style="material"] .two-tone-title {
+    font-size: var(--fs-21);
+    font-weight: 400;
+}
+
+/* Icon buttons are round, with a state layer on hover, everywhere they appear */
+:root[data-style="material"] .icon-button,
+:root[data-style="material"] .two-tone-header-action {
+    border-radius: var(--radius-round);
+}
+
+:root[data-style="material"] .icon-button {
+    width: 40px;
+    height: 40px;
+}
+
+:root[data-style="material"] .header-right {
+    gap: 2px;
+}
+
+/* On tiles are the accent's tonal container */
+:root[data-style="material"] .ha-tile:not(.off) {
+    color: var(--m3-on-primary-container);
+}
+
+:root[data-style="material"] .ha-tile.off {
+    background: var(--m3-container);
+}
+
+/* The selected segment is the accent's tonal container, not a white pill */
+:root[data-style="material"] .editor-segmented,
+:root[data-style="material"] .graph-seg {
+    gap: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--color-separator);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+}
+
+:root[data-style="material"] .editor-segmented button,
+:root[data-style="material"] .graph-seg button {
+    border-radius: 0;
+}
+
+:root[data-style="material"] .editor-segmented button[aria-checked="true"],
+:root[data-style="material"] .graph-seg button[aria-pressed="true"] {
+    background: var(--m3-primary-container);
+    color: var(--m3-on-primary-container);
+    box-shadow: none;
+}
+
+:root[data-style="material"] .editor-toggle input:checked + .editor-switch {
+    background: var(--color-primary);
+}
+
+:root[data-style="material"] .page-indicators {
+    background: var(--m3-container-high);
+    box-shadow: var(--shadow-tile);
+}

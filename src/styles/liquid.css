@@ -1,0 +1,329 @@
+/*
+ * Liquid Glass: clear, thick glass with a lit rim and larger, rounder corners. Surfaces show
+ * more of the page behind them and stand off it with a soft shadow. Where the browser can,
+ * the rim also bends what is behind it (refraction, see refraction.js), set per surface as
+ * --refraction; without it the plain blur stays.
+ *
+ * Theme colors are set inline on the root, so the tokens a theme also sets need !important.
+ */
+:root[data-style="liquid"] {
+    --radius-scale: 1.6;
+    --radius-card: 26px;
+    --blur-scale: 0.8;
+    --liquid-blur: blur(12px) saturate(180%);
+    --liquid-rim: inset 0 1px 0 rgba(255, 255, 255, 0.42), inset 0 0 0 1px rgba(255, 255, 255, 0.13), inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+
+    /* Fills keep secondary text at 4.5:1 or better over the default gradient, at the middle
+       transparency; the Theme menu's slider makes them more solid or clearer (--surface-*). The
+       header band is a white tint, so it only gets clearer: solid, it would be a white bar. */
+    --bg-card-surface: rgba(20, 22, 32, calc((0.34 + (1 - 0.34) * var(--surface-solid, 0)) * var(--surface-clear, 1)));
+    --bg-card-glass: transparent !important;
+    --bg-card-glass-header: rgba(255, 255, 255, calc(0.08 * var(--surface-clear, 1))) !important;
+    --bg-toolbar: rgba(24, 26, 36, 0.3);
+    --bg-popup: rgba(30, 32, 42, 0.74) !important;
+    --border-popup: rgba(255, 255, 255, 0.16);
+    --shadow-tile: var(--liquid-rim), 0 12px 32px rgba(0, 0, 0, 0.26);
+    --shadow-popup: var(--liquid-rim), 0 18px 48px rgba(0, 0, 0, 0.36);
+    --bg-fill: rgba(255, 255, 255, 0.14);
+    --bg-fill-hover: rgba(255, 255, 255, 0.22);
+    /* Dividers are a line of light in the glass, not grey paint */
+    --color-separator: rgba(255, 255, 255, 0.16) !important;
+}
+
+:root[data-style="liquid"][data-theme="light"] {
+    --liquid-rim: inset 0 1px 0 rgba(255, 255, 255, 0.85), inset 0 0 0 1px rgba(255, 255, 255, 0.4), inset 0 -1px 0 rgba(255, 255, 255, 0.3);
+    --bg-card-surface: rgba(255, 255, 255, calc((0.65 + (1 - 0.65) * var(--surface-solid, 0)) * var(--surface-clear, 1)));
+    --bg-card-glass-header: rgba(255, 255, 255, calc(0.3 * var(--surface-clear, 1))) !important;
+    --bg-toolbar: rgba(255, 255, 255, 0.42);
+    --bg-popup: rgba(250, 250, 253, 0.82) !important;
+    --border-popup: rgba(255, 255, 255, 0.55);
+    --shadow-tile: var(--liquid-rim), 0 12px 32px rgba(0, 25, 70, 0.18);
+    --shadow-popup: var(--liquid-rim), 0 18px 48px rgba(0, 25, 70, 0.24);
+    --bg-fill: rgba(255, 255, 255, 0.42);
+    --bg-fill-hover: rgba(255, 255, 255, 0.62);
+    --color-separator: rgba(0, 20, 60, 0.12) !important;
+}
+
+/* Glass surfaces: frosted by default, bent at the rim where refraction is on */
+:root[data-style="liquid"] .glass-card,
+:root[data-style="liquid"] .ha-tile.off,
+:root[data-style="liquid"] .sidebar-rail,
+:root[data-style="liquid"] .header-right > button {
+    -webkit-backdrop-filter: var(--liquid-blur);
+    backdrop-filter: var(--refraction, var(--liquid-blur));
+}
+
+/* A two-tone card is one piece of glass: its banner is a brighter band, not a separate pane */
+:root[data-style="liquid"] .glass-card.two-tone-card {
+    background: var(--bg-card-surface) !important;
+    -webkit-backdrop-filter: var(--liquid-blur) !important;
+    backdrop-filter: var(--refraction, var(--liquid-blur)) !important;
+}
+
+:root[data-style="liquid"] .two-tone-header,
+:root[data-style="liquid"] .two-tone-content {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+/* The glass is clear, so a list with more to scroll to fades out at its bottom edge instead of
+   being shaded over, which would show as a dark band */
+:root[data-style="liquid"] .two-tone-content.has-more {
+    -webkit-mask-image: linear-gradient(#000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(#000 calc(100% - 36px), transparent);
+}
+
+:root[data-style="liquid"] .two-tone-more {
+    display: none;
+}
+
+:root[data-style="liquid"] .two-tone-header {
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Text keeps its contrast over a bright spot showing through the clear glass */
+:root[data-style="liquid"][data-theme="dark"] .glass-card,
+:root[data-style="liquid"][data-theme="dark"] .app-header,
+:root[data-style="liquid"][data-theme="dark"] .ha-tile.off {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+/* No header bar: the name sits on the page, and each control is its own floating glass button */
+:root[data-style="liquid"] .app-header {
+    height: calc(60px + env(safe-area-inset-top));
+    padding-right: calc(14px + env(safe-area-inset-right));
+    background: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+}
+
+:root[data-style="liquid"] .header-right {
+    gap: 8px;
+}
+
+/* The header lies over the page, which scrolls up beneath it to the top edge instead of being
+   cut off under a band; the page starts below the header */
+:root[data-style="liquid"] .App:not(.has-hidden-header-bar) > .app-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+
+:root[data-style="liquid"] .App:not(.has-hidden-header-bar) .scroll-content,
+:root[data-style="liquid"] .App:not(.has-hidden-header-bar) .iframe-view-container {
+    padding-top: calc(60px + env(safe-area-inset-top));
+}
+
+/* Once the page is scrolled, the name fades out so cards pass under the buttons alone */
+:root[data-style="liquid"] .app-header.is-scrolled:not(.is-editing) .header-left {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* An auto-hiding header lies over the page, where the name would run into the cards; only the
+   buttons float in */
+:root[data-style="liquid"] .app-header.is-auto-hide:not(.is-editing) .header-left {
+    visibility: hidden;
+}
+
+:root[data-style="liquid"] .header-right > button {
+    background: var(--bg-toolbar);
+    box-shadow: var(--shadow-tile);
+}
+
+:root[data-style="liquid"] .header-right > .icon-button {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-round);
+}
+
+:root[data-style="liquid"] .header-right > .header-text-button,
+:root[data-style="liquid"] .header-right > .header-done-button {
+    height: 40px;
+    padding: 0 16px;
+    border-radius: var(--radius-pill);
+}
+
+/* Every glass button sits the same distance apart; Reset is set apart by its red label */
+:root[data-style="liquid"] .header-right > .header-text-button {
+    margin-right: 0;
+}
+
+/* Arriving: the name fades in, and the buttons well up out of the right edge like drops of
+   glass, the one nearest the edge first, overshooting a little before they settle */
+:root[data-style="liquid"] .app-header,
+:root[data-style="liquid"] .app-header.is-auto-hide.is-hidden {
+    animation: none;
+    transform: none;
+    opacity: 1;
+}
+
+:root[data-style="liquid"] .header-left {
+    animation: liquid-fade-in 0.25s var(--ease-standard) backwards;
+    transition: opacity 0.2s var(--ease-standard);
+}
+
+/* The buttons grow out of the one nearest the edge, all at once, the way glass splits into
+   separate controls: a quick swell past full size, and icons that come into focus */
+:root[data-style="liquid"] .header-right > * {
+    --liquid-from: 0px;
+    animation: liquid-morph-in 0.32s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
+    transition:
+        transform 0.2s var(--ease-standard),
+        opacity 0.12s var(--ease-standard) 0.06s,
+        background var(--duration-standard) var(--ease-standard);
+}
+
+:root[data-style="liquid"] .header-right > * > svg {
+    animation: liquid-focus 0.32s var(--ease-standard) backwards;
+}
+
+:root[data-style="liquid"] .header-right > :nth-last-child(2) { --liquid-from: 48px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(3) { --liquid-from: 96px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(4) { --liquid-from: 144px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(5) { --liquid-from: 192px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(6) { --liquid-from: 240px; }
+:root[data-style="liquid"] .header-right > :nth-last-child(n+7) { --liquid-from: 288px; }
+
+/* Hidden: the buttons have merged back into the one at the edge, and the header lets clicks through */
+:root[data-style="liquid"] .app-header.is-auto-hide.is-hidden {
+    pointer-events: none;
+}
+
+:root[data-style="liquid"] .app-header.is-hidden .header-left {
+    opacity: 0;
+    animation: none;
+}
+
+:root[data-style="liquid"] .app-header.is-hidden .header-right > * {
+    opacity: 0;
+    transform: translateX(var(--liquid-from)) scale(0.6);
+    /* Taking the animation away lets it play again each time the header is revealed */
+    animation: none;
+}
+
+:root[data-style="liquid"] .app-header.is-hidden .header-right > * > svg {
+    animation: none;
+}
+
+@keyframes liquid-fade-in {
+    from { opacity: 0; }
+}
+
+@keyframes liquid-morph-in {
+    0% { opacity: 0; transform: translateX(var(--liquid-from)) scale(0.6); }
+    30% { opacity: 1; }
+    65% { transform: translateX(calc(var(--liquid-from) * -0.04)) scale(1.07, 1.03); }
+    100% { opacity: 1; transform: none; }
+}
+
+@keyframes liquid-focus {
+    from { filter: blur(4px); opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root[data-style="liquid"] .header-right > * {
+        animation-name: liquid-fade-in;
+        transition: opacity 0.2s var(--ease-standard), background var(--duration-standard) var(--ease-standard);
+    }
+
+    :root[data-style="liquid"] .app-header.is-hidden .header-right > * {
+        transform: none;
+    }
+
+    :root[data-style="liquid"] .header-right > * > svg {
+        animation: none;
+    }
+}
+
+/* On narrow screens Reset is a round button with only its icon, like the others */
+@media (max-width: 640px) {
+    :root[data-style="liquid"] .header-right > .header-reset-button {
+        width: 40px;
+        padding: 0;
+        border-radius: var(--radius-round);
+    }
+}
+
+/* Done keeps its accent fill, lit like the rest of the glass */
+:root[data-style="liquid"] .header-right > .header-done-button {
+    background: var(--color-primary);
+    box-shadow: var(--liquid-rim), 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+@media (pointer: fine) {
+    :root[data-style="liquid"] .header-right > .icon-button:hover {
+        background: color-mix(in srgb, var(--bg-toolbar), var(--text-primary) 8%);
+    }
+}
+
+:root[data-style="liquid"] .header-right > .icon-button:active,
+:root[data-style="liquid"] .header-right > .icon-button.active {
+    background: color-mix(in srgb, var(--bg-toolbar), var(--text-primary) 14%);
+}
+
+:root[data-style="liquid"] .header-right > .icon-button:focus-visible {
+    box-shadow: var(--shadow-tile), var(--focus-ring);
+}
+
+:root[data-style="liquid"] dialog.launcher-popup,
+:root[data-style="liquid"] dialog.theme-menu {
+    top: calc(66px + env(safe-area-inset-top));
+    border: 0;
+    border-radius: var(--radius-24);
+    /* Menus hold small text over anything, so they are frosted more and not bent */
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    backdrop-filter: blur(30px) saturate(180%);
+}
+
+:root[data-style="liquid"] .sidebar-rail {
+    border: 0;
+}
+
+:root[data-style="liquid"] .page-indicators {
+    background: var(--bg-toolbar);
+    box-shadow: var(--liquid-rim), 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Selected segments are a lit glass pill, like the rest of the glass controls */
+:root[data-style="liquid"] .editor-segmented button[aria-checked="true"],
+:root[data-style="liquid"] .graph-seg button[aria-pressed="true"] {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), inset 0 1px 0 #fff;
+}
+
+/* Reduce Transparency and Increase Contrast: solid surfaces with a visible edge instead of
+   glass. These win over the glass rules above, which use !important themselves. */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    :root[data-style="liquid"] {
+        --bg-card-surface: #1c1c1e;
+        --bg-card-glass-header: #2c2c2e !important;
+        --bg-toolbar: #1c1c1e;
+        --bg-popup: #1c1c1e !important;
+        --liquid-rim: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+        --color-separator: rgba(255, 255, 255, 0.4) !important;
+    }
+
+    :root[data-style="liquid"][data-theme="light"] {
+        --bg-card-surface: #ffffff;
+        --bg-card-glass-header: #f2f2f7 !important;
+        --bg-toolbar: #ffffff;
+        --bg-popup: #ffffff !important;
+        --liquid-rim: inset 0 0 0 1px rgba(0, 0, 0, 0.22);
+        --color-separator: rgba(60, 60, 67, 0.45) !important;
+    }
+
+    :root[data-style="liquid"] .glass-card,
+    :root[data-style="liquid"] .glass-card.two-tone-card,
+    :root[data-style="liquid"] .ha-tile.off,
+    :root[data-style="liquid"] .sidebar-rail,
+    :root[data-style="liquid"] .app-header,
+    :root[data-style="liquid"] .header-right > button,
+    :root[data-style="liquid"] dialog.launcher-popup,
+    :root[data-style="liquid"] dialog.theme-menu {
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+        text-shadow: none;
+    }
+}

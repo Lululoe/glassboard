@@ -1,0 +1,244 @@
+/*
+ * Terminal: monospace type, square corners, flat dark panels outlined in the accent, card
+ * titles in brackets. Components keep their shapes and work as in every other style; graphs
+ * draw with block characters and the weather forecast with ASCII art (see `useTheme().style`).
+ *
+ * Theme colors are set inline on the root, so the tokens a theme also sets need !important.
+ */
+:root[data-style="terminal"] {
+    --font-family: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, "Cascadia Mono", Consolas, monospace;
+    --font-mono: var(--font-family);
+    --radius-scale: 0;
+    --round-scale: 0;
+    --radius-card: 0;
+    --blur-scale: 0;
+
+    --term-bg: #050806;
+    --term-panel: rgba(6, 10, 8, 0.94);
+    --term-line: color-mix(in srgb, var(--color-primary) 50%, transparent);
+    --term-line-strong: color-mix(in srgb, var(--color-primary) 80%, transparent);
+
+    --text-primary: color-mix(in srgb, var(--color-primary) 22%, #e8e8e8) !important;
+    --text-secondary: color-mix(in srgb, var(--color-primary) 35%, #9a9a9a) !important;
+    --text-tertiary: color-mix(in srgb, var(--color-primary) 35%, #6e6e6e);
+    --text-quaternary: color-mix(in srgb, var(--color-primary) 30%, #555);
+    --color-separator: var(--term-line) !important;
+    --bg-card-surface: var(--term-panel);
+    --bg-card-glass: var(--term-panel) !important;
+    --bg-card-glass-header: color-mix(in srgb, var(--color-primary) 9%, var(--term-bg)) !important;
+    --bg-toolbar: var(--term-bg);
+    --bg-popup: var(--term-bg) !important;
+    --bg-tile: var(--color-primary) !important;
+    --border-popup: var(--term-line-strong);
+    --bg-fill: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    --bg-fill-hover: color-mix(in srgb, var(--color-primary) 20%, transparent);
+    --shadow-tile: inset 0 0 0 1px var(--term-line);
+    --shadow-popup: inset 0 0 0 1px var(--term-line-strong), 0 8px 24px rgba(0, 0, 0, 0.5);
+    --shadow-app: transparent;
+    --scroll-shade: rgba(5, 8, 6, 0.95);
+    --icon-background: transparent !important;
+    /* A dark screen behind the panels, unless the page sets its own background */
+    --bg-page-gradient: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--color-primary) 12%, #0b0f0c) 0%, #030504 70%) !important;
+}
+
+:root[data-style="terminal"][data-theme="light"] {
+    --term-bg: #f6f6ee;
+    --term-panel: rgba(250, 250, 243, 0.96);
+    --term-line: color-mix(in srgb, var(--color-primary) 55%, #000 10%);
+    --term-line-strong: color-mix(in srgb, var(--color-primary) 70%, #000);
+    --text-primary: #1d1d1b !important;
+    --text-secondary: #55554f !important;
+    --text-tertiary: #77776f;
+    --text-quaternary: #9a9a90;
+    --bg-card-glass-header: color-mix(in srgb, var(--color-primary) 10%, var(--term-bg)) !important;
+    --shadow-popup: inset 0 0 0 1px var(--term-line-strong), 0 8px 24px rgba(0, 0, 0, 0.15);
+    --scroll-shade: rgba(246, 246, 238, 0.95);
+    --bg-page-gradient: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--color-primary) 10%, #f1f1e6) 0%, #e4e4d8 75%) !important;
+}
+
+/* Flat panels: no frosting, no depth */
+:root[data-style="terminal"] .glass-card,
+:root[data-style="terminal"] .two-tone-header,
+:root[data-style="terminal"] .two-tone-content,
+:root[data-style="terminal"] .ha-tile,
+:root[data-style="terminal"] .app-header,
+:root[data-style="terminal"] .sidebar-rail,
+:root[data-style="terminal"] .page-indicators,
+:root[data-style="terminal"] dialog {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+}
+
+:root[data-style="terminal"] .app-header {
+    box-shadow: inset 0 -1px 0 var(--term-line);
+}
+
+/* Card titles in brackets, in the accent */
+:root[data-style="terminal"] .two-tone-title,
+:root[data-style="terminal"] .card-title {
+    color: var(--color-primary);
+    font-weight: 600;
+    font-size: var(--fs-17);
+}
+
+:root[data-style="terminal"][data-theme="light"] .two-tone-title,
+:root[data-style="terminal"][data-theme="light"] .card-title {
+    color: color-mix(in srgb, var(--color-primary) 60%, #000);
+}
+
+:root[data-style="terminal"] .two-tone-title::before,
+:root[data-style="terminal"] .card-title::before {
+    content: '[ ';
+}
+
+:root[data-style="terminal"] .two-tone-title::after,
+:root[data-style="terminal"] .card-title::after {
+    content: ' ]';
+}
+
+:root[data-style="terminal"] .two-tone-header {
+    box-shadow: inset 0 -1px 0 var(--term-line);
+}
+
+/* Header buttons of the bar and the cards: outlined while pointed at, like a selected cell */
+@media (pointer: fine) {
+    :root[data-style="terminal"] .icon-button:hover,
+    :root[data-style="terminal"] .two-tone-header-action:hover {
+        box-shadow: inset 0 0 0 1px var(--term-line-strong);
+    }
+}
+
+:root[data-style="terminal"] .editor-segmented,
+:root[data-style="terminal"] .graph-seg {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--term-line);
+}
+
+/* App icons turn monochrome, so the page reads as one color */
+:root[data-style="terminal"] .app-icon-container {
+    filter: grayscale(1) contrast(1.15);
+    box-shadow: inset 0 0 0 1px var(--term-line);
+}
+
+/* On tiles are filled with the accent, with dark ink */
+:root[data-style="terminal"] .ha-tile:not(.off) {
+    color: var(--on-accent);
+}
+
+:root[data-style="terminal"] .ha-tile.off {
+    background: var(--term-panel);
+}
+
+:root[data-style="terminal"] .editor-segmented button[aria-checked="true"],
+:root[data-style="terminal"] .graph-seg button[aria-pressed="true"] {
+    background: var(--color-primary);
+    color: var(--on-accent);
+    box-shadow: none;
+}
+
+:root[data-style="terminal"] .editor-toggle input:checked + .editor-switch {
+    background: var(--color-primary);
+}
+
+:root[data-style="terminal"] .editor-switch::after {
+    background: var(--term-bg);
+    box-shadow: inset 0 0 0 1px var(--term-line-strong);
+}
+
+:root[data-style="terminal"] .sidebar-rail,
+:root[data-style="terminal"] dialog.launcher-popup,
+:root[data-style="terminal"] dialog.theme-menu {
+    border: 1px solid var(--term-line-strong);
+}
+
+:root[data-style="terminal"] .page-indicators {
+    background: var(--term-bg);
+    box-shadow: inset 0 0 0 1px var(--term-line);
+}
+
+:root[data-style="terminal"] .page-dot.active::before {
+    background: var(--color-primary);
+}
+
+/* Block-character graphs and ASCII weather */
+.graph-blocks text {
+    font-family: var(--font-mono);
+    white-space: pre;
+}
+
+.weather-art {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--fs-11);
+    line-height: 1.1;
+    white-space: pre;
+    color: var(--text-secondary);
+}
+
+.weather-art.is-sun {
+    color: var(--system-orange-text);
+}
+
+.weather-art.is-wet {
+    color: var(--color-primary);
+}
+
+/*
+ * Screen effects (on unless turned off in the Theme menu; see ThemeContext): scanlines and a
+ * darker rim over the whole screen, a phosphor glow on text, and a cursor after the dashboard's
+ * name. There is no flicker, which can trouble people sensitive to flashing light.
+ */
+:root[data-effects="crt"] body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    pointer-events: none;
+    background:
+        repeating-linear-gradient(transparent 0 2px, rgba(0, 0, 0, 0.16) 2px 3px),
+        radial-gradient(ellipse at center, transparent 62%, rgba(0, 0, 0, 0.35) 100%);
+}
+
+:root[data-effects="crt"][data-theme="light"] body::after {
+    background:
+        repeating-linear-gradient(transparent 0 2px, rgba(0, 0, 0, 0.045) 2px 3px),
+        radial-gradient(ellipse at center, transparent 65%, rgba(0, 0, 0, 0.1) 100%);
+}
+
+:root[data-effects="crt"][data-theme="dark"] .glass-card,
+:root[data-effects="crt"][data-theme="dark"] .app-header,
+:root[data-effects="crt"][data-theme="dark"] .ha-tile.off,
+:root[data-effects="crt"][data-theme="dark"] .page-header {
+    text-shadow: 0 0 6px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+:root[data-effects="crt"] .header-title::after {
+    content: '█';
+    margin-left: 4px;
+    color: var(--color-primary);
+    animation: terminal-cursor 1.1s steps(1) infinite;
+}
+
+@keyframes terminal-cursor {
+    50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    :root[data-effects="crt"] .header-title::after {
+        animation: none;
+    }
+}
+
+/* Increase Contrast: clear text without glow or lines over it */
+@media (prefers-contrast: more) {
+    :root[data-effects="crt"] body::after {
+        display: none;
+    }
+
+    :root[data-effects="crt"] .glass-card,
+    :root[data-effects="crt"] .app-header,
+    :root[data-effects="crt"] .ha-tile.off,
+    :root[data-effects="crt"] .page-header {
+        text-shadow: none !important;
+    }
+}

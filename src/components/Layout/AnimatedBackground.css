@@ -1,0 +1,100 @@
+/* The moving layer sits between the page background and the cards. Only transforms animate,
+   so the browser can move it on the graphics card without repainting. */
+.page-motion {
+    --motion-a: #00c2a8;
+    --motion-b: #3a5bff;
+    --motion-c: #b23cff;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+    animation: page-motion-in 1.2s ease-out;
+}
+
+@keyframes page-motion-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.page-motion i {
+    position: absolute;
+    border-radius: 50%; /* fixed: soft round fields in every style */
+    will-change: transform;
+}
+
+/* Aurora: three huge soft color fields drifting */
+.motion-aurora i {
+    width: 95vmax;
+    height: 95vmax;
+    opacity: 0.7;
+    mix-blend-mode: screen;
+    animation: aurora-drift 28s ease-in-out infinite alternate;
+}
+
+.motion-aurora i:nth-child(1) {
+    left: -25vmax;
+    top: -40vmax;
+    background: radial-gradient(closest-side, var(--motion-c), transparent);
+}
+
+.motion-aurora i:nth-child(2) {
+    right: -30vmax;
+    top: -20vmax;
+    background: radial-gradient(closest-side, var(--motion-b), transparent);
+    animation-duration: 34s;
+    animation-delay: -9s;
+}
+
+.motion-aurora i:nth-child(3) {
+    left: 5vmax;
+    bottom: -55vmax;
+    background: radial-gradient(closest-side, var(--motion-a), transparent);
+    animation-duration: 40s;
+    animation-delay: -17s;
+}
+
+:root[data-theme="light"] .motion-aurora i {
+    mix-blend-mode: soft-light;
+    opacity: 0.9;
+}
+
+@keyframes aurora-drift {
+    0% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(14vmax, 8vmax) scale(1.15); }
+    100% { transform: translate(-8vmax, 15vmax) scale(0.95); }
+}
+
+/* Blobs: soft-edged shapes floating behind the cards, so glass has something to show */
+.motion-blobs i {
+    width: var(--s);
+    height: var(--s);
+    opacity: 0.55;
+    background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--c) 60%, #fff), var(--c) 55%, transparent 72%);
+    animation: blob-float var(--d) ease-in-out infinite alternate;
+}
+
+.motion-blobs i:nth-child(1) { --s: 34vmax; --c: var(--motion-a); --d: 21s; --tx: 30vmax; --ty: 18vmax; left: -6vmax; top: -8vmax; }
+.motion-blobs i:nth-child(2) { --s: 26vmax; --c: var(--motion-b); --d: 25s; --tx: -24vmax; --ty: 26vmax; left: 62vw; top: 6vh; }
+.motion-blobs i:nth-child(3) { --s: 30vmax; --c: var(--motion-c); --d: 29s; --tx: 26vmax; --ty: -22vmax; left: 18vw; top: 55vh; }
+.motion-blobs i:nth-child(4) { --s: 20vmax; --c: var(--motion-a); --d: 23s; --tx: -30vmax; --ty: -14vmax; left: 75vw; top: 62vh; }
+.motion-blobs i:nth-child(5) { --s: 16vmax; --c: var(--motion-c); --d: 19s; --tx: 18vmax; --ty: 30vmax; left: 40vw; top: 18vh; }
+.motion-blobs i:nth-child(6) { --s: 14vmax; --c: var(--motion-b); --d: 27s; --tx: 40vmax; --ty: -10vmax; left: 4vw; top: 72vh; }
+
+@keyframes blob-float {
+    to { transform: translate(var(--tx), var(--ty)) scale(1.2); }
+}
+
+.page-motion-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .page-motion,
+    .page-motion i {
+        animation: none;
+    }
+}

@@ -1,6 +1,8 @@
 import { useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useElementSize } from '../../hooks/useElementSize';
 import { axisLabels, cssVars, formatValue, niceRange, pointLabel } from './graphModel';
+import { blockLayout } from './blockChart';
+import { useTheme } from '../../context/ThemeContext';
 
 const TOP = 8;
 const BOTTOM = 22;
@@ -10,7 +12,8 @@ const DUAL_WIDTH = 40;
 /**
  * Lines or bars for one or more sensors over a time range. Sensors with the same unit share an
  * axis; with two units, the first gets an axis on the left and the second on the right. Hover (mouse) or press and slide (touch)
- * to read every sensor at that time; arrow keys do the same.
+ * to read every sensor at that time; arrow keys do the same. In the Terminal style the lines and
+ * bars are drawn with block characters.
  * @param {Object} props
  * @param {Array<Object>} props.series - Sensors with `name`, `unit`, `color`, `kind` and `values`.
  * @param {number[]} props.times - Start of each period in ms.
@@ -28,6 +31,7 @@ const LineBarChart = ({ series, times, minutes, hours, type, stack, hidden, focu
     const pressed = useRef(false);
     const tipRef = useRef(/** @type {HTMLDivElement|null} */ (null));
     const gradient = useId();
+    const { style } = useTheme();
     const bar = type === 'bar';
     const n = times.length;
 
@@ -105,7 +109,22 @@ const LineBarChart = ({ series, times, minutes, hours, type, stack, hidden, focu
     }, [active, size, left, xs]);
 
     let body = null;
-    if (w > 0 && h > 0 && drawn.length) {
+    if (w > 0 && h > 0 && drawn.length && style === 'terminal') {
+        const grid = blockLayout({ drawn, n, w, h, y, bar, stacked });
+        body = (
+            <g className="graph-blocks" style={{ fontSize: grid.cellHeight * 0.92 }}>
+                {grid.series.map(s => (
+                    <g key={s.i} className={focus !== null && focus !== s.i ? 'graph-faded' : undefined} style={{ fill: s.color }}>
+                        {s.rows.map((row, r) => row.trim() && (
+                            <text key={r} x="0" y={(r + 1) * grid.cellHeight - grid.cellHeight * 0.18} textLength={w} lengthAdjust="spacing">
+                                {row}
+                            </text>
+                        ))}
+                    </g>
+                ))}
+            </g>
+        );
+    } else if (w > 0 && h > 0 && drawn.length) {
         if (!bar) {
             const single = drawn.length === 1;
             body = drawn.map(s => {

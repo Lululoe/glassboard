@@ -45,7 +45,7 @@
     justify-content: center;
     gap: 3px;
     padding-right: 6px;
-    border-radius: 9px;
+    border-radius: var(--radius-9);
     text-align: left;
     cursor: pointer;
     transition: opacity var(--duration-standard) var(--ease-standard);
@@ -154,7 +154,7 @@
     min-height: 44px;
     width: min(100%, 136px);
     padding: 0 10px 0 12px;
-    border-radius: 22px;
+    border-radius: var(--radius-22);
     background: var(--bg-fill);
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -220,7 +220,7 @@
 .mt-step {
     width: 44px;
     height: 44px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     display: grid;
     place-items: center;
     background: var(--bg-fill);
@@ -262,11 +262,11 @@
     flex-direction: column;
     gap: 3px;
     padding: 8px;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
     /* Nearly opaque, so the room underneath does not show through */
     background: rgba(44, 44, 46, 0.97);
-    backdrop-filter: blur(30px) saturate(140%);
-    -webkit-backdrop-filter: blur(30px) saturate(140%);
+    backdrop-filter: blur(calc(30px * var(--blur-scale))) saturate(140%);
+    -webkit-backdrop-filter: blur(calc(30px * var(--blur-scale))) saturate(140%);
     box-shadow: var(--shadow-popup), 0 0 0 0.5px var(--border-popup);
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -303,7 +303,7 @@
     flex-shrink: 0;
     min-height: 44px;
     padding: 0 10px;
-    border-radius: 9px;
+    border-radius: var(--radius-9);
     display: flex;
     align-items: center;
     gap: 8px;

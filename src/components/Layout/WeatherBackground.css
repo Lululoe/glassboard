@@ -1,0 +1,182 @@
+/* The weather background. Clouds, the sun and the stars only animate transforms and opacity, so
+   the browser moves them without repainting; rain and snow are canvases (weatherEffects.js). */
+.weather-scene {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.weather-scene i {
+    position: absolute;
+    display: block;
+    will-change: transform, opacity;
+}
+
+.weather-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* The sky darkens under heavy cloud, rain and snow, and greys over in fog */
+.weather-veil {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(8, 12, 22, 0.55), rgba(8, 12, 22, 0.15) 70%, transparent);
+    opacity: calc(var(--clouds) * 0.5);
+}
+
+.weather-scene.is-wet .weather-veil {
+    opacity: calc(0.45 + var(--intensity) * 0.4);
+}
+
+.weather-scene.is-fog .weather-veil {
+    background: linear-gradient(0deg, rgba(200, 208, 220, 0.4), rgba(200, 208, 220, 0.12) 60%, transparent);
+    opacity: 1;
+}
+
+:root[data-theme="light"] .weather-veil {
+    background: linear-gradient(180deg, rgba(90, 104, 128, 0.4), rgba(90, 104, 128, 0.1) 70%, transparent);
+}
+
+:root[data-theme="light"] .weather-scene.is-fog .weather-veil {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.2) 60%, transparent);
+}
+
+/* ---------- Clouds ---------- */
+
+/* Soft clouds sailing slowly across, each a cluster of round puffs, blurred */
+.weather-cloud {
+    --cloud: rgba(214, 222, 238, 0.26);
+    left: 0;
+    top: var(--y);
+    width: var(--s);
+    height: calc(var(--s) * 0.55);
+    /* Puffs of different sizes heaped on a flat base; where they overlap the cloud is denser */
+    background:
+        radial-gradient(24% 40% at 24% 64%, var(--cloud) 35%, transparent 70%),
+        radial-gradient(30% 50% at 45% 44%, var(--cloud) 35%, transparent 70%),
+        radial-gradient(22% 38% at 64% 38%, var(--cloud) 35%, transparent 70%),
+        radial-gradient(26% 42% at 79% 62%, var(--cloud) 35%, transparent 70%),
+        radial-gradient(46% 26% at 52% 78%, var(--cloud) 40%, transparent 72%);
+    filter: blur(calc(var(--s) * 0.025));
+    opacity: calc(0.45 + var(--clouds) * 0.55);
+    animation: weather-cloud-sail var(--d) linear var(--delay) infinite;
+}
+
+.weather-scene.is-wet .weather-cloud {
+    --cloud: rgba(120, 132, 156, 0.3);
+}
+
+:root[data-theme="light"] .weather-cloud {
+    --cloud: rgba(255, 255, 255, 0.75);
+}
+
+:root[data-theme="light"] .weather-scene.is-wet .weather-cloud {
+    --cloud: rgba(170, 180, 198, 0.55);
+}
+
+@keyframes weather-cloud-sail {
+    from { transform: translateX(calc(-1 * var(--s))); }
+    to { transform: translateX(100vw); }
+}
+
+/* ---------- Sun ---------- */
+
+/* The sun stands top right: a warm glow and a few lens flares */
+.weather-sun {
+    position: absolute;
+    inset: 0;
+}
+
+.weather-sun-glow {
+    right: -18vmax;
+    top: -18vmax;
+    width: 56vmax;
+    height: 56vmax;
+    border-radius: 50%; /* fixed: the sun is round in every style */
+    background: radial-gradient(closest-side, rgba(255, 244, 214, 0.95), rgba(255, 214, 130, 0.5) 18%, rgba(255, 180, 90, 0.18) 45%, transparent);
+    animation: weather-sun-breathe 9s ease-in-out infinite alternate;
+}
+
+.weather-flare {
+    border-radius: 50%; /* fixed: a lens flare is round in every style */
+    background: radial-gradient(closest-side, rgba(255, 240, 210, 0.16), rgba(255, 240, 210, 0.05) 70%, transparent);
+    animation: weather-sun-breathe 7s ease-in-out infinite alternate;
+}
+
+.weather-flare:nth-of-type(2) { right: 34vw; top: 30vh; width: 9vmax; height: 9vmax; }
+.weather-flare:nth-of-type(3) { right: 48vw; top: 46vh; width: 4vmax; height: 4vmax; animation-delay: -3s; }
+.weather-flare:nth-of-type(4) { right: 60vw; top: 60vh; width: 14vmax; height: 14vmax; animation-delay: -5s; opacity: 0.6; }
+
+:root[data-theme="light"] .weather-sun-glow {
+    background: radial-gradient(closest-side, rgba(255, 250, 230, 1), rgba(255, 226, 150, 0.6) 20%, rgba(255, 200, 110, 0.22) 48%, transparent);
+}
+
+@keyframes weather-sun-breathe {
+    from { transform: scale(1); opacity: 0.85; }
+    to { transform: scale(1.06); opacity: 1; }
+}
+
+/* ---------- Night ---------- */
+
+/* A clear night: stars twinkling and the moon's cool glow */
+.weather-night {
+    position: absolute;
+    inset: 0;
+}
+
+.weather-stars {
+    inset: 0;
+    background-image:
+        radial-gradient(1px 1px at 12% 18%, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 28% 42%, #fff, transparent),
+        radial-gradient(1px 1px at 46% 12%, #fff, transparent),
+        radial-gradient(1.2px 1.2px at 64% 30%, #fff, transparent),
+        radial-gradient(1px 1px at 82% 52%, #fff, transparent),
+        radial-gradient(1.5px 1.5px at 92% 16%, #fff, transparent),
+        radial-gradient(1px 1px at 36% 70%, #fff, transparent),
+        radial-gradient(1.2px 1.2px at 72% 78%, #fff, transparent),
+        radial-gradient(1px 1px at 8% 64%, #fff, transparent),
+        radial-gradient(1px 1px at 54% 56%, #fff, transparent);
+    background-size: 420px 420px;
+    opacity: 0.7;
+    animation: weather-twinkle 5s ease-in-out infinite alternate;
+}
+
+.weather-stars + .weather-stars {
+    background-size: 290px 290px;
+    background-position: 140px 80px;
+    animation-duration: 7s;
+    animation-delay: -3s;
+}
+
+.weather-moon {
+    right: 8vw;
+    top: 8vh;
+    width: 22vmax;
+    height: 22vmax;
+    border-radius: 50%; /* fixed: the moon is round in every style */
+    background: radial-gradient(closest-side, rgba(236, 242, 255, 0.95) 0 14%, rgba(190, 210, 255, 0.25) 16%, rgba(160, 185, 255, 0.08) 50%, transparent);
+}
+
+:root[data-theme="light"] .weather-stars {
+    opacity: 0.35;
+}
+
+@keyframes weather-twinkle {
+    from { opacity: 0.35; }
+    to { opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .weather-scene i {
+        animation: none;
+    }
+
+    /* Still clouds stand where they are, spread across the sky */
+    .weather-cloud {
+        transform: translateX(var(--x));
+    }
+}

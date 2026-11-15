@@ -1,3 +1,5 @@
+import { useCardNotice } from '../../context/notices';
+import { thermostatNotices } from '../cardNotices';
 import { useEffect, useRef, useState } from 'react';
 import BaseCard from '../../components/Shared/BaseCard';
 import Icon from '../../components/Shared/Icon';
@@ -113,6 +115,7 @@ const TempSlider = ({ t, preview, onPreview }) => {
  */
 const ThermostatCard = ({ config }) => {
     const t = useThermostat(config);
+    useCardNotice(thermostatNotices([{ name: t.name, available: t.available }], !t.loading && !t.error));
     const [preview, setPreview] = useState(null);
     const size = config.tileSize === 'quarter' || config.tileSize === 'half' ? config.tileSize : 'full';
     const shownTarget = preview ?? t.target;

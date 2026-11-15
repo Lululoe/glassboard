@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { callService } from '../../lib/api';
-import { usePolling } from '../../hooks/usePolling';
+import { BACKGROUND_FAST, usePolling } from '../../hooks/usePolling';
 import { rememberColor } from './controls/lastColors';
 
 const CONFIRM_DELAY = 500;
@@ -27,7 +27,7 @@ export const useHomeAssistant = (entities, interval = 2000) => {
     const { data, loading, error, updatedAt, refresh } = usePolling(
         // With the icon Home Assistant shows for each entity, used unless the card sets one
         () => callService('homeassistant', { endpoint: 'states', entity_ids: ids, icons: true }),
-        { interval, enabled: ids.length > 0, key: ids.join(',') }
+        { interval, backgroundInterval: BACKGROUND_FAST, enabled: ids.length > 0, key: ids.join(',') }
     );
     const [overrides, setOverrides] = useState(/** @type {Object<string, {state: string, at: number}>} */ ({}));
 

@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAutoHide } from '../../hooks/useAutoHide';
 import './Header.css';
-import { LayoutTemplate, Sun, Moon, LayoutGrid, Pencil, SquarePen, Plus, Wallpaper, FilePen, RotateCcw } from 'lucide-react';
+import { LayoutTemplate, Palette, LayoutGrid, Pencil, SquarePen, Plus, Wallpaper, FilePen, RotateCcw, PanelLeft } from 'lucide-react';
 import LauncherPopup from './LauncherPopup';
-import { useTheme } from '../../context/ThemeContext';
+import ThemeMenu from './ThemeMenu';
+
+/** The top-left corner that reveals an auto-hiding header when the mouse is in it, in pixels. */
+// eslint-disable-next-line react-refresh/only-export-components
+export const REVEAL_CORNER = { width: 240, height: 72 };
 
 /**
- * Application header component displaying the logo, theme toggle, and launcher grid toggle.
+ * Whether a point is in the top-left corner that reveals the header.
+ * @param {number} x - Distance from the left edge.
+ * @param {number} y - Distance from the top edge.
+ * @returns {boolean} True inside the corner.
+ */
+const inRevealCorner = (x, y) => x <= REVEAL_CORNER.width && y <= REVEAL_CORNER.height;
+
+/**
+ * Application header component displaying the logo, the Theme menu, and launcher grid toggle.
  * While the layout is being edited it shows Reset and Done instead.
  * @param {Object} props
  * @param {Object} props.config - The global application configuration object.
@@ -25,16 +37,45 @@ import { useTheme } from '../../context/ThemeContext';
  * @param {() => void} [props.edit.onEditMenu] - Opens the editor of the header menu.
  * @param {() => void} [props.edit.onEditBackground] - Opens the editor of the page background.
  * @param {() => void} [props.edit.onEditPage] - Opens the settings of the page being shown.
+ * @param {boolean} [props.edit.sidebar] - Whether the sidebar shows.
+ * @param {() => void} [props.edit.onToggleSidebar] - Shows or hides the sidebar.
  * @param {boolean} [props.autoHide] - Hides the bar until it is pointed at, tapped at the top of the
  *   screen or reached with the keyboard. It stays while it is used and while its menu is open.
+ * @param {number} [props.page] - The page shown; when it changes, whether it is scrolled is read again.
  * @returns {JSX.Element} The rendered header.
  */
-const Header = ({ config, edit, autoHide = false }) => {
+const Header = ({ config, edit, autoHide = false, page }) => {
     const [isLauncherOpen, setIsLauncherOpen] = useState(false);
-    const { mode, toggleMode } = useTheme();
-    const { hidden, reveal, hideSoon } = useAutoHide(autoHide, isLauncherOpen);
+    const [isThemeOpen, setIsThemeOpen] = useState(false);
+    const { hidden, reveal, hideSoon } = useAutoHide(autoHide, isLauncherOpen || isThemeOpen);
     // On touch screens there is no pointer leaving the bar, so it hides a few seconds after the last tap
     const TOUCH_DELAY = 4000;
+
+    // Besides the strip along the top edge, the mouse in the top-left corner reveals the bar. It is
+    // watched rather than covered, so the cards under the corner can still be clicked.
+    useEffect(() => {
+        if (!autoHide) return undefined;
+        let inside = false;
+        const onMove = (e) => {
+            if (e.pointerType !== 'mouse') return;
+            const now = inRevealCorner(e.clientX, e.clientY);
+            if (now && !inside) reveal();
+            // Leaving the corner onto the bar itself keeps it; the bar hides when the mouse leaves it
+            else if (!now && inside && !e.target?.closest?.('.app-header')) hideSoon();
+            inside = now;
+        };
+        window.addEventListener('pointermove', onMove);
+        return () => window.removeEventListener('pointermove', onMove);
+    }, [autoHide, reveal, hideSoon]);
+
+    // Whether the page is scrolled down, so a style can fade the name out over the cards
+    const [scrolled, setScrolled] = useState(false);
+    useEffect(() => {
+        const update = () => setScrolled((document.querySelector('.scroll-content.page-active')?.scrollTop ?? 0) > 4);
+        update();
+        document.addEventListener('scroll', update, { capture: true, passive: true });
+        return () => document.removeEventListener('scroll', update, { capture: true });
+    }, [page]);
 
     const autoHideHandlers = autoHide ? {
         onPointerEnter: (e) => { if (e.pointerType === 'mouse') reveal(); },
@@ -64,7 +105,7 @@ const Header = ({ config, edit, autoHide = false }) => {
                 </div>
             )}
             <header
-                className={`app-header${edit?.active ? ' is-editing' : ''}${autoHide ? ' is-auto-hide' : ''}${hidden ? ' is-hidden' : ''}`}
+                className={`app-header${edit?.active ? ' is-editing' : ''}${autoHide ? ' is-auto-hide' : ''}${hidden ? ' is-hidden' : ''}${scrolled ? ' is-scrolled' : ''}`}
                 {...autoHideHandlers}
             >
                 <div className="header-left">
@@ -76,7 +117,7 @@ const Header = ({ config, edit, autoHide = false }) => {
                 </div>
 
                 {edit?.active ? (
-                    <div className="header-right">
+                    <div className="header-right" key="edit">
                         {edit.status && <span className="header-edit-status" role="status">{edit.status}</span>}
                         <button
                             type="button"
@@ -125,6 +166,19 @@ const Header = ({ config, edit, autoHide = false }) => {
                                 <span className="header-menu-edit-badge"><Pencil size={10} strokeWidth={3} aria-hidden="true" /></span>
                             </button>
                         )}
+                        {edit.onToggleSidebar && (
+                            <button
+                                type="button"
+                                className={`button-reset icon-button header-sidebar-toggle${edit.sidebar ? ' is-on' : ''}`}
+                                onClick={edit.onToggleSidebar}
+                                disabled={edit.saving}
+                                title={edit.sidebar ? 'Hide sidebar' : 'Show sidebar'}
+                                aria-label="Sidebar"
+                                aria-pressed={!!edit.sidebar}
+                            >
+                                <PanelLeft size={20} aria-hidden="true" />
+                            </button>
+                        )}
                         <button
                             type="button"
                             className="button-reset header-text-button header-reset-button"
@@ -142,7 +196,7 @@ const Header = ({ config, edit, autoHide = false }) => {
                         </button>
                     </div>
                 ) : (
-                <div className="header-right">
+                <div className="header-right" key="view">
                     {edit?.canUndoReset && (
                         <span className="header-edit-status" role="status">
                             {edit.undoFailed ? "Couldn't undo the reset." : 'Dashboard reset.'}{' '}
@@ -165,12 +219,14 @@ const Header = ({ config, edit, autoHide = false }) => {
                     {config?.themeToggle !== false && (
                         <button
                             type="button"
-                            className="button-reset icon-button"
-                            onClick={toggleMode}
-                            title={mode === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
-                            aria-label={mode === 'dark' ? 'Switch to light appearance' : 'Switch to dark appearance'}
+                            className={`button-reset icon-button${isThemeOpen ? ' active' : ''}`}
+                            onClick={() => setIsThemeOpen(!isThemeOpen)}
+                            title="Theme"
+                            aria-label="Theme"
+                            aria-haspopup="dialog"
+                            aria-expanded={isThemeOpen}
                         >
-                            {mode === 'dark' ? <Sun size={20} aria-hidden="true" /> : <Moon size={20} aria-hidden="true" />}
+                            <Palette size={20} aria-hidden="true" />
                         </button>
                     )}
                     <button
@@ -185,6 +241,16 @@ const Header = ({ config, edit, autoHide = false }) => {
                         <LayoutGrid size={20} aria-hidden="true" />
                     </button>
                 </div>
+                )}
+
+                {isThemeOpen && (
+                    <ThemeMenu
+                        editable={config?.editable !== false}
+                        onClose={() => {
+                            setIsThemeOpen(false);
+                            if (autoHide) hideSoon();
+                        }}
+                    />
                 )}
 
                 {isLauncherOpen && (

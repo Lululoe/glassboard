@@ -1,4 +1,5 @@
 import { backgroundCss } from '../shared/pageBackground.js';
+import { normalizeAppearance, transparencyVariables } from '../shared/appearance.js';
 
 /**
  * Picks light or dark before anything is drawn, the way the app does once it runs: the
@@ -58,8 +59,9 @@ function declarations(config, background, mode) {
 
 /**
  * Builds what goes into the <head> of the page the server sends, so the first paint shows the
- * dashboard's background instead of the default blue until the app has loaded its config: a
- * script that sets light or dark, and the background of the requested page for both.
+ * dashboard's background and style instead of the default ones until the app has loaded its
+ * config: a script that sets light or dark and the style, and the background of the requested
+ * page for both.
  * @param {Object} config - The dashboard config.
  * @param {string} [path] - The requested address.
  * @returns {string} HTML for the <head>.
@@ -69,7 +71,13 @@ export function initialHead(config = {}, path = '/') {
     const style = `:root{${declarations(config, background, 'light')}}:root[data-theme="dark"]{${declarations(config, background, 'dark')}}`
         + 'html{background:var(--bg-page-base,#003780) var(--bg-page-custom,var(--bg-page-gradient)) center/cover fixed}'
         + 'body::before{content:"";position:fixed;inset:0;z-index:-1;background:rgba(0,0,0,var(--bg-page-dim,0));pointer-events:none}';
-    return `${MODE_SCRIPT}<style id="glassboard-initial">${style}</style>`;
+    // The style is one of a fixed list, so it can go into the script as it is
+    const { style: dashboardStyle, transparency } = normalizeAppearance(config.appearance);
+    // Numbers only, so they can go into the script as they are too
+    const surfaces = Object.entries(transparencyVariables(dashboardStyle, transparency))
+        .map(([name, value]) => `d.style.setProperty('${name}','${Number(value)}');`).join('');
+    const styleScript = `<script>(function(d){d.setAttribute('data-style','${dashboardStyle}');${surfaces}})(document.documentElement)</script>`;
+    return `${MODE_SCRIPT}${styleScript}<style id="glassboard-initial">${style}</style>`;
 }
 
 /**

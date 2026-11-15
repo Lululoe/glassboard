@@ -12,9 +12,9 @@ dialog.launcher-popup {
     margin: 0;
     /* Add margin 0 to override default centering */
     background: var(--bg-popup);
-    backdrop-filter: blur(50px);
-    -webkit-backdrop-filter: blur(50px);
-    border-radius: 14px;
+    backdrop-filter: blur(calc(50px * var(--blur-scale)));
+    -webkit-backdrop-filter: blur(calc(50px * var(--blur-scale)));
+    border-radius: var(--radius-14);
     border: 0.5px solid var(--border-popup);
     box-shadow: var(--shadow-popup);
     z-index: 999;
@@ -71,7 +71,7 @@ dialog.launcher-popup::backdrop {
     align-items: center;
     min-width: 0;
     padding: 3px 1px;
-    border-radius: 9px;
+    border-radius: var(--radius-9);
     text-decoration: none;
     color: var(--text-primary);
     cursor: pointer;
@@ -135,7 +135,7 @@ dialog.launcher-popup::backdrop {
     padding: 6px 0;
     text-decoration: none;
     color: var(--text-primary);
-    border-radius: 7px;
+    border-radius: var(--radius-7);
     transition: opacity var(--duration-standard) var(--ease-standard);
 }
 

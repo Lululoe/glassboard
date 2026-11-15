@@ -202,7 +202,7 @@
     display: block;
     color: inherit;
     text-align: inherit;
-    border-radius: 8px;
+    border-radius: var(--radius-8);
     cursor: pointer;
     outline: 2px solid rgba(255, 255, 255, 0.85);
     outline-offset: 5px;
@@ -254,7 +254,7 @@
     align-self: flex-start;
     min-height: 32px;
     padding: 0 12px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: 1.5px dashed rgba(255, 255, 255, 0.55);
     font-size: var(--fs-13);
     font-weight: 600;
@@ -431,7 +431,7 @@
 
 .ph-bars span {
     width: 3px;
-    border-radius: 2px;
+    border-radius: var(--radius-2);
 }
 
 /* A number widget: a larger icon over its value, without a ring */
@@ -472,14 +472,14 @@
     position: relative;
     flex: none;
     color: inherit;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     cursor: pointer;
     outline: 2px solid rgba(255, 255, 255, 0.85);
     outline-offset: 3px;
 }
 
 .ph-widget-button.is-wide {
-    border-radius: 10px;
+    border-radius: var(--radius-10);
 }
 
 .ph-widget-badge {
@@ -512,7 +512,7 @@
     height: var(--ph-size);
     display: grid;
     place-items: center;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     border: 1.5px dashed rgba(255, 255, 255, 0.55);
     color: rgba(255, 255, 255, 0.85);
     cursor: pointer;

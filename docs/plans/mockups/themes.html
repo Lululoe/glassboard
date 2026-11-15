@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en" data-style="glass" data-mode="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glassboard style examples</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,400;8..144,500;8..144,600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="backgrounds.css">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { font-family: var(--font); color: var(--text); -webkit-font-smoothing: antialiased; }
+:root { --accent: #0a84ff; --red: #ff453a; --orange: #ff9f0a; --green: #30d158; }
+:root[data-mode="light"] { --red: #d70015; --orange: #c93400; --green: #248a3d; }
+
+/* ---------- Style tokens ---------- */
+
+/* Glass: today's look */
+[data-style="glass"] {
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --radius: 11px; --radius-ctl: 8px; --radius-tile: 10px; --gap: 30px; --pad: 20px;
+    --surface: radial-gradient(circle at 97% 3.3%, rgba(0,0,0,.35) 0, rgba(0,0,0,.6) 164%);
+    --blur: blur(15px) saturate(86%);
+    --shadow: 17px 20px 40px rgba(0,0,0,.65);
+    --text: rgba(255,255,255,.98); --text2: rgba(255,255,255,.66);
+    --fill: rgba(118,118,128,.24); --tile-on: #fff; --tile-on-text: #1c1c1e; --sep: rgba(84,84,88,.6);
+    --title-weight: 600;
+}
+[data-style="glass"][data-mode="light"] {
+    --surface: radial-gradient(circle at 100% 0, rgba(255,255,255,.85) 0, rgba(245,245,245,.78) 183%);
+    --shadow: 17px 20px 40px rgba(0,0,0,.2);
+    --text: #1c1c1e; --text2: rgba(60,60,67,.86); --fill: rgba(120,120,128,.12); --sep: rgba(60,60,67,.18);
+}
+
+/* Liquid glass: clear, thick rounded glass with a lit rim */
+[data-style="liquid"] {
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --radius: 30px; --radius-ctl: 999px; --radius-tile: 20px; --gap: 22px; --pad: 22px;
+    --surface: rgba(16,18,28,.16);
+    --blur: blur(10px) saturate(180%);
+    --shadow: 0 14px 40px rgba(0,0,0,.28);
+    --text: #fff; --text2: rgba(255,255,255,.74);
+    --fill: rgba(255,255,255,.14); --tile-on: rgba(255,255,255,.9); --tile-on-text: #111; --sep: rgba(255,255,255,.16);
+    --title-weight: 600;
+}
+[data-style="liquid"][data-mode="light"] {
+    --surface: rgba(255,255,255,.34); --shadow: 0 14px 40px rgba(0,20,60,.18);
+    --text: #0b0b0f; --text2: rgba(15,15,30,.68); --fill: rgba(255,255,255,.45); --tile-on: #fff; --sep: rgba(0,0,0,.08);
+}
+
+/* Material 3: opaque neutral surfaces, accent for interactive parts only */
+[data-style="material"] {
+    --font: "Roboto Flex", Roboto, system-ui, sans-serif;
+    --radius: 16px; --radius-ctl: 999px; --radius-tile: 16px; --gap: 16px; --pad: 20px;
+    --surface: #1f2023; --blur: none;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 2px 6px 2px rgba(0,0,0,.15);
+    --text: #e3e3e6; --text2: #c4c6cc; --fill: #2e3034;
+    --tile-on: color-mix(in srgb, var(--accent) 34%, #1f2023); --tile-on-text: color-mix(in srgb, var(--accent) 18%, #fff);
+    --sep: #3a3b40; --title-weight: 500;
+}
+[data-style="material"][data-mode="light"] {
+    --surface: #f7f8fa; --text: #1b1c1f; --text2: #45474d; --fill: #e6e7eb;
+    --tile-on: color-mix(in srgb, var(--accent) 20%, #fff); --tile-on-text: color-mix(in srgb, var(--accent) 65%, #000);
+    --sep: #d8d9de;
+}
+
+/* Terminal (draft B, "hybrid" — see terminal.html for the other depths) */
+[data-style="terminal"] {
+    --font: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --radius: 0; --radius-ctl: 0; --radius-tile: 0; --gap: 18px; --pad: 18px;
+    --surface: rgba(4,8,6,.9); --surface-solid: #050906; --blur: none; --shadow: none;
+    --text: color-mix(in srgb, var(--accent) 28%, #e6e6e6); --text2: color-mix(in srgb, var(--accent) 45%, #7d7d7d);
+    --fill: transparent; --tile-on: var(--accent); --tile-on-text: #000;
+    --sep: color-mix(in srgb, var(--accent) 45%, transparent); --title-weight: 600;
+}
+[data-style="terminal"][data-mode="light"] {
+    --surface: rgba(250,250,243,.96); --surface-solid: #fafaf3;
+    --text: #1d1d1b; --text2: #5d5d58; --tile-on-text: #fff;
+    --sep: color-mix(in srgb, var(--accent) 60%, #000);
+}
+
+/* ---------- Mockup controls (not part of any style) ---------- */
+.controls { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; padding: 10px 16px; background: rgba(18,18,20,.94); color: #eee; font: 13px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; border-bottom: 1px solid #333; }
+.controls .group { display: flex; align-items: center; gap: 8px; }
+.controls .label { color: #9a9aa2; }
+.seg { display: inline-flex; background: #2a2a2e; border-radius: 8px; padding: 2px; flex-wrap: wrap; }
+.seg button { all: unset; cursor: pointer; padding: 5px 10px; border-radius: 6px; color: #bbb; }
+.seg button[aria-pressed="true"] { background: #4a4a52; color: #fff; }
+.seg button:focus-visible, .swatch:focus-visible { outline: 2px solid #fff; }
+.swatch { all: unset; cursor: pointer; width: 18px; height: 18px; border-radius: 50%; background: var(--c); }
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px #18181b, 0 0 0 4px #fff; }
+.controls .note { flex-basis: 100%; color: #a6a6ae; font-size: 12.5px; line-height: 1.45; }
+.controls label.check { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.controls a { color: #8ec5ff; }
+.controls [hidden] { display: none !important; }
+
+/* ---------- Page ---------- */
+.page { max-width: 1180px; margin: 0 auto; padding: 28px 16px 80px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: var(--gap); }
+
+.surface { position: relative; background: var(--surface); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur); border-radius: var(--radius); box-shadow: var(--shadow); }
+.card { padding: var(--pad); display: flex; flex-direction: column; gap: 14px; min-height: 200px; }
+.card-title { margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: var(--title-weight); }
+.card-title svg { width: 18px; height: 18px; color: var(--accent); flex: none; }
+.muted { color: var(--text2); }
+svg.i { width: 20px; height: 20px; }
+
+/* Header */
+.page-header { display: flex; align-items: center; gap: 12px 20px; flex-wrap: wrap; margin-bottom: 28px; color: #fff; }
+:root[data-mode="light"] .bg[data-bg="plain"] ~ .page .page-header,
+:root[data-mode="light"] .bg[data-bg="blobs"] ~ .page .page-header,
+:root[data-mode="light"] .bg[data-bg="aurora"] ~ .page .page-header,
+:root[data-mode="light"] .bg[data-bg="text"] ~ .page .page-header { color: #111; }
+.page-header h1 { margin: 0; font-size: 34px; font-weight: 700; }
+.page-header .date { opacity: .78; font-size: 15px; margin-top: 2px; }
+.tabs { display: flex; gap: 4px; margin-left: auto; }
+.tabs a { padding: 7px 14px; border-radius: var(--radius-ctl); font-size: 14px; font-weight: 500; opacity: .78; }
+.tabs a.on { opacity: 1; background: rgba(255,255,255,.2); }
+.clock { font-size: 15px; font-variant-numeric: tabular-nums; opacity: .9; }
+
+/* Weather */
+.wx-now { display: flex; align-items: center; gap: 14px; }
+.wx-now .big svg { width: 54px; height: 54px; color: var(--orange); }
+.wx-temp { font-size: 44px; font-weight: 300; line-height: 1; }
+.wx-days { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center; font-size: 13px; margin-top: auto; }
+.wx-days > div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.wx-days svg { width: 20px; height: 20px; color: var(--text2); }
+
+/* Meters */
+.meters { display: flex; flex-direction: column; gap: 12px; }
+.meter-head { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.bar { height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: inherit; background: var(--lvl); }
+
+/* Tiles */
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: var(--radius-tile); background: var(--fill); font-size: 13px; }
+.tile svg { width: 22px; height: 22px; color: var(--text2); }
+.tile .name { font-weight: 600; }
+.tile .state { color: var(--text2); }
+.tile.on { background: var(--tile-on); color: var(--tile-on-text); }
+.tile.on svg { color: var(--orange); }
+.tile.on .state { color: color-mix(in srgb, var(--tile-on-text) 65%, transparent); }
+
+/* Graph */
+.graph svg { width: 100%; height: 120px; display: block; overflow: visible; }
+.graph .line { fill: none; stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.graph-legend { display: flex; justify-content: space-between; font-size: 12px; }
+
+/* Apps */
+.apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px; }
+.app { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11.5px; text-align: center; }
+.app-icon { position: relative; width: 52px; height: 52px; border-radius: 12px; display: grid; place-items: center; font-weight: 700; font-size: 20px; color: #fff; background: linear-gradient(145deg, color-mix(in srgb, var(--c) 80%, #fff), var(--c)); box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.app-icon .dot { position: absolute; right: -3px; top: -3px; width: 12px; height: 12px; border-radius: 50%; background: var(--green); border: 2px solid #1c1c1e; }
+.app-icon .dot.down { background: var(--red); }
+
+/* Media */
+.media { display: flex; gap: 14px; align-items: center; }
+.art { width: 72px; height: 72px; border-radius: var(--radius-tile); flex: none; background: conic-gradient(from 210deg at 30% 40%, #ff7a59, #ffd166, #06d6a0, #118ab2, #9b5de5, #ff7a59); }
+.media .t { font-weight: 600; font-size: 15px; }
+.progress { display: flex; align-items: center; gap: 8px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.progress .bar { flex: 1; height: 4px; }
+.progress .bar i { background: var(--text); }
+.ctrls { display: flex; justify-content: center; gap: 14px; align-items: center; }
+.ctrls button { all: unset; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; color: var(--text); cursor: pointer; }
+.ctrls button.main { width: 48px; height: 48px; background: var(--fill); }
+.ctrls svg { width: 20px; height: 20px; }
+
+/* Two-tone cards: a header banner over the content, like TwoToneBase */
+[data-style] .surface.two-tone { padding: 0; gap: 0; background: var(--tt-surface, transparent); }
+.tt-head { display: flex; align-items: center; justify-content: space-between; min-height: 80px; padding: 8px; background: var(--hdr-bg); border-radius: var(--radius) var(--radius) 0 0; }
+.tt-info { display: flex; align-items: center; gap: 16px; padding: 8px 10px; min-width: 0; }
+.tt-icon { width: 40px; height: 40px; flex: none; border-radius: 9px; display: grid; place-items: center; color: #fff; background: linear-gradient(145deg, color-mix(in srgb, var(--c) 72%, #fff), var(--c)); box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.tt-icon svg { width: 24px; height: 24px; }
+.tt-titles { min-width: 0; }
+.tt-title { font-size: 21px; font-weight: 600; line-height: 25px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tt-sub { font-size: 14px; line-height: 20px; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tt-actions { display: flex; gap: 2px; flex: none; margin-left: 8px; }
+.tt-action { all: unset; cursor: pointer; width: 38px; height: 38px; border-radius: 9px; display: inline-grid; place-items: center; color: var(--text); }
+.tt-action:hover { background: var(--fill); }
+.tt-action:focus-visible { outline: 2px solid var(--accent); }
+.tt-action svg { width: 20px; height: 20px; }
+.tt-body { flex: 1; padding: var(--pad); display: flex; flex-direction: column; gap: 14px; background: var(--body-bg); border-radius: 0 0 var(--radius) var(--radius); }
+.meter-head .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 8px; }
+.small { font-size: 12px; margin-top: 4px; }
+
+[data-style="glass"] { --hdr-bg: rgba(56,56,61,.6); --body-bg: rgba(0,0,0,.75); }
+[data-style="glass"][data-mode="light"] { --hdr-bg: rgba(248,248,252,.85); --body-bg: rgba(255,255,255,.88); }
+[data-style="liquid"] { --tt-surface: var(--surface); --hdr-bg: rgba(255,255,255,.1); --body-bg: transparent; }
+[data-style="liquid"][data-mode="light"] { --hdr-bg: rgba(255,255,255,.38); }
+[data-style="material"] { --tt-surface: var(--surface); --hdr-bg: #2a2b2f; --body-bg: transparent; }
+[data-style="material"][data-mode="light"] { --hdr-bg: #eceef2; }
+[data-style="terminal"] { --tt-surface: var(--surface); --hdr-bg: color-mix(in srgb, var(--accent) 9%, transparent); --body-bg: transparent; }
+
+[data-style="liquid"] .tt-head { box-shadow: inset 0 -1px 0 rgba(255,255,255,.14); }
+[data-style="liquid"] .tt-icon { border-radius: 13px; box-shadow: 0 4px 10px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.55), inset 0 -2px 5px rgba(0,0,0,.15); }
+[data-style="liquid"] .tt-action { border-radius: 50%; background: rgba(255,255,255,.14); box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
+[data-style="liquid"][data-mode="light"] .tt-action { background: rgba(255,255,255,.5); }
+
+[data-style="material"] .tt-icon { border-radius: 50%; box-shadow: none; background: color-mix(in srgb, var(--c) 22%, var(--hdr-bg)); color: var(--c); }
+[data-style="material"] .tt-title { font-size: 22px; font-weight: 400; }
+[data-style="material"] .tt-action { border-radius: 50%; width: 40px; height: 40px; color: var(--text2); }
+
+[data-style="terminal"] .tt-head { min-height: 0; padding: 8px 10px; border-bottom: 1px solid var(--sep); border-radius: 0; }
+[data-style="terminal"] .tt-info { padding: 0 4px; }
+[data-style="terminal"] .tt-title { font-size: 15px; line-height: 20px; color: var(--accent); }
+[data-style="terminal"][data-mode="light"] .tt-title { color: color-mix(in srgb, var(--accent) 55%, #000); }
+[data-style="terminal"] .tt-sub { font-size: 12px; }
+[data-style="terminal"] .tt-action { width: auto; height: auto; padding: 2px 4px; border-radius: 0; font-size: 13px; color: var(--accent); }
+[data-style="terminal"] .tt-action:hover { background: var(--accent); color: var(--tile-on-text); }
+
+/* ---------- Liquid glass details ---------- */
+[data-style="liquid"] .surface {
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,.45), inset 0 -1px 0 rgba(255,255,255,.12), inset 0 0 22px rgba(255,255,255,.08);
+}
+[data-style="liquid"] .surface::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.2px; pointer-events: none;
+    background: linear-gradient(135deg, rgba(255,255,255,.75), rgba(255,255,255,.08) 30%, rgba(255,255,255,0) 55%, rgba(255,255,255,.4));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+}
+[data-style="liquid"] .card { text-shadow: 0 1px 2px rgba(0,0,0,.12); }
+[data-style="liquid"][data-mode="light"] .card { text-shadow: none; }
+[data-style="liquid"] .page-header { padding: 8px 10px 8px 24px; border-radius: 999px; color: var(--text); }
+[data-style="liquid"] .page-header h1 { font-size: 22px; }
+[data-style="liquid"] .page-header .date { display: none; }
+[data-style="liquid"] .tabs a.on { background: rgba(255,255,255,.28); box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
+[data-style="liquid"] .clock { padding-right: 12px; }
+[data-style="liquid"] .bar { height: 8px; border-radius: 4px; box-shadow: inset 0 1px 2px rgba(0,0,0,.15); }
+[data-style="liquid"] .bar i { box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
+[data-style="liquid"] .tile { box-shadow: inset 0 1px 0 rgba(255,255,255,.3); }
+[data-style="liquid"] .tile.on { box-shadow: 0 6px 18px rgba(0,0,0,.15), inset 0 1px 0 #fff; }
+[data-style="liquid"] .app-icon { border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.55), inset 0 -2px 6px rgba(0,0,0,.15); }
+[data-style="liquid"] .ctrls button.main { background: rgba(255,255,255,.22); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 4px 12px rgba(0,0,0,.15); }
+
+/* ---------- Material 3 details ---------- */
+[data-style="material"] .page-header h1 { font-size: 36px; font-weight: 400; }
+[data-style="material"] .tabs a { border: 1px solid rgba(255,255,255,.5); opacity: 1; }
+[data-style="material"] .tabs a.on { background: color-mix(in srgb, var(--accent) 30%, #fff); color: color-mix(in srgb, var(--accent) 70%, #000); border-color: transparent; }
+[data-style="material"] .tabs a.on::before { content: "✓ "; }
+[data-style="material"] .card-title { font-size: 16px; }
+[data-style="material"] .card-title svg { display: none; }
+[data-style="material"] .wx-temp { font-weight: 400; }
+[data-style="material"] .bar { height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--lvl) 24%, transparent); }
+[data-style="material"] .graph .line { stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+[data-style="material"] .graph .area { display: none; }
+[data-style="material"] .tile { background: var(--fill); }
+[data-style="material"] .tile.on svg { color: var(--tile-on-text); }
+[data-style="material"] .app-icon { border-radius: 50%; background: var(--c); box-shadow: none; }
+[data-style="material"] .app-icon .dot { border-color: var(--surface); }
+[data-style="material"] .ctrls button.main { width: 56px; height: 56px; border-radius: 16px; background: var(--accent); color: #fff; }
+[data-style="material"] .progress .bar i { background: var(--accent); }
+
+/* ---------- Terminal details ---------- */
+[data-style="terminal"] .surface { border: 1px solid var(--sep); }
+[data-style="terminal"] .card { padding-top: 22px; font-size: 13px; }
+[data-style="terminal"] .card-title { position: absolute; top: -0.75em; left: 12px; padding: 0 6px; background: var(--surface-solid); font-size: 13px; color: var(--accent); text-transform: lowercase; }
+[data-style="terminal"] .card-title::before { content: "[ "; }
+[data-style="terminal"] .card-title::after { content: " ]"; }
+[data-style="terminal"] .card-title svg { display: none; }
+[data-style="terminal"] .page-header { font-size: 14px; color: var(--text); background: var(--surface); border: 1px solid var(--sep); padding: 10px 14px; }
+[data-style="terminal"] .page-header h1 { font-size: 14px; font-weight: 600; }
+[data-style="terminal"] .prompt { color: var(--accent); }
+[data-style="terminal"] .cursor { animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+[data-style="terminal"] .tabs a { padding: 0 4px; opacity: .7; }
+[data-style="terminal"] .tabs a.on { background: none; color: var(--accent); opacity: 1; }
+pre.ascii { margin: 0; font: inherit; white-space: pre; overflow: hidden; line-height: 1.25; }
+.acc { color: var(--accent); }
+.lvl { color: var(--lvl); }
+.ok { color: var(--green); } .bad { color: var(--red); } .warn { color: var(--orange); }
+.term-list { display: flex; flex-direction: column; gap: 4px; }
+.term-list .row { display: flex; gap: 10px; white-space: pre; }
+.term-list .row .grow { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+[data-style="terminal"] .ctrls button { border-radius: 0; width: auto; height: auto; padding: 2px 6px; border: 1px solid var(--sep); }
+[data-style="terminal"] .ctrls button.main { width: auto; height: auto; background: var(--accent); color: var(--tile-on-text); }
+[data-style="terminal"] .art { border-radius: 0; filter: grayscale(1) contrast(1.4); image-rendering: pixelated; mix-blend-mode: luminosity; }
+[data-style="terminal"][data-mode="dark"] .page::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 20; background: repeating-linear-gradient(transparent 0 2px, rgba(0,0,0,.18) 2px 3px); }
+[data-style="terminal"][data-mode="dark"] .card { text-shadow: 0 0 6px color-mix(in srgb, var(--accent) 35%, transparent); }
+
+@media (max-width: 600px) {
+    .tabs { margin-left: 0; order: 3; width: 100%; }
+    [data-style="liquid"] .page-header { border-radius: 26px; padding: 12px 16px; }
+}
+</style>
+</head>
+<body>
+
+<div class="controls" role="toolbar" aria-label="Mockup settings">
+    <div class="group"><span class="label">Style</span>
+        <div class="seg" data-key="style">
+            <button data-v="glass">Glass (today)</button><button data-v="liquid">Liquid Glass</button><button data-v="material">Material 3</button><button data-v="terminal">Terminal</button>
+        </div>
+    </div>
+    <div class="group"><span class="label">Mode</span>
+        <div class="seg" data-key="mode"><button data-v="dark">Dark</button><button data-v="light">Light</button></div>
+    </div>
+    <div class="group"><span class="label">Accent</span><div class="group" id="swatches"></div></div>
+    <div class="group"><span class="label">Page background</span>
+        <div class="seg" data-key="bg">
+            <button data-v="gradient">Gradient</button><button data-v="plain">Plain</button><button data-v="wallpaper">Picture</button><button data-v="aurora">Aurora</button><button data-v="blobs">Blobs</button><button data-v="matrix">Matrix</button>
+        </div>
+    </div>
+    <label class="check" id="refractToggle" hidden><input type="checkbox" id="refract" checked> Refraction (Chromium)</label>
+    <div class="note" id="note"></div>
+</div>
+
+<main class="page">
+    <header class="page-header" id="header"></header>
+    <div class="grid" id="grid"></div>
+</main>
+
+<script src="backgrounds.js"></script>
+<script src="refraction.js"></script>
+<script>
+const svg = (inner, fill) => `<svg class="i" viewBox="0 0 24 24" fill="${fill ? 'currentColor' : 'none'}" stroke="${fill ? 'none' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${inner}</svg>`;
+const CLOUD = 'M6.5 19h11a4.5 4.5 0 0 0 .4-8.98A6 6 0 0 0 6.3 10.1 4.5 4.5 0 0 0 6.5 19z';
+const I = {
+    sun: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+    cloud: svg(`<path d="${CLOUD}"/>`),
+    cloudSun: svg('<circle cx="8" cy="7" r="3"/><path d="M8 1.5v1M2.5 7h1M4.1 3.1l.7.7M11.9 3.1l-.7.7"/><path d="M9 21h8.5a3.5 3.5 0 0 0 .3-6.99A5 5 0 0 0 8.4 15 3 3 0 0 0 9 21z"/>'),
+    rain: svg('<path d="M6.5 15h11a4.5 4.5 0 0 0 .4-8.98A6 6 0 0 0 6.3 6.1 4.5 4.5 0 0 0 6.5 15z"/><path d="M8 18l-1 3M12 18l-1 3M16 18l-1 3"/>'),
+    cpu: svg('<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>'),
+    bulb: svg('<path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.3h6c0-1 .4-1.8 1-2.3A7 7 0 0 0 12 2z"/>'),
+    chart: svg('<path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/>'),
+    grid: svg('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'),
+    music: svg('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>'),
+    play: svg('<path d="M7 4l13 8-13 8z"/>', true),
+    prev: svg('<path d="M19 5v14L9 12zM5 5h2v14H5z"/>', true),
+    next: svg('<path d="M5 5v14l10-7zM17 5h2v14h-2z"/>', true),
+    refresh: svg('<path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/>'),
+    terminal: svg('<path d="M4 17l6-5-6-5M12 19h8"/>'),
+    clock: svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+    speaker: svg('<rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><path d="M12 6h.01"/>'),
+    download: svg('<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>'),
+    pause: svg('<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>', true),
+    plus: svg('<path d="M12 5v14M5 12h14"/>'),
+};
+
+const ACCENTS = [['Blue', '#0a84ff'], ['Purple', '#bf5af2'], ['Pink', '#ff375f'], ['Orange', '#ff9f0a'], ['Green', '#30d158'], ['Teal', '#40c8e0'], ['Phosphor', '#33ff66'], ['Graphite', '#8e8e93']];
+const NOTES = {
+    glass: 'Glass — today\'s look, unchanged. Frosted dark/light tiles, 11px corners, soft offset shadow.',
+    liquid: 'Liquid Glass — clear glass with a lit rim, 30px corners, capsule controls and a floating header. With refraction on (Chromium), the backdrop bends at the edges; elsewhere it falls back to blur. Refraction only shows over a background with detail (Picture, Blobs) — over the plain gradient it is almost invisible.',
+    material: 'Material 3 — opaque neutral surfaces, no blur, tonal elevation, Roboto Flex, pill controls. Only the accent colors the interactive parts (tiles that are on, buttons, progress, chips); surfaces stay neutral as decided.',
+    terminal: 'Terminal — shown here at depth B ("hybrid"): monospace, square, text bars, block-character graph, [x] toggles, status as [ OK ]. Scanlines and glow in dark mode. Compare depths A/B/C in <a href="terminal.html">terminal.html</a>.',
+};
+const DEFAULT_BG = { glass: 'gradient', liquid: 'wallpaper', material: 'gradient', terminal: 'matrix' };
+
+const TEMPS = [14.2, 13.8, 13.5, 13.1, 12.9, 12.8, 13.4, 14.6, 16.1, 17.8, 19.2, 20.3, 21.1, 21.8, 22.4, 22.1, 21.3, 20.2, 19.1, 18.2, 17.0, 16.1, 15.4, 14.9];
+const APPS = [['Jellyfin', '#7b4fd8', 'up'], ['Grafana', '#f46800', 'up'], ['Proxmox', '#e57000', 'up'], ['Nextcloud', '#0082c9', 'up'], ['Gitea', '#609926', 'up'], ['Pi-hole', '#96060c', 'down'], ['Sonarr', '#35c5f0', 'up'], ['Vault', '#175ddc', 'up']];
+const LIGHTS = [['Living room', true, '80 %'], ['Kitchen', false, 'Off'], ['Desk lamp', true, '45 %'], ['Bedroom', false, 'Off']];
+const METERS = [['CPU', 34], ['Memory', 68], ['Disk /srv', 87], ['Temp', 52, '°C']];
+const DAYS = [['Sun', 'sun', 23, 13], ['Mon', 'cloud', 19, 12], ['Tue', 'rain', 16, 10], ['Wed', 'sun', 20, 11], ['Thu', 'cloudSun', 18, 11]];
+
+const state = { style: 'glass', mode: 'dark', accent: '#0a84ff', bg: null, refract: true };
+const root = document.documentElement;
+const lvl = v => v >= 85 ? 'var(--red)' : v >= 70 ? 'var(--orange)' : 'var(--accent)';
+const term = () => state.style === 'terminal';
+const asciiBar = (v, w = 16) => { const n = Math.round(v / 100 * w); return '█'.repeat(n) + '░'.repeat(w - n); };
+
+function blockChart(vals, rows) {
+    const min = Math.min(...vals), max = Math.max(...vals), blocks = ' ▁▂▃▄▅▆▇█', out = [];
+    for (let r = rows - 1; r >= 0; r--) {
+        out.push(vals.map(v => { const f = (v - min) / (max - min) * rows - r; return f >= 1 ? '█' : f <= 0 ? ' ' : blocks[Math.max(1, Math.round(f * 8))]; }).join(''));
+    }
+    return out.join('\n');
+}
+
+const card = (title, icon, body) => `<section class="card surface"><h2 class="card-title">${icon}<span>${title}</span></h2>${body}</section>`;
+
+/* Cards with a header banner, like TwoToneBase: icon, title, subtitle and actions over the content */
+const META = {
+    weather: { title: 'Weather', sub: 'Home · updated 2 min ago', icon: 'cloudSun', color: '#ff9f0a', actions: [['Refresh', 'refresh', '⟳']] },
+    server: { title: 'pve-01', sub: 'Proxmox · up 41 days', icon: 'cpu', color: '#e57000', actions: [['Open console', 'terminal', '>_']] },
+    graph: { title: 'Living room', sub: 'Temperature · 24 h', icon: 'chart', color: '#30b0c7', actions: [['Change range', 'clock', '24h']] },
+    media: { title: 'Now playing', sub: 'Living room speaker', icon: 'music', color: '#ff375f', actions: [['Choose speaker', 'speaker', 'spk']] },
+    downloads: { title: 'Transmission', sub: '3 active · ↓ 12.4 MB/s', icon: 'download', color: '#d70015', actions: [['Pause all', 'pause', '||'], ['Add torrent', 'plus', '+']] },
+};
+function tt(m, body) {
+    const actions = m.actions.map(([label, icon, glyph]) => `<button class="tt-action" aria-label="${label}" title="${label}">${term() ? `[${glyph}]` : I[icon]}</button>`).join('');
+    return `<section class="card surface two-tone"><header class="tt-head"><div class="tt-info">${term() ? '' : `<div class="tt-icon" style="--c:${m.color}">${I[m.icon]}</div>`}<div class="tt-titles"><div class="tt-title">${term() ? m.title.toLowerCase() : m.title}</div><div class="tt-sub">${m.sub}</div></div></div><div class="tt-actions">${actions}</div></header><div class="tt-body">${body}</div></section>`;
+}
+
+const TORRENTS = [['ubuntu-26.04-desktop-amd64.iso', 62, '8.1 MB/s', '2 min'], ['debian-13.2-netinst.iso', 91, '3.4 MB/s', '20 s'], ['fedora-workstation-44.iso', 18, '0.9 MB/s', '24 min']];
+function downloads() {
+    if (term()) return tt(META.downloads, `<pre class="ascii">${TORRENTS.map(([n, v, s]) => `${n.slice(0, 18).padEnd(18)} <span class="acc">${asciiBar(v, 10)}</span> ${String(v).padStart(3)}%\n<span class="muted">${' '.repeat(19)}↓ ${s}</span>`).join('\n')}</pre>`);
+    return tt(META.downloads, `<div class="meters">${TORRENTS.map(([n, v, s, eta]) => `<div style="--lvl:var(--accent)"><div class="meter-head"><span class="name">${n}</span><span class="muted">${v}%</span></div><div class="bar"><i style="width:${v}%"></i></div><div class="muted small">↓ ${s} · ${eta} left</div></div>`).join('')}</div>`);
+}
+
+function weather() {
+    if (term()) return tt(META.weather, `<pre class="ascii"><span class="warn">  \\ | /</span>      <span style="font-size:1.6em" class="acc">21°C</span>
+<span class="warn">  -(_)-</span><span class="muted">.--.</span>   partly cloudy
+<span class="warn">  / </span><span class="muted">(    ).</span>  H 24  L 14
+<span class="muted">   (___(___)</span> wind 12 km/h NW</pre>
+<div class="muted">${DAYS.map(d => `${d[0].toLowerCase()} ${d[2]}/${d[3]}`).join(' · ')}</div>`);
+    return tt(META.weather, `<div class="wx-now"><div class="big">${I.cloudSun}</div><div><div class="wx-temp">21°</div><div class="muted">Partly cloudy · H 24° L 14°</div></div></div>
+<div class="wx-days">${DAYS.map(d => `<div><span class="muted">${d[0]}</span>${I[d[1]]}<span>${d[2]}°</span><span class="muted">${d[3]}°</span></div>`).join('')}</div>`);
+}
+
+function server() {
+    if (term()) return tt(META.server, `<pre class="ascii">${METERS.map(([n, v, u]) => `${n.padEnd(9)} <span class="lvl" style="--lvl:${lvl(v)}">${asciiBar(v)}</span> ${String(v).padStart(3)}${u || '%'}`).join('\n')}</pre>
+<div class="muted">up 41d 3h · load 0.42 0.38 0.31</div>`);
+    return tt(META.server, `<div class="meters">${METERS.map(([n, v, u]) => `<div style="--lvl:${lvl(v)}"><div class="meter-head"><span>${n}</span><span class="muted">${v}${u || '%'}</span></div><div class="bar"><i style="width:${v}%"></i></div></div>`).join('')}</div>`);
+}
+
+function lights() {
+    if (term()) return card('Lights', '', `<div class="term-list">${LIGHTS.map(([n, on, s]) => `<div class="row"><span class="${on ? 'acc' : 'muted'}">[${on ? 'x' : ' '}]</span><span class="grow">${n}</span><span class="muted">${s.toLowerCase()}</span></div>`).join('')}</div>`);
+    return card('Lights', I.bulb, `<div class="tiles">${LIGHTS.map(([n, on, s]) => `<div class="tile ${on ? 'on' : ''}">${I.bulb}<div><div class="name">${n}</div><div class="state">${s}</div></div></div>`).join('')}</div>`);
+}
+
+function graph() {
+    const min = Math.min(...TEMPS), max = Math.max(...TEMPS);
+    if (term()) return tt(META.graph, `<pre class="ascii acc">${blockChart(TEMPS, 5)}</pre><div class="graph-legend muted"><span>00:00</span><span>min ${min}° max ${max}°</span><span>now</span></div>`);
+    const pts = TEMPS.map((v, i) => [i / (TEMPS.length - 1) * 300, 110 - (v - min) / (max - min) * 100]);
+    const d = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join('');
+    return tt(META.graph, `<div class="graph"><svg viewBox="0 0 300 120" preserveAspectRatio="none"><defs><linearGradient id="ga" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".35"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs><path class="area" d="${d}L300,120L0,120Z" fill="url(#ga)"/><path class="line" d="${d}"/></svg></div>
+<div class="graph-legend muted"><span>00:00</span><span>${min}° – ${max}°</span><span>now 21.3°</span></div>`);
+}
+
+function apps() {
+    if (term()) return card('Apps', '', `<div class="term-list">${APPS.map(([n, , s], i) => `<div class="row"><span class="${s === 'up' ? 'ok' : 'bad'}">[${s === 'up' ? ' OK ' : 'FAIL'}]</span><span class="grow">${n.toLowerCase()}</span><span class="muted">${s === 'up' ? (8 + i * 7) + 'ms' : 'timeout'}</span></div>`).join('')}</div>`);
+    return card('Apps', I.grid, `<div class="apps">${APPS.map(([n, c, s]) => `<div class="app"><div class="app-icon" style="--c:${c}">${n[0]}<span class="dot ${s}"></span></div><span>${n}</span></div>`).join('')}</div>`);
+}
+
+function media() {
+    if (term()) return tt(META.media, `<div class="media"><div class="art"></div><div><div class="acc">♪ Weightless Afternoon</div><div class="muted">The Placeholders</div></div></div>
+<pre class="ascii">01:42 ${'━'.repeat(9)}<span class="acc">●</span>${'─'.repeat(11)} 03:58</pre><div class="ctrls"><button>|◀</button><button class="main">▶ play</button><button>▶|</button></div>`);
+    return tt(META.media, `<div class="media"><div class="art"></div><div><div class="t">Weightless Afternoon</div><div class="muted">The Placeholders</div></div></div>
+<div class="progress"><span class="muted">1:42</span><div class="bar"><i style="width:43%"></i></div><span class="muted">3:58</span></div>
+<div class="ctrls"><button aria-label="Previous">${I.prev}</button><button class="main" aria-label="Play">${I.play}</button><button aria-label="Next">${I.next}</button></div>`);
+}
+
+function header() {
+    const h = document.getElementById('header');
+    h.classList.toggle('surface', state.style === 'liquid');
+    if (term()) {
+        h.innerHTML = `<h1><span class="prompt">glassboard@home</span>:~/home$ <span class="cursor">█</span></h1><nav class="tabs"><a class="on">[0:home*]</a><a>1:media</a><a>2:network</a></nav><div class="clock" id="clock"></div>`;
+    } else {
+        h.innerHTML = `<div><h1>Home</h1><div class="date">Saturday, 14 November</div></div><nav class="tabs"><a class="on">Home</a><a>Media</a><a>Network</a></nav><div class="clock" id="clock"></div>`;
+    }
+    tick();
+}
+
+function tick() {
+    const c = document.getElementById('clock');
+    if (c) c.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: term() ? '2-digit' : undefined });
+}
+
+function applyRefraction() {
+    Refraction.detachAll();
+    const on = state.style === 'liquid' && state.refract;
+    if (on) document.querySelectorAll('.surface').forEach(el => Refraction.attach(el, { scale: 50, bezel: 26 }));
+}
+
+function render() {
+    root.dataset.style = state.style;
+    root.dataset.mode = state.mode;
+    root.style.setProperty('--accent', state.accent);
+    Backgrounds.set(state.bg || DEFAULT_BG[state.style]);
+    document.querySelectorAll('.seg').forEach(seg => {
+        const v = seg.dataset.key === 'bg' ? (state.bg || DEFAULT_BG[state.style]) : state[seg.dataset.key];
+        seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v)));
+    });
+    document.querySelectorAll('.swatch').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === state.accent)));
+    document.getElementById('refractToggle').hidden = state.style !== 'liquid' || !Refraction.supported;
+    document.getElementById('note').innerHTML = NOTES[state.style] + (state.style === 'liquid' && !Refraction.supported ? ' <b>This browser cannot show refraction; you are seeing the fallback.</b>' : '');
+    header();
+    document.getElementById('grid').innerHTML = [weather(), server(), lights(), graph(), apps(), downloads(), media()].join('');
+    applyRefraction();
+}
+
+document.getElementById('swatches').innerHTML = ACCENTS.map(([n, c]) => `<button class="swatch" style="--c:${c}" data-v="${c}" title="${n}" aria-label="${n}"></button>`).join('');
+document.querySelector('.controls').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.classList.contains('swatch')) state.accent = b.dataset.v;
+    else state[b.closest('.seg').dataset.key] = b.dataset.v;
+    render();
+});
+document.getElementById('refract').addEventListener('change', e => { state.refract = e.target.checked; applyRefraction(); });
+setInterval(tick, 1000);
+render();
+</script>
+</body>
+</html>

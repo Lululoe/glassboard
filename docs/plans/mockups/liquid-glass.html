@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en" data-mode="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liquid glass comparison</title>
+<link rel="stylesheet" href="backgrounds.css">
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body { font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #fff; -webkit-font-smoothing: antialiased; }
+
+.controls { position: sticky; top: 0; z-index: 30; display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; padding: 10px 16px; background: rgba(18,18,20,.94); color: #eee; font-size: 13px; border-bottom: 1px solid #333; }
+.controls .group { display: flex; align-items: center; gap: 8px; }
+.controls .label { color: #9a9aa2; }
+.seg { display: inline-flex; background: #2a2a2e; border-radius: 8px; padding: 2px; flex-wrap: wrap; }
+.seg button { all: unset; cursor: pointer; padding: 5px 10px; border-radius: 6px; color: #bbb; }
+.seg button[aria-pressed="true"] { background: #4a4a52; color: #fff; }
+.controls input[type=range] { width: 110px; }
+.controls output { width: 2.5em; color: #fff; font-variant-numeric: tabular-nums; }
+.controls .note { flex-basis: 100%; color: #a6a6ae; font-size: 12.5px; line-height: 1.45; }
+.controls a { color: #8ec5ff; }
+
+.page { max-width: 1180px; margin: 0 auto; padding: 32px 16px 160px; }
+.row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 28px; }
+.col { display: flex; flex-direction: column; gap: 12px; }
+.caption { align-self: flex-start; padding: 6px 12px; border-radius: 8px; background: rgba(0,0,0,.6); font-size: 13px; line-height: 1.35; }
+.caption b { display: block; font-size: 14px; }
+.caption span { color: #c8c8d0; }
+
+/* The three panels share one layout */
+.panel { position: relative; padding: 22px; min-height: 250px; display: flex; flex-direction: column; gap: 14px; }
+.panel h2 { margin: 0; font-size: 14px; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.panel .temp { font-size: 52px; font-weight: 300; line-height: 1; }
+.panel .muted { opacity: .72; }
+.panel .chips { display: flex; gap: 8px; margin-top: auto; }
+.panel .chip { flex: 1; text-align: center; padding: 10px 0; font-size: 13px; }
+
+/* Today's glass */
+.p-glass { border-radius: 11px; background: radial-gradient(circle at 97% 3.3%, rgba(0,0,0,.35) 0, rgba(0,0,0,.6) 164%); backdrop-filter: blur(15px) saturate(86%); -webkit-backdrop-filter: blur(15px) saturate(86%); box-shadow: 17px 20px 40px rgba(0,0,0,.65); }
+.p-glass .chip { border-radius: 8px; background: rgba(118,118,128,.24); }
+:root[data-mode="light"] .p-glass { background: radial-gradient(circle at 100% 0, rgba(255,255,255,.85) 0, rgba(245,245,245,.78) 183%); box-shadow: 17px 20px 40px rgba(0,0,0,.2); color: #1c1c1e; }
+:root[data-mode="light"] .p-glass .chip { background: rgba(120,120,128,.12); }
+
+/* Liquid glass, both versions */
+.liquid { border-radius: 30px; background: rgba(16,18,28,.14); backdrop-filter: blur(10px) saturate(180%); -webkit-backdrop-filter: blur(10px) saturate(180%);
+    box-shadow: 0 14px 40px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.45), inset 0 -1px 0 rgba(255,255,255,.12), inset 0 0 22px rgba(255,255,255,.08);
+    text-shadow: 0 1px 2px rgba(0,0,0,.15); }
+.liquid::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1.2px; pointer-events: none;
+    background: linear-gradient(135deg, rgba(255,255,255,.75), rgba(255,255,255,.08) 30%, rgba(255,255,255,0) 55%, rgba(255,255,255,.4));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.liquid .chip { border-radius: 999px; background: rgba(255,255,255,.16); box-shadow: inset 0 1px 0 rgba(255,255,255,.35); }
+:root[data-mode="light"] .liquid { background: rgba(255,255,255,.3); color: #0b0b0f; text-shadow: none; box-shadow: 0 14px 40px rgba(0,20,60,.18), inset 0 1px 0 rgba(255,255,255,.7), inset 0 0 22px rgba(255,255,255,.2); }
+:root[data-mode="light"] .liquid .chip { background: rgba(255,255,255,.5); }
+
+/* Floating bar you can drag over the background */
+.dock { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 25; display: flex; align-items: center; gap: 6px; padding: 8px; border-radius: 999px; cursor: grab; touch-action: none; user-select: none; }
+.dock.dragging { cursor: grabbing; }
+.dock span { padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 500; }
+.dock span.on { background: rgba(255,255,255,.26); box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
+.dock small { padding: 0 12px 0 6px; opacity: .7; font-size: 12px; }
+
+.costs { margin-top: 36px; padding: 18px 22px; border-radius: 14px; background: rgba(0,0,0,.66); font-size: 14px; }
+.costs h3 { margin: 0 0 10px; font-size: 15px; }
+.costs table { width: 100%; border-collapse: collapse; }
+.costs th, .costs td { text-align: left; padding: 7px 10px 7px 0; border-top: 1px solid rgba(255,255,255,.12); vertical-align: top; }
+.costs th { color: #bbb; font-weight: 500; border-top: none; }
+.costs-wrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="controls" role="toolbar" aria-label="Comparison settings">
+    <div class="group"><span class="label">Background</span>
+        <div class="seg" data-key="bg"><button data-v="wallpaper">Picture</button><button data-v="blobs">Moving blobs</button><button data-v="text">Scrolling text</button><button data-v="gradient">Plain gradient</button></div>
+    </div>
+    <div class="group"><span class="label">Mode</span>
+        <div class="seg" data-key="mode"><button data-v="dark">Dark</button><button data-v="light">Light</button></div>
+    </div>
+    <label class="group"><span class="label">Bend</span><input type="range" id="scale" min="0" max="160" value="50"><output id="scaleOut">50</output></label>
+    <label class="group"><span class="label">Rim width</span><input type="range" id="bezel" min="6" max="70" value="26"><output id="bezelOut">26</output></label>
+    <label class="group"><span class="label">Frost</span><input type="range" id="blur" min="0" max="12" step="0.5" value="4"><output id="blurOut">4</output></label>
+    <div class="note" id="note">Three versions of the same card over the same background. Drag the floating bar at the bottom across the picture to see the rim bend what is behind it. Back to <a href="themes.html">all styles</a>.</div>
+</div>
+
+<main class="page">
+    <div class="row">
+        <div class="col">
+            <div class="caption"><b>1 · Glass (today)</b><span>Frosted, dark tint, 11px corners</span></div>
+            <section class="panel p-glass" id="pGlass"></section>
+        </div>
+        <div class="col">
+            <div class="caption"><b>2 · Liquid glass, CSS only</b><span>Clear, lit rim, 30px corners. Same in every browser.</span></div>
+            <section class="panel liquid" id="pCss"></section>
+        </div>
+        <div class="col">
+            <div class="caption"><b>3 · Liquid glass + refraction</b><span id="refractCaption">Rim bends the backdrop like a lens. Chromium only.</span></div>
+            <section class="panel liquid" id="pRefract"></section>
+        </div>
+    </div>
+
+    <div class="costs">
+        <h3>What separates 2 and 3</h3>
+        <div class="costs-wrap"><table>
+            <tr><th></th><th>2 · CSS only</th><th>3 · Refraction</th></tr>
+            <tr><td>Browsers</td><td>All (Safari, iOS, Firefox, Chromium)</td><td>Chrome, Edge, Android, Electron. Safari/iOS and Firefox silently show version 2.</td></tr>
+            <tr><td>Visible when</td><td>Always</td><td>Only over detail: a picture, animated background, or content scrolling under the header. Over the plain gradient it looks like 2.</td></tr>
+            <tr><td>Cost</td><td>One blur per card — same as today</td><td>Blur + displacement per card, recomputed on every frame if the background moves. Fine on desktop/phones; on a Raspberry Pi it should switch off automatically.</td></tr>
+            <tr><td>Maintenance</td><td>CSS tokens only</td><td>A small script that builds one filter per card size and rebuilds it on resize (~100 lines).</td></tr>
+        </table></div>
+    </div>
+</main>
+
+<div class="dock liquid" id="dock"><span class="on">Home</span><span>Media</span><span>Network</span><small>drag me</small></div>
+
+<script src="backgrounds.js"></script>
+<script src="refraction.js"></script>
+<script>
+const body = `<h2>Weather</h2><div class="temp">21°</div><div class="muted">Partly cloudy · H 24° L 14°</div><div class="chips"><div class="chip">Sun 23°</div><div class="chip">Mon 19°</div><div class="chip">Tue 16°</div></div>`;
+['pGlass', 'pCss', 'pRefract'].forEach(id => { document.getElementById(id).innerHTML = body; });
+
+const state = { bg: 'wallpaper', mode: 'dark' };
+const $ = id => document.getElementById(id);
+const scale = $('scale'), bezel = $('bezel'), blur = $('blur');
+const scaleOut = $('scaleOut'), bezelOut = $('bezelOut'), blurOut = $('blurOut');
+const opts = () => ({ scale: +scale.value, bezel: +bezel.value, blur: +blur.value });
+const refracted = [document.getElementById('pRefract'), document.getElementById('dock')];
+
+function render() {
+    document.documentElement.dataset.mode = state.mode;
+    Backgrounds.set(state.bg);
+    document.querySelectorAll('.seg').forEach(seg => seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === state[seg.dataset.key]))));
+}
+
+function refract() {
+    scaleOut.value = scale.value; bezelOut.value = bezel.value; blurOut.value = blur.value;
+    refracted.forEach(el => Refraction.attach(el, opts()));
+}
+
+document.querySelector('.controls').addEventListener('click', e => {
+    const b = e.target.closest('.seg button');
+    if (!b) return;
+    state[b.closest('.seg').dataset.key] = b.dataset.v;
+    render();
+});
+[scale, bezel, blur].forEach(i => i.addEventListener('input', refract));
+
+if (!Refraction.supported) {
+    document.getElementById('refractCaption').textContent = 'This browser cannot show refraction, so this is identical to 2 — open the page in Chrome or Edge to compare.';
+    [scale, bezel, blur].forEach(i => { i.disabled = true; });
+}
+
+// Drag the dock around
+const dock = document.getElementById('dock');
+let start = null;
+dock.addEventListener('pointerdown', e => {
+    const r = dock.getBoundingClientRect();
+    start = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    dock.setPointerCapture(e.pointerId);
+    dock.classList.add('dragging');
+});
+dock.addEventListener('pointermove', e => {
+    if (!start) return;
+    dock.style.transform = 'none';
+    dock.style.left = `${Math.max(0, Math.min(innerWidth - dock.offsetWidth, e.clientX - start.dx))}px`;
+    dock.style.top = `${Math.max(0, Math.min(innerHeight - dock.offsetHeight, e.clientY - start.dy))}px`;
+    dock.style.bottom = 'auto';
+});
+dock.addEventListener('pointerup', () => { start = null; dock.classList.remove('dragging'); });
+
+render();
+refract();
+</script>
+</body>
+</html>

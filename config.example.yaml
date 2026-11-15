@@ -5,6 +5,14 @@
 theme: "default"
 themes: []
 
+# Style of the whole dashboard (glass, liquid, material, neon or terminal) and its accent color.
+# Both can also be picked in the Theme menu of the header bar. See docs/THEMING.md.
+# appearance:
+#   style: glass
+#   accent: "#0a84ff"
+#   transparency: 0.5   # Glass and Liquid Glass cards: 0 solid to 1 clear
+#   locked: true        # keep these; the Theme menu can't change them
+
 # Fill every card with simulated data instead of calling your services, e.g. to try the
 # dashboard before setting anything up. Can also be set with GLASSBOARD_DEMO=true.
 # demo: true
@@ -17,6 +25,11 @@ themes: []
 # The header bar (title, menu and edit buttons) can hide itself until you point at or tap the top of the
 # screen: never (default), with-page-header (on pages that show the page header below) or always.
 # headerAutoHide: with-page-header
+
+# An optional sidebar of the pages, with folders and bubbles when cards need attention. It can also be
+# turned on and arranged in the browser's edit mode. See docs/SIDEBAR.md.
+# sidebar:
+#   enabled: true
 
 # An optional header above the cards: a clock under the date by default. Set it here for every
 # page, or as `pageHeader` on a page to change or turn it off there. See docs/HEADER_CONFIGURATION.md.

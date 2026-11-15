@@ -1,5 +1,5 @@
 import { callService } from '../../lib/api';
-import { usePolling } from '../../hooks/usePolling';
+import { BACKGROUND_SLOW, usePolling } from '../../hooks/usePolling';
 
 const EMPTY = { prs: [], stats: { count: 0, open: 0 } };
 
@@ -13,7 +13,7 @@ const EMPTY = { prs: [], stats: { count: 0, open: 0 } };
 export const useGit = (cardId, interval = 60000) => {
     const { data = EMPTY, loading, error } = usePolling(
         () => callService('git', { cardId }),
-        { interval, enabled: cardId !== undefined, key: String(cardId) }
+        { interval, backgroundInterval: BACKGROUND_SLOW, enabled: cardId !== undefined, key: String(cardId) }
     );
     return { ...data, loading, error };
 };

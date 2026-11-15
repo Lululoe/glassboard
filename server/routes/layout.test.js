@@ -176,6 +176,18 @@ describe('layout API', () => {
             expect((await put(server, { pages, background: { image: 'javascript:alert(1)' } })).status).toBe(400);
         });
 
+        it('saves a moving layer over the theme, a color or a picture, and refuses unknown ones', async () => {
+            expect((await put(server, { pages, background: { motion: 'aurora' } })).status).toBe(200);
+            expect(readLayout().background).toEqual({ motion: 'aurora' });
+            expect((await put(server, { pages, background: { color: '#7a2bd4', motion: 'blobs' } })).status).toBe(200);
+            expect(readLayout().background).toEqual({ color: '#7a2bd4', motion: 'blobs' });
+            expect((await put(server, { pages, pageBackgrounds: { home: { theme: true, motion: 'matrix' } } })).status).toBe(200);
+            expect(readLayout().pageBackgrounds).toEqual({ home: { theme: true, motion: 'matrix' } });
+
+            expect((await put(server, { pages, background: { motion: 'fireworks' } })).status).toBe(400);
+            expect((await put(server, { pages, background: {} })).status).toBe(400);
+        });
+
         it('downloads a picture from the web and serves it from here', async () => {
             const webp = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBPVP8 ')]);
             const site = await listenOnLoopback(http.createServer((req, res) => {
@@ -296,6 +308,24 @@ describe('layout API', () => {
             expect(readLayout().pageHeader).toBeUndefined();
         });
 
+        it('accepts headers written in config.yaml, which the browser sends back as they are', async () => {
+            const header = {
+                title: 'Living Room',
+                subtitle: { type: 'date' },
+                widgets: [
+                    { type: 'gauge', entity_id: 'sensor.temperature', min: 10, max: 30, icon: 'mdi:thermometer', color: 'orange' },
+                    { entity_id: 'sensor.humidity' },
+                ],
+            };
+            setConfig({ ...config(), pages: config().pages.map(p => (p.id === 'home' ? { ...p, pageHeader: header } : p)) });
+            const res = await put(server, { pages, pageHeaders: { home: header } });
+            expect(res.status).toBe(200);
+            expect(readLayout().pageHeaders).toBeUndefined();
+
+            expect((await put(server, { pages, pageHeaders: { admin: header } })).status).toBe(200);
+            expect(readLayout().pageHeaders).toEqual({ admin: header });
+        });
+
         it('rejects invalid headers and unknown pages', async () => {
             expect((await put(server, { pages, pageHeader: { align: 'middle' } })).status).toBe(400);
             expect((await put(server, { pages, pageHeader: { title: { type: 'clock', color: 'red; top: 0' } } })).status).toBe(400);
@@ -332,6 +362,38 @@ describe('layout API', () => {
             await put(server, { pages: { ...pages, garden: [] }, addedPages: [{ id: 'garden' }] });
             expect((await put(server, { pages, addedPages: [] })).status).toBe(200);
             expect(readLayout().addedPages).toBeUndefined();
+        });
+    });
+
+    describe('sidebar', () => {
+        const pages = { home: [{ id: 'a', type: 'x' }, { id: 't', type: 'transmission', url: 'http://t' }], admin: [{ id: 'c', type: 'x' }] };
+        const sidebar = {
+            enabled: true,
+            items: [
+                { page: 'admin', icon: 'mdi:server', iconBackground: '#0a84ff' },
+                { folder: 'folder-ab12', name: 'Rooms', icon: 'lu-Folder', pages: [{ page: 'home' }, { page: 'web' }] },
+            ],
+        };
+
+        it('saves it, keeps it when left out and goes back to config.yaml with null', async () => {
+            expect((await put(server, { pages, sidebar })).status).toBe(200);
+            expect(readLayout().sidebar).toEqual(sidebar);
+            expect((await put(server, { pages })).status).toBe(200);
+            expect(readLayout().sidebar).toEqual(sidebar);
+            expect((await put(server, { pages, sidebar: null })).status).toBe(200);
+            expect(readLayout().sidebar).toBeUndefined();
+        });
+
+        it("doesn't store a sidebar that matches config.yaml", async () => {
+            setConfig({ ...config(), sidebar: { enabled: true } });
+            expect((await put(server, { pages, sidebar: { enabled: true } })).status).toBe(200);
+            expect(readLayout().sidebar).toBeUndefined();
+        });
+
+        it('rejects folders inside folders and invalid folder ids', async () => {
+            const nested = { items: [{ folder: 'a', pages: [{ folder: 'b', pages: [] }] }] };
+            expect((await put(server, { pages, sidebar: nested })).status).toBe(400);
+            expect((await put(server, { pages, sidebar: { items: [{ folder: 'no spaces', pages: [] }] } })).status).toBe(400);
         });
     });
 });

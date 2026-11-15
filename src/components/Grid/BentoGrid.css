@@ -161,6 +161,51 @@
     box-shadow: var(--focus-ring);
 }
 
+/* Cards inside a container can be grabbed on their own and dragged out; the container's edges
+   still move the container. BentoGrid places these over the cards. */
+.grid-child-surface {
+    position: absolute;
+    z-index: 3;
+    border-radius: var(--radius-card);
+    cursor: grab;
+    touch-action: pan-y;
+    -webkit-user-select: none;
+    user-select: none;
+    box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3);
+    transition: box-shadow var(--duration-standard) var(--ease-standard);
+}
+
+@media (pointer: fine) {
+    .grid-child-surface:hover {
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+    }
+}
+
+.grid-child-surface:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* A container the dragged card will drop into */
+.grid-item .container-card {
+    transition: box-shadow var(--duration-standard) var(--ease-standard), background-color var(--duration-standard) var(--ease-standard);
+}
+
+.grid-item.drop-target .container-card {
+    background-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 0 28px rgba(255, 255, 255, 0.35);
+}
+
+.bento-grid.editing .grid-item.dragging.over-container {
+    rotate: none;
+    opacity: 0.92;
+}
+
+.grid-item.dragging .grid-child-surface,
+.bento-grid.is-dragging .grid-child-surface {
+    display: none !important;
+}
+
 .bento-grid.editing .grid-item.dragging {
     z-index: 20;
     pointer-events: none;
@@ -192,7 +237,7 @@
     content: '';
     width: 24px;
     height: 24px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     background: var(--bg-tile, #fff);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
@@ -239,7 +284,7 @@
     position: absolute;
     width: 26px;
     height: 26px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     background: var(--bg-tile, #fff);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 }
@@ -266,7 +311,7 @@
 .grid-icon-button {
     position: absolute;
     z-index: 3;
-    border-radius: 22.5%;
+    border-radius: calc(22.5% * var(--round-scale));
     cursor: pointer;
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85);
     transition: box-shadow var(--duration-standard) var(--ease-standard);
@@ -285,7 +330,7 @@
     bottom: -7px;
     width: 20px;
     height: 20px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     display: grid;
     place-items: center;
     background: var(--bg-tile, #fff);
@@ -324,10 +369,10 @@
     align-items: center;
     gap: 5px;
     padding: 5px 10px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(calc(14px * var(--blur-scale)));
+    -webkit-backdrop-filter: blur(calc(14px * var(--blur-scale)));
     color: #fff;
     font-size: var(--fs-12);
     font-weight: 600;

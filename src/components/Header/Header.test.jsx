@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { headerBarHides } from '../../../shared/pageHeader';
-import Header from './Header';
+import Header, { REVEAL_CORNER } from './Header';
 
 const bar = () => document.querySelector('.app-header');
 
@@ -39,6 +39,27 @@ describe('Header auto-hide', () => {
         expect(bar()).toHaveClass('is-hidden');
     });
 
+    it('shows while the mouse is in the top-left corner, and hides again after it leaves', () => {
+        const move = (x, y, target = document.body) => {
+            const e = new MouseEvent('pointermove', { clientX: x, clientY: y, bubbles: true });
+            Object.defineProperty(e, 'pointerType', { value: 'mouse' });
+            act(() => { target.dispatchEvent(e); });
+        };
+        render(<Header config={{}} autoHide />);
+        move(600, 300);
+        expect(bar()).toHaveClass('is-hidden');
+        move(REVEAL_CORNER.width - 10, REVEAL_CORNER.height - 10);
+        expect(bar()).not.toHaveClass('is-hidden');
+        // Moving from the corner onto the bar keeps it
+        move(REVEAL_CORNER.width + 50, 20, bar());
+        act(() => vi.advanceTimersByTime(1000));
+        expect(bar()).not.toHaveClass('is-hidden');
+        move(100, 30);
+        move(100, REVEAL_CORNER.height + 100);
+        act(() => vi.advanceTimersByTime(1000));
+        expect(bar()).toHaveClass('is-hidden');
+    });
+
     it('shows for a few seconds after a tap at the top of a touch screen', () => {
         render(<Header config={{}} autoHide />);
         fireEvent.click(document.querySelector('.header-reveal'));
@@ -57,5 +78,22 @@ describe('Header auto-hide', () => {
         fireEvent.blur(screen.getByRole('button', { name: 'Apps' }), { relatedTarget: document.body });
         act(() => vi.advanceTimersByTime(2000));
         expect(bar()).not.toHaveClass('is-hidden');
+    });
+});
+
+describe('Header scrolling', () => {
+    it('marks the bar while the page shown is scrolled down, and reads it again on another page', () => {
+        const page = document.createElement('div');
+        page.className = 'scroll-content page-active';
+        document.body.appendChild(page);
+        const { rerender } = render(<Header config={{}} page={0} />);
+        expect(bar()).not.toHaveClass('is-scrolled');
+        page.scrollTop = 120;
+        fireEvent.scroll(page);
+        expect(bar()).toHaveClass('is-scrolled');
+        page.scrollTop = 0;
+        rerender(<Header config={{}} page={1} />);
+        expect(bar()).not.toHaveClass('is-scrolled');
+        page.remove();
     });
 });

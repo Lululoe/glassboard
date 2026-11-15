@@ -37,7 +37,7 @@
 .printer-dot {
     width: 8px;
     height: 8px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     flex-shrink: 0;
     background: var(--text-tertiary);
 }
@@ -113,7 +113,7 @@
 .printer-bar {
     flex-shrink: 0;
     height: 6px;
-    border-radius: 4px;
+    border-radius: var(--radius-4);
     background: var(--bg-fill);
     overflow: hidden;
 }
@@ -121,7 +121,7 @@
 .printer-bar i {
     display: block;
     height: 100%;
-    border-radius: 4px;
+    border-radius: var(--radius-4);
     transition: width var(--duration-standard) var(--ease-standard);
 }
 
@@ -134,7 +134,7 @@
 .printer-tile {
     min-width: 0;
     padding: 7px 10px;
-    border-radius: 9px;
+    border-radius: var(--radius-9);
     background: var(--bg-fill);
 }
 
@@ -178,7 +178,7 @@
 .printer-spool {
     width: 26px;
     height: 26px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     /* A real hole, so the card shows through whatever the theme */
     background: radial-gradient(circle, transparent 30%, var(--spool, var(--bg-fill)) 31%);
     box-shadow: 0 0 0 1px rgba(128, 128, 128, 0.45);

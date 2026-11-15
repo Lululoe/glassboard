@@ -270,6 +270,11 @@ list is kept; pages no longer listed are removed along with their cards. In `GET
 the pages of `config.yaml` and are marked `"addedInEditor": true`; a config with top-level `cards` then gets a
 `default` page for them.
 
+`sidebar` saves the [sidebar](SIDEBAR): `enabled` and `items`, its pages (`{ "page": "home", "icon": "lu-House" }`)
+and folders (`{ "folder": "rooms", "name": "Rooms", "pages": [...] }`) in order, each with an optional `icon`,
+`iconColor` and `iconBackground`. Folder ids are letters, digits, `-` and `_`; folders can't hold folders. `null`
+goes back to the sidebar of `config.yaml`; left out, the saved one is kept. One equal to `config.yaml` isn't stored.
+
 ```json
 {
   "pages": {

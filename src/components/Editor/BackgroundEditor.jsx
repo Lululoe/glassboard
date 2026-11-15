@@ -2,7 +2,8 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { Check, ImageUp } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import {
-    BACKGROUND_COLORS, backgroundCss, isBackgroundColor, isBackgroundImage,
+    BACKGROUND_COLORS, BACKGROUND_MOTIONS, WEATHER_EFFECTS, backgroundCss, backgroundMotion, backgroundWeather,
+    isBackgroundColor, isBackgroundImage,
 } from '../../../shared/pageBackground.js';
 import { downloadBackground, uploadBackground } from '../../lib/api';
 import { Group, SegmentedField, TextField } from './EditorFields';
@@ -16,16 +17,18 @@ const IMAGE_TYPES = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
  * @property {string} color - The color its gradient is made from.
  * @property {string|undefined} image - The picture's address.
  * @property {number} dim - How much the picture is darkened, from 0 to 0.8.
+ * @property {string} motion - The moving layer over it, or `none`.
+ * @property {string} weather - The weather effect it always shows, or `live` for the current weather's.
  */
 
 /**
  * Reads a saved background setting into a form.
- * @param {{color?: string, image?: string, dim?: number, theme?: boolean}|null|undefined} background - The setting.
+ * @param {{color?: string, image?: string, dim?: number, theme?: boolean, motion?: string, weather?: string}|null|undefined} background - The setting.
  * @param {boolean} forPage - Whether it is a single page's, which can follow the dashboard's.
  * @returns {BackgroundForm} The form.
  */
 const toForm = (background, forPage) => {
-    const base = { color: BACKGROUND_COLORS[0], image: undefined, dim: 0.25 };
+    const base = { color: BACKGROUND_COLORS[0], image: undefined, dim: 0.25, motion: backgroundMotion(background) || 'none', weather: backgroundWeather(background) || 'live' };
     if (isBackgroundImage(background?.image)) return { ...base, kind: 'image', image: background.image, dim: Number(background.dim) || 0 };
     if (isBackgroundColor(background?.color)) return { ...base, kind: 'color', color: background.color.toLowerCase() };
     if (forPage && !background?.theme) return { ...base, kind: 'inherit' };
@@ -37,12 +40,16 @@ const toForm = (background, forPage) => {
  * @param {BackgroundForm} form - The form.
  * @param {boolean} forPage - Whether it is a single page's.
  * @returns {Object|undefined} The setting: undefined for the theme's (dashboard) or the dashboard's (page),
- *   `{ theme: true }` for the theme's on a page.
+ *   `{ theme: true }` for the theme's on a page. Any of them can also move (`motion`).
  */
 const fromForm = (form, forPage) => {
-    if (form.kind === 'color') return { color: form.color };
-    if (form.kind === 'image' && isBackgroundImage(form.image)) return form.dim > 0 ? { image: form.image, dim: form.dim } : { image: form.image };
-    if (form.kind === 'theme' && forPage) return { theme: true };
+    const moves = form.kind !== 'inherit' && Object.hasOwn(BACKGROUND_MOTIONS, form.motion);
+    const fixed = moves && form.motion === 'weather' && Object.hasOwn(WEATHER_EFFECTS, form.weather);
+    const motion = moves ? { motion: form.motion, ...(fixed && { weather: form.weather }) } : {};
+    if (form.kind === 'color') return { color: form.color, ...motion };
+    if (form.kind === 'image' && isBackgroundImage(form.image)) return form.dim > 0 ? { image: form.image, dim: form.dim, ...motion } : { image: form.image, ...motion };
+    if (form.kind === 'theme' && forPage) return { theme: true, ...motion };
+    if (form.kind === 'theme' && motion.motion) return motion;
     return undefined;
 };
 
@@ -269,6 +276,32 @@ const BackgroundEditor = ({ background, pageBackground, pageName, initialScope, 
                             />
                             <div className="editor-hint">Keeps the cards readable on bright pictures.</div>
                         </div>
+                    </Group>
+                )}
+
+                {form.kind !== 'inherit' && (
+                    <Group title="Motion" description="A moving layer behind the cards. It stays still for people who ask their device for less motion.">
+                        <SegmentedField
+                            label="Motion"
+                            value={form.motion}
+                            options={[{ value: 'none', label: 'None' }, ...Object.entries(BACKGROUND_MOTIONS).map(([value, label]) => ({ value, label }))]}
+                            onChange={(motion) => set({ motion })}
+                            hint={{
+                                aurora: 'Soft color fields drifting slowly, in the colors of the background color when one is set.',
+                                blobs: 'Shapes floating behind the cards; Liquid Glass bends them at its edges.',
+                                matrix: 'Characters falling in the accent color. Suits the Terminal style.',
+                                weather: 'The weather outside, from the first weather card: rain on the glass, snow, clouds or sun.',
+                            }[form.motion]}
+                        />
+                        {form.motion === 'weather' && (
+                            <SegmentedField
+                                label="Effect"
+                                value={form.weather}
+                                options={[{ value: 'live', label: 'Live' }, ...Object.entries(WEATHER_EFFECTS).map(([value, label]) => ({ value, label }))]}
+                                onChange={(weather) => set({ weather })}
+                                hint={form.weather === 'live' ? 'Follows the current weather, checked every 15 minutes.' : 'Always shows this effect, whatever the weather.'}
+                            />
+                        )}
                     </Group>
                 )}
             </div>

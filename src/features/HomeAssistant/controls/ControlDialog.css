@@ -32,8 +32,8 @@ dialog.ctl-overlay:not([open]) {
 
 dialog.ctl-overlay::backdrop {
     background: rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(calc(6px * var(--blur-scale)));
+    -webkit-backdrop-filter: blur(calc(6px * var(--blur-scale)));
     animation: ctl-fade-in 0.2s ease;
 }
 
@@ -54,7 +54,7 @@ html:has(dialog.ctl-overlay[open]) {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-radius: 22px;
+    border-radius: var(--radius-22);
     background: var(--ctl-bg);
     border: 0.5px solid var(--border-popup);
     box-shadow: var(--shadow-popup);
@@ -116,7 +116,7 @@ html:has(dialog.ctl-overlay[open]) {
 .ctl-icon {
     width: 40px;
     height: 40px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     display: grid;
     place-items: center;
     flex-shrink: 0;
@@ -133,7 +133,7 @@ html:has(dialog.ctl-overlay[open]) {
 .ctl-close {
     width: 44px;
     height: 44px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     display: grid;
     place-items: center;
     background: var(--bg-fill);
@@ -148,7 +148,7 @@ html:has(dialog.ctl-overlay[open]) {
 .ctl-back {
     width: 44px;
     height: 44px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     display: none;
     place-items: center;
     color: var(--system-blue);
@@ -207,7 +207,7 @@ html:has(dialog.ctl-overlay[open]) {
     align-items: center;
     gap: 12px;
     padding: 6px 10px;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
     text-align: left;
 }
 
@@ -349,7 +349,7 @@ html:has(dialog.ctl-overlay[open]) {
 .ctl-track {
     position: relative;
     height: 44px;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
     touch-action: none;
     cursor: ew-resize;
     background: linear-gradient(90deg, var(--ctl-track-low), #fff);
@@ -367,7 +367,7 @@ html:has(dialog.ctl-overlay[open]) {
     bottom: 4px;
     width: 8px;
     margin-left: -4px;
-    border-radius: 4px;
+    border-radius: var(--radius-4);
     background: #fff;
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.35);
     pointer-events: none;
@@ -399,7 +399,7 @@ html:has(dialog.ctl-overlay[open]) {
 .ctl-swatch {
     width: 44px;
     height: 44px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     position: relative;
     box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
@@ -408,7 +408,7 @@ html:has(dialog.ctl-overlay[open]) {
     content: "";
     position: absolute;
     inset: -4px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     box-shadow: 0 0 0 2.5px var(--text-primary);
 }
 
@@ -421,7 +421,7 @@ html:has(dialog.ctl-overlay[open]) {
 /* Power: a wide toggle at the bottom; big for entities that only switch */
 .ctl-power {
     min-height: 52px;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
     background: var(--bg-fill);
     display: flex;
     align-items: center;
@@ -479,14 +479,14 @@ html:has(dialog.ctl-overlay[open]) {
     min-height: 44px;
     display: grid;
     place-items: center;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
 }
 
 .ctl-switch {
     position: relative;
     width: 51px;
     height: 31px;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
     background: var(--bg-fill-hover);
     transition: background var(--duration-standard) var(--ease-standard);
 }
@@ -498,7 +498,7 @@ html:has(dialog.ctl-overlay[open]) {
     left: 2px;
     width: 27px;
     height: 27px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     background: #fff;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
     transition: transform var(--duration-standard) var(--ease-standard);
@@ -524,7 +524,7 @@ html:has(dialog.ctl-overlay[open]) {
         width: 100%;
         height: auto;
         max-height: 82dvh;
-        border-radius: 22px 22px 0 0;
+        border-radius: var(--radius-22) var(--radius-22) 0 0;
         border-width: 0.5px 0 0;
         animation-name: ctl-sheet-in;
         padding-bottom: env(safe-area-inset-bottom);
@@ -534,7 +534,7 @@ html:has(dialog.ctl-overlay[open]) {
         display: block;
         width: 36px;
         height: 5px;
-        border-radius: 4px;
+        border-radius: var(--radius-4);
         background: var(--text-tertiary);
         margin: 8px auto 0;
         flex-shrink: 0;

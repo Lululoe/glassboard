@@ -1,3 +1,5 @@
+import { useCardNotice } from '../../context/notices';
+import { haControlNotices } from '../cardNotices';
 import { useState } from 'react';
 import { isControllable, useHomeAssistant } from './useHomeAssistant';
 import ControlDialog from './controls/ControlDialog';
@@ -17,7 +19,8 @@ import Icon from '../../components/Shared/Icon';
 const HAControlCard = ({ config }) => {
     const displayEntities = (config.data?.entities || []).slice(0, 1).filter(e => e?.entity_id);
 
-    const { entityStates, loading, toggleEntity, refresh } = useHomeAssistant(displayEntities);
+    const { entityStates, loading, error, toggleEntity, refresh } = useHomeAssistant(displayEntities);
+    useCardNotice(haControlNotices(displayEntities, entityStates, !loading && !error));
     const [openId, setOpenId] = useState(/** @type {string|null} */ (null));
     const openEntity = displayEntities.find(e => e.entity_id === openId);
 
@@ -108,8 +111,11 @@ const HAControlCard = ({ config }) => {
 
                 // Dynamic color override if on
                 const circleStyle = {};
+                // The tile's own color, which a style can use for the whole tile (Neon does)
+                const tileStyle = {};
                 if (isOn && entity.color) {
                     circleStyle.backgroundColor = entity.color;
+                    tileStyle['--tile-color'] = entity.color;
                 }
 
                 // Get display state from configured attributes
@@ -124,7 +130,7 @@ const HAControlCard = ({ config }) => {
                 if (hasDialog) {
                     // Two sibling buttons: the tile opens the controls, the icon switches
                     return (
-                        <div key={entity.entity_id ?? idx} className={tileClass}>
+                        <div key={entity.entity_id ?? idx} className={tileClass} style={/** @type {import('react').CSSProperties} */ (tileStyle)}>
                             <button
                                 type="button"
                                 className="button-reset ha-tile-open"
@@ -153,6 +159,7 @@ const HAControlCard = ({ config }) => {
                     <Tile
                         key={entity.entity_id ?? idx}
                         className={hasActions ? `button-reset ${tileClass}` : tileClass}
+                        style={/** @type {import('react').CSSProperties} */ (tileStyle)}
                         {...(hasActions && {
                             type: 'button',
                             'aria-pressed': isOn,

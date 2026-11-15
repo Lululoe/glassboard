@@ -3,6 +3,18 @@ import {
     ALIGNMENTS, CONDITION_OPERATORS, HEADER_AUTO_HIDE, ENTITY_ID, LAYOUTS, LINE_TYPES, MAX_TEMPLATE_LENGTH, MAX_WIDGETS, STYLES, WIDGET_TYPES,
     isHeaderColor,
 } from '../shared/pageHeader.js';
+import { childCardsOf } from '../shared/containerCards.js';
+import { APPEARANCE_STYLES, isAccent } from '../shared/appearance.js';
+import { BACKGROUND_MOTIONS, WEATHER_EFFECTS } from '../shared/pageBackground.js';
+
+/** The dashboard's style, accent color and the transparency of Glass and Liquid Glass cards. */
+export const appearanceSchema = z.object({
+    style: z.enum(APPEARANCE_STYLES).optional(),
+    accent: z.string().refine(isAccent, 'Use a #rrggbb color').optional(),
+    transparency: z.number().min(0).max(1).optional(),
+    /** Keeps the style, accent and transparency of config.yaml: the Theme menu can't change them. */
+    locked: z.boolean().optional(),
+});
 
 const id = z.union([z.string().min(1), z.number()]);
 
@@ -54,6 +66,7 @@ const card = z.looseObject({
     id,
     type: z.string().min(1),
     colSpan: z.number().int().min(1).max(3).optional(),
+    rowSpan: z.number().int().min(1).max(3).optional(),
     tileSize: z.enum(['half', 'quarter']).optional(),
     hideOn: z.array(z.enum(['phone', 'tablet', 'desktop'])).optional(),
     primaryColor: z.string().optional(),
@@ -74,9 +87,27 @@ const launcherItem = z.looseObject({
     url: z.string(),
 });
 
+const sidebarIcon = {
+    icon: z.string().optional(),
+    iconColor: z.string().optional(),
+    iconBackground: z.string().optional(),
+};
+
+const sidebarPage = z.looseObject({ page: z.union([z.string(), z.number()]), ...sidebarIcon });
+
+/** The sidebar: whether it shows, and its pages and folders in order. */
+const sidebar = z.looseObject({
+    enabled: z.boolean().optional(),
+    items: z.array(z.union([
+        sidebarPage,
+        z.looseObject({ folder: z.string().min(1), name: z.string().optional(), pages: z.array(sidebarPage), ...sidebarIcon }),
+    ])).optional(),
+});
+
 export const configSchema = z.looseObject({
     theme: z.string().optional(),
     themeToggle: z.boolean().optional(),
+    appearance: appearanceSchema.optional(),
     headerAutoHide: z.enum(HEADER_AUTO_HIDE).optional(),
     demo: z.boolean().optional(),
     editable: z.boolean().optional(),
@@ -89,10 +120,13 @@ export const configSchema = z.looseObject({
         links: z.array(launcherItem).optional(),
         links_title: z.string().optional(),
     }).optional(),
+    sidebar: sidebar.optional(),
     background: z.looseObject({
         color: z.string().optional(),
         image: z.string().optional(),
         dim: z.number().min(0).max(1).optional(),
+        motion: z.enum(Object.keys(BACKGROUND_MOTIONS)).optional(),
+        weather: z.enum(Object.keys(WEATHER_EFFECTS)).optional(),
     }).optional(),
     services: z.record(z.string(), z.unknown()).optional(),
 }).superRefine((config, ctx) => {
@@ -114,17 +148,17 @@ export const configSchema = z.looseObject({
             ctx.addIssue({ code: 'custom', path: [...pagePath, 'url'], message: 'Iframe pages require a url' });
         }
 
-        (p.cards || []).forEach((c, cardIdx) => {
-            if (c.id === undefined) return;
-            if (seenCardIds.has(c.id)) {
-                ctx.addIssue({
-                    code: 'custom',
-                    path: [...pagePath, 'cards', cardIdx, 'id'],
-                    message: `Duplicate card id "${c.id}"`,
-                });
+        const checkCards = (cards, path) => (cards || []).forEach((c, cardIdx) => {
+            const cardPath = [...path, 'cards', cardIdx];
+            if (c?.id !== undefined) {
+                if (seenCardIds.has(c.id)) {
+                    ctx.addIssue({ code: 'custom', path: [...cardPath, 'id'], message: `Duplicate card id "${c.id}"` });
+                }
+                seenCardIds.add(c.id);
             }
-            seenCardIds.add(c.id);
+            checkCards(childCardsOf(c), cardPath);
         });
+        checkCards(p.cards, pagePath);
     });
 });
 

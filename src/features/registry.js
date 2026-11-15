@@ -1,6 +1,8 @@
 import AppGridCard from './AppGrid/AppGridCard';
 import AppGridEditor from './AppGrid/AppGridEditor';
 import { AppGridInspector, AppGridStage } from '../components/Editor/icons/AppGridStage';
+import ContainerCard from './Container/ContainerCard';
+import ContainerEditor from './Container/ContainerEditor';
 import GitCard from './Git/GitCard';
 import GraphCard from './Graph/GraphCard';
 import GraphEditor from './Graph/GraphEditor';
@@ -32,6 +34,7 @@ import WeatherEditor from './Weather/WeatherEditor';
  */
 export const cardRegistry = {
     appgrid: AppGridCard,
+    container: ContainerCard,
     git: GitCard,
     graph: GraphCard,
     hacontrol: HAControlCard,
@@ -59,8 +62,10 @@ const ALL_SIZES = ['quarter', 'half', '1', '2', '3'];
  * @property {string[]} [sizes] - Sizes edit mode offers, from `quarter`, `half`, `1`, `2`, `3`
  *   (columns). Defaults to `1`, `2` and `3`. A size set in config.yaml is always rendered.
  * @property {Object} [defaults] - Properties of a newly added card, besides `id` and `type`.
- * @property {import('react').ComponentType<{config: Object, onChange: (config: Object) => void}>} [Editor]
+ * @property {import('react').ComponentType<{config: Object, onChange: (config: Object) => void, globalConfig?: Object}>} [Editor]
  *   - Settings form shown in the card editor. Without one the card is edited as YAML only.
+ * @property {boolean} [rows] - The card can be more than one row tall (`rowSpan`, 1 to 3). Its height is
+ *   then set in the Layout tab and by dragging the resize handle down.
  * @property {boolean} [headerIcon] - The card has a header whose icon reads `icon`, `iconColor`
  *   and `iconBackground`. The card editor then shows the real card and edits that icon.
  * @property {{Stage: import('react').ComponentType<Object>, Inspector: import('react').ComponentType<Object>, split?: boolean}} [stage]
@@ -187,6 +192,14 @@ export const cardInfo = {
         description: 'Open pull requests from GitHub, GitLab or Gitea',
         icon: 'lu-GitPullRequest',
         defaults: { repositories: [] },
+    },
+    container: {
+        name: 'Container',
+        description: 'Groups several cards in one panel, drawn a little smaller',
+        icon: 'lu-Group',
+        rows: true,
+        defaults: { colSpan: 2, cards: [] },
+        Editor: ContainerEditor,
     },
     spacer: {
         name: 'Empty Space',

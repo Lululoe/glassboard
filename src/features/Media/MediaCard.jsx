@@ -1,3 +1,5 @@
+import { useCardNotice } from '../../context/notices';
+import { mediaNotices } from '../cardNotices';
 import { useState } from 'react';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
 import Icon from '../../components/Shared/Icon';
@@ -88,6 +90,7 @@ const MediaCard = ({ config = {} }) => {
     fetchEndDate.setDate(fetchEndDate.getDate() + 1);
 
     const { events, error } = useMedia(startDate, fetchEndDate);
+    useCardNotice(mediaNotices(events));
 
     const prevDay = () => setStartDate(d => {
         const n = new Date(d); n.setDate(n.getDate() - 1); return n;

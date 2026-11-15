@@ -43,7 +43,7 @@
 .vac-round {
     width: 44px;
     height: 44px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     display: grid;
     place-items: center;
     flex-shrink: 0;
@@ -131,7 +131,7 @@
 .vac-bar,
 .vac-part-bar {
     height: 6px;
-    border-radius: 4px;
+    border-radius: var(--radius-4);
     background: var(--bg-fill);
     overflow: hidden;
     flex-shrink: 0;
@@ -140,7 +140,7 @@
 .vac-bar > div,
 .vac-part-bar > div {
     height: 100%;
-    border-radius: 4px;
+    border-radius: var(--radius-4);
     background: var(--system-green);
     transition: width 0.5s var(--ease-standard), background var(--duration-standard) var(--ease-standard);
 }
@@ -170,14 +170,14 @@
     grid-auto-columns: minmax(0, 1fr);
     gap: 2px;
     padding: 2px;
-    border-radius: 9px;
+    border-radius: var(--radius-9);
     background: var(--bg-fill);
 }
 
 .vac-seg button {
     min-height: 34px;
     padding: 0 2px;
-    border-radius: 7px;
+    border-radius: var(--radius-7);
     font-size: var(--fs-12);
     font-weight: 600;
     text-align: center;
@@ -200,7 +200,7 @@
     min-height: 38px;
     padding: 0 10px;
     border: 0;
-    border-radius: 9px;
+    border-radius: var(--radius-9);
     background: var(--bg-fill);
     color: var(--text-primary);
     font: inherit;
@@ -250,7 +250,7 @@
     flex-shrink: 0;
     height: 36px;
     padding: 0 13px;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
     background: var(--bg-fill);
     font-size: var(--fs-13);
     font-weight: 600;
@@ -355,7 +355,7 @@
     align-items: center;
     gap: 8px;
     width: 100%;
-    border-radius: 7px;
+    border-radius: var(--radius-7);
     color: var(--text-tertiary);
 }
 
@@ -420,8 +420,8 @@ dialog.vac-overlay:not([open]) {
 
 dialog.vac-overlay::backdrop {
     background: rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(calc(6px * var(--blur-scale)));
+    -webkit-backdrop-filter: blur(calc(6px * var(--blur-scale)));
     animation: vac-fade-in 0.2s ease;
 }
 
@@ -441,7 +441,7 @@ html:has(dialog.vac-overlay[open]) {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-radius: 22px;
+    border-radius: var(--radius-22);
     background: var(--vac-panel-bg);
     border: 0.5px solid var(--border-popup);
     box-shadow: var(--shadow-popup);
@@ -476,7 +476,7 @@ html:has(dialog.vac-overlay[open]) {
 .vac-head-icon {
     width: 40px;
     height: 40px;
-    border-radius: 9px;
+    border-radius: var(--radius-9);
     display: grid;
     place-items: center;
     color: #fff;
@@ -542,7 +542,7 @@ html:has(dialog.vac-overlay[open]) {
     flex: 1;
     min-height: 0;
     position: relative;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
     overflow: hidden;
     background: var(--bg-fill);
 }
@@ -728,7 +728,7 @@ html:has(dialog.vac-overlay[open]) {
     min-height: 32px;
     min-width: 62px;
     padding: 0 12px;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
     background: var(--bg-fill);
     font-size: var(--fs-12);
     font-weight: 600;
@@ -765,7 +765,7 @@ html:has(dialog.vac-overlay[open]) {
 
 .vac-action {
     min-height: 48px;
-    border-radius: 14px;
+    border-radius: var(--radius-14);
     background: var(--bg-fill);
     color: var(--text-primary);
     display: flex;
@@ -792,7 +792,7 @@ html:has(dialog.vac-overlay[open]) {
     .vac-panel.single {
         width: 100%;
         height: 82dvh;
-        border-radius: 22px 22px 0 0;
+        border-radius: var(--radius-22) var(--radius-22) 0 0;
         border-width: 0.5px 0 0;
         animation-name: vac-sheet-in;
         padding-bottom: env(safe-area-inset-bottom);
@@ -802,7 +802,7 @@ html:has(dialog.vac-overlay[open]) {
         display: block;
         width: 36px;
         height: 5px;
-        border-radius: 4px;
+        border-radius: var(--radius-4);
         background: var(--text-tertiary);
         margin: 8px auto 0;
         flex-shrink: 0;

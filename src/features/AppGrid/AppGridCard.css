@@ -195,7 +195,7 @@
     transform: translate(35%, -35%);
     width: calc(var(--icon) * 0.37 * var(--u));
     aspect-ratio: 1 / 1;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     /* iCloud's badge red and shadow */
     background: rgb(255, 48, 55);
     color: #fff;
