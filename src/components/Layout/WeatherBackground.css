@@ -84,7 +84,7 @@
 
 /* ---------- Sun ---------- */
 
-/* The sun stands top right: a warm glow, slowly turning rays and a few lens flares */
+/* The sun stands top right: a warm glow and a few lens flares */
 .weather-sun {
     position: absolute;
     inset: 0;
@@ -100,33 +100,18 @@
     animation: weather-sun-breathe 9s ease-in-out infinite alternate;
 }
 
-.weather-sun-rays {
-    right: -50vmax;
-    top: -50vmax;
-    width: 120vmax;
-    height: 120vmax;
-    background: repeating-conic-gradient(from 0deg, rgba(255, 236, 190, 0.1) 0deg 4deg, transparent 4deg 15deg);
-    mask-image: radial-gradient(closest-side, #000 8%, transparent 70%);
-    -webkit-mask-image: radial-gradient(closest-side, #000 8%, transparent 70%);
-    animation: weather-sun-turn 140s linear infinite;
-}
-
 .weather-flare {
     border-radius: 50%; /* fixed: a lens flare is round in every style */
     background: radial-gradient(closest-side, rgba(255, 240, 210, 0.16), rgba(255, 240, 210, 0.05) 70%, transparent);
     animation: weather-sun-breathe 7s ease-in-out infinite alternate;
 }
 
-.weather-flare:nth-of-type(3) { right: 34vw; top: 30vh; width: 9vmax; height: 9vmax; }
-.weather-flare:nth-of-type(4) { right: 48vw; top: 46vh; width: 4vmax; height: 4vmax; animation-delay: -3s; }
-.weather-flare:nth-of-type(5) { right: 60vw; top: 60vh; width: 14vmax; height: 14vmax; animation-delay: -5s; opacity: 0.6; }
+.weather-flare:nth-of-type(2) { right: 34vw; top: 30vh; width: 9vmax; height: 9vmax; }
+.weather-flare:nth-of-type(3) { right: 48vw; top: 46vh; width: 4vmax; height: 4vmax; animation-delay: -3s; }
+.weather-flare:nth-of-type(4) { right: 60vw; top: 60vh; width: 14vmax; height: 14vmax; animation-delay: -5s; opacity: 0.6; }
 
 :root[data-theme="light"] .weather-sun-glow {
     background: radial-gradient(closest-side, rgba(255, 250, 230, 1), rgba(255, 226, 150, 0.6) 20%, rgba(255, 200, 110, 0.22) 48%, transparent);
-}
-
-@keyframes weather-sun-turn {
-    to { transform: rotate(360deg); }
 }
 
 @keyframes weather-sun-breathe {

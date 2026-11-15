@@ -177,7 +177,7 @@ A web address set in `config.yaml` is used as it is, without downloading it.
   - rain, drizzle and storms: rain running down a misted window, harder the heavier it rains
   - snow: falling snow
   - overcast and fog: clouds drifting across, larger and lower in fog
-  - clear and partly cloudy: the sun with turning rays, with as many clouds as there are; at night, the moon and stars
+  - clear and partly cloudy: the sun with a warm glow and lens flares, with as many clouds as there are; at night, the moon and stars
 
   It checks the weather every 15 minutes. **Effect** in the background editor (`weather` in `config.yaml`) can always
   show one of them instead: `rain`, `snow`, `cover` (clouds) or `sun`. Without a weather card, Live shows nothing.

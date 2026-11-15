@@ -42,9 +42,9 @@ describe('AnimatedBackground', () => {
             expect(fetch).not.toHaveBeenCalled();
         });
 
-        it('shows the sun with its rays, and nothing while there is no weather', async () => {
+        it('shows the sun, and nothing while there is no weather', async () => {
             vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 404, json: async () => ({ error: 'No weather card' }) })));
-            expect(render(<AnimatedBackground background={{ motion: 'weather', weather: 'sun' }} />).container.querySelector('.weather-sun-rays')).not.toBeNull();
+            expect(render(<AnimatedBackground background={{ motion: 'weather', weather: 'sun' }} />).container.querySelector('.weather-sun-glow')).not.toBeNull();
             const { container } = render(<AnimatedBackground background={{ motion: 'weather' }} />);
             await waitFor(() => expect(fetch).toHaveBeenCalled());
             expect(container.querySelector('.weather-scene')).toBeNull();

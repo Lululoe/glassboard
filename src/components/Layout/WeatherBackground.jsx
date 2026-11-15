@@ -57,7 +57,6 @@ const WeatherBackground = ({ fixed = null }) => {
             <div className="weather-veil" />
             {scene.effect === 'sun' && !scene.night && (
                 <div className="weather-sun">
-                    <i className="weather-sun-rays" />
                     <i className="weather-sun-glow" />
                     <i className="weather-flare" />
                     <i className="weather-flare" />
