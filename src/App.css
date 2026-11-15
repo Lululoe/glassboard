@@ -130,7 +130,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    /* Below the header bar (100), its menus and the sidebar (90), so their buttons are never
+       covered by an arrow; above the cards */
+    z-index: 80;
     cursor: pointer;
     transition: background var(--duration-standard) var(--ease-standard), opacity var(--duration-standard) var(--ease-standard);
     opacity: 0;

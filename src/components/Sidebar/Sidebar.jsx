@@ -14,7 +14,7 @@ const CLOSE_MS = 160;
 /**
  * @typedef {import('./sidebarModel').Entry} Entry
  * @typedef {import('./sidebarModel').EntryPath} EntryPath
- * @typedef {{key: string, index: number, name: string, hidden?: boolean}} SidebarPage
+ * @typedef {{key: string, index: number, name: string, hidden?: boolean, excluded?: boolean}} SidebarPage
  */
 
 /**
@@ -111,7 +111,11 @@ const Sidebar = ({ pages, activeIndex, onNavigate, items: stored, editing = fals
     const byKey = useMemo(() => new Map(pages.map(p => [p.key, p])), [pages]);
     const items = useMemo(() => normalizeItems(pages.map(p => p.key), stored), [pages, stored]);
     const activeKey = pages.find(p => p.index === activeIndex)?.key;
-    const shown = (entry) => editing || !byKey.get(/** @type {any} */ (entry).page)?.hidden;
+    // Pages hidden by the URL never show; pages hidden in the config show only while editing
+    const shown = (entry) => {
+        const page = byKey.get(/** @type {any} */ (entry).page);
+        return !page?.excluded && (editing || !page?.hidden);
+    };
     const folderById = (id) => {
         const found = id ? items.find(e => isFolder(e) && e.folder === id) : undefined;
         return found && isFolder(found) ? found : null;

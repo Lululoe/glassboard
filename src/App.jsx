@@ -3,6 +3,8 @@ import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useConfig } from './hooks/useConfig';
 import { usePageNavigation } from './hooks/usePageNavigation';
 import { useSwipe } from './hooks/useSwipe';
+import { useScrollingClass } from './hooks/useScrollingClass';
+import { excludeUrlHiddenPages, hiddenPagesFromUrl } from './lib/urlHiddenPages';
 import { ThemeProvider } from './context/ThemeContext';
 import { IconBackgroundsContext } from './context/iconBackgrounds';
 import { PageActiveContext } from './context/pageActive';
@@ -56,11 +58,14 @@ function Dashboard({ config }) {
     }, [config]);
 
     const layout = useDashboardEditing(config, configPages);
+    // Pages hidden with the `hide` URL parameter, read once when the dashboard opens
+    const urlHidden = useMemo(() => hiddenPagesFromUrl(window.location.search), []);
     // Pages added, renamed or deleted in edit mode show right away
-    const pages = layout.withDraftPages(configPages);
+    const pages = excludeUrlHiddenPages(layout.withDraftPages(configPages), urlHidden);
     const { pageIndex, goTo, goToKey, next, prev, hasNext, hasPrev } = usePageNavigation(pages);
     const swipeHandlers = useSwipe({ onSwipeLeft: next, onSwipeRight: prev, threshold: 75 });
     const contentRef = useRef(null);
+    useScrollingClass();
 
     // The header menu being edited shows wherever the saved one would, also in app grids that follow it
     const liveConfig = useMemo(
@@ -86,7 +91,7 @@ function Dashboard({ config }) {
     const editable = config.editable !== false && !!activePage && activePage.type !== 'iframe';
     const sidebarOn = layout.sidebar?.enabled === true;
     const sidebarPages = useMemo(
-        () => pages.map((page, idx) => ({ key: pageKey(page, idx), index: idx, name: page.name || String(page.id ?? idx + 1), hidden: !!page.hidden })),
+        () => pages.map((page, idx) => ({ key: pageKey(page, idx), index: idx, name: page.name || String(page.id ?? idx + 1), hidden: !!page.hidden, excluded: !!page.excluded })),
         [pages],
     );
     const sidebarItems = normalizeItems(sidebarPages.map(p => p.key), layout.sidebar?.items);
@@ -100,7 +105,7 @@ function Dashboard({ config }) {
      */
     const pageInDirection = (from, direction) => {
         const target = pages[from + direction];
-        return target && target.type !== 'iframe' ? from + direction : -1;
+        return target && target.type !== 'iframe' && !target.excluded ? from + direction : -1;
     };
 
     const onKeyDown = useEffectEvent((e) => {
@@ -174,13 +179,14 @@ function Dashboard({ config }) {
                 )}
 
                 <div className="app-content" ref={contentRef}>
-                    {hasPrev && (
+                    {/* With the sidebar, it takes over from the arrows */}
+                    {hasPrev && !sidebarOn && (
                         <button type="button" className="button-reset nav-zone nav-zone-left" onClick={prev} aria-label="Previous page">
                             <ChevronLeft size={48} aria-hidden="true" />
                         </button>
                     )}
 
-                    {pages.map((page, idx) => (
+                    {pages.map((page, idx) => !page.excluded && (
                         <div
                             key={page.id ?? idx}
                             className={`scroll-content ${idx === pageIndex ? 'page-active' : 'page-hidden'}`}
@@ -225,7 +231,7 @@ function Dashboard({ config }) {
                         </div>
                     ))}
 
-                    {hasNext && (
+                    {hasNext && !sidebarOn && (
                         <button type="button" className="button-reset nav-zone nav-zone-right" onClick={next} aria-label="Next page">
                             <ChevronRight size={48} aria-hidden="true" />
                         </button>
@@ -358,9 +364,9 @@ function Dashboard({ config }) {
                     )}
                 </IconBackgroundsContext>
 
-                {((pages.length > 1 && !sidebarOn) || layout.editing) && (
+                {((pages.filter(p => !p.excluded).length > 1 && !sidebarOn) || layout.editing) && (
                     <nav className={`page-indicators${layout.editing ? ' is-editing' : ''}`} aria-label="Pages">
-                        {pages.map((page, idx) => (!page.hidden || layout.editing) && (
+                        {pages.map((page, idx) => !page.excluded && (!page.hidden || layout.editing) && (
                             <button
                                 type="button"
                                 key={page.id ?? idx}

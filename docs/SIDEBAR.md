@@ -17,7 +17,7 @@ sidebar:
 ```
 
 That is all it needs. Every page shows with the first letter of its name, in the order of the dashboard.
-Hidden pages (`hidden: true`) are left out, except in edit mode.
+Hidden pages (`hidden: true`) are left out, except in edit mode. Pages hidden with the `hide` URL parameter (`?hide=servers,media`) are always left out.
 
 ## Arranging icons
 
