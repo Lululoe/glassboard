@@ -9,8 +9,16 @@ import { readLayout } from '../layout.js';
 import { createApp } from '../app.js';
 import { listenOnLoopback } from '../testServer.js';
 
-// Saving reloads the config from disk; keep the test config in memory instead
-vi.mock('../config.js', async (importOriginal) => ({ ...await importOriginal(), loadConfig: vi.fn() }));
+// Saving reloads the config from disk; keep the test config in memory instead. Editing is off
+// unless config.yaml turns it on, so the test configs turn it on unless they say otherwise.
+vi.mock('../config.js', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        loadConfig: vi.fn(),
+        setConfig: (config, base = config) => actual.setConfig({ editable: true, ...config }, { editable: true, ...base }),
+    };
+});
 
 const put = (server, body) => request(server).put('/api/config/appearance').send(body);
 const putLayout = (server, body) => request(server).put('/api/config/layout').send(body);

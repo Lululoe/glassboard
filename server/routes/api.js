@@ -61,9 +61,15 @@ router.get('/icons/mdi/:file', async (req, res, next) => {
     }
 });
 
-router.all('/', async (req, res, next) => {
+/**
+ * The service endpoint takes only a JSON POST body, never URL parameters. Some services change
+ * things (lights, thermostats, media players), and a browser sends a GET, or a form POST, to any
+ * address another site puts in the page; a cross-site JSON POST needs CORS, which isn't enabled.
+ */
+router.post('/', async (req, res, next) => {
     try {
-        const params = { ...req.query, ...req.body };
+        if (!req.is('application/json')) throw new HttpError(415, 'Send the request as JSON');
+        const params = { ...req.body };
         const { service } = params;
 
         if (!service) throw new HttpError(400, 'Service parameter required');

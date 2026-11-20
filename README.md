@@ -52,7 +52,7 @@ This project was born out of a desire for a dashboard that didn't just function 
 
 Configuration is managed through `config.yaml` (layout), `services.yaml` (secrets), and an optional `theme.yaml` (styles) in the root directory. Changes are picked up without a restart, and open dashboards reload automatically.
 
-Cards can also be moved, resized, edited, added and removed in the browser: long-press a card or click the pencil button in the header. These changes are saved to `layout.yaml`, so `config.yaml` is never rewritten. There is no login yet; set `editable: false` on dashboards others can reach. See [Editing the Dashboard](docs/CARD_CONFIGURATION.md#editing-the-dashboard).
+Cards can also be moved, resized, edited, added and removed in the browser: long-press a card or click the pencil button in the header. These changes are saved to `layout.yaml`, so `config.yaml` is never rewritten. Editing is off by default because there is no login yet: set `editable: true` in `config.yaml` to turn it on, and only on dashboards that strangers can't reach. See [Editing the Dashboard](docs/CARD_CONFIGURATION.md#editing-the-dashboard).
 
 ### Structure (`config.yaml`)
 ```yaml
@@ -117,6 +117,8 @@ This project uses a **Backend-for-Frontend (BFF)** architecture.
 -   **Sanitized Config**: The frontend receives a stripped-down version of the configuration.
 -   **Proxying**: All requests to internal services (Sonarr, HA, etc.) are proxied and validated by the Node.js server. Only the entities, actions and repositories listed in `config.yaml` can be reached.
 -   **No authentication**: The dashboard itself has no login. Run it on a trusted network or behind a reverse proxy that handles authentication.
+-   **Editing is opt-in**: Edit mode stays off until `editable: true` is set, since whoever can edit cards decides which Home Assistant entities and actions the dashboard may control.
+-   **No cross-site calls**: The service endpoint only takes JSON `POST` requests, so another website can't make your browser switch lights through a link or image.
 
 ## Documentation
 All documentation is hosted on the [Glassboard GitHub Wiki](https://github.com/Lululoe/glassboard/wiki).

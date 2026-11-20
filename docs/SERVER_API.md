@@ -28,7 +28,10 @@ Outside production (`NODE_ENV !== 'production'`) the body also contains a `stack
 ---
 
 ## 1. Service API
-**Endpoint**: `POST /api` (JSON body) or `GET /api` (query parameters)
+**Endpoint**: `POST /api` with a JSON body (`Content-Type: application/json`)
+
+URL parameters are ignored, other content types answer `415`, and `GET /api` answers `404`: some services
+change things, so they can't be reached through a link, an image or a form on another website.
 **Description**: Single entry point for all dashboard services. Dispatch is based on the `service` parameter.
 
 | Name | Type | Description |
@@ -242,7 +245,7 @@ A `config` event is sent whenever `config.yaml`, `services.yaml`, `theme.yaml` o
 dashboards reload their configuration when they receive it.
 
 ## 4. Layout API
-Used by edit mode to store the dashboard in `layout.yaml`. Both endpoints answer `403` when `editable: false` is
+Used by edit mode to store the dashboard in `layout.yaml`. Both endpoints answer `403` unless `editable: true` is
 set, and the config reloads right away.
 
 ### `PUT /api/config/layout`

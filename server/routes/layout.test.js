@@ -10,8 +10,16 @@ import { readLayout } from '../layout.js';
 import { createApp } from '../app.js';
 import { listenOnLoopback } from '../testServer.js';
 
-// Saving reloads the config from disk; keep the test config in memory instead
-vi.mock('../config.js', async (importOriginal) => ({ ...await importOriginal(), loadConfig: vi.fn() }));
+// Saving reloads the config from disk; keep the test config in memory instead. Editing is off
+// unless config.yaml turns it on, so the test configs turn it on unless they say otherwise.
+vi.mock('../config.js', async (importOriginal) => {
+    const actual = await importOriginal();
+    return {
+        ...actual,
+        loadConfig: vi.fn(),
+        setConfig: (config, base = config) => actual.setConfig({ editable: true, ...config }, { editable: true, ...base }),
+    };
+});
 
 const config = () => ({
     pages: [
@@ -94,6 +102,17 @@ describe('layout API', () => {
         setConfig({ ...config(), editable: false });
         expect((await put(server, { pages: { home: [], admin: [] } })).status).toBe(403);
         expect((await request(server).delete('/api/config/layout')).status).toBe(403);
+    });
+
+    it('refuses every change when config.yaml does not turn editing on', async () => {
+        setConfig({ ...config(), editable: undefined });
+        const card = { id: 'evil', type: 'hacontrol', data: { entities: [{ entity_id: 'lock.front_door', on_action: { service: 'lock.unlock' } }] } };
+        expect((await put(server, { pages: { home: [card], admin: [] } })).status).toBe(403);
+        expect((await request(server).delete('/api/config/layout')).status).toBe(403);
+        expect((await request(server).post('/api/config/layout/restore')).status).toBe(403);
+        expect((await request(server).post('/api/config/background/download').send({ url: 'http://192.168.1.1/' })).status).toBe(403);
+        expect((await request(server).put('/api/config/appearance').send({ style: 'liquid' })).status).toBe(403);
+        expect(readLayout().pages).toEqual({});
     });
 
     it('resets the layout', async () => {

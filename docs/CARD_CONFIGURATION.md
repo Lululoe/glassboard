@@ -46,6 +46,7 @@ support one to three wide, `container` also one to three rows tall, `spacer` als
 `config.yaml` is always used, even if edit mode would not offer it.
 
 ## Editing the Dashboard
+Edit mode is off until `editable: true` is set at the top level of `config.yaml` (see the security note below).
 Long-press a card, or click the pencil button in the header, to edit the dashboard. The cards stop reacting to
 taps, and the grid's tiles are drawn behind them, with one free row below the last card, so you can see where cards
 can go:
@@ -222,13 +223,17 @@ card is saved, the server keeps the values it already has.
 
 > **Security**: the dashboard has no login yet. While editing is on, anyone who can open the dashboard can change
 > any card, including Home Assistant entities and actions and the URLs the server connects to (sometimes with
-> credentials from `services.yaml`). Only expose Glassboard on networks you trust, or turn editing off.
+> credentials from `services.yaml`). That's why editing is off by default. Only turn it on where strangers can't
+> reach Glassboard.
 
-Set `editable: false` at the top level of `config.yaml` to turn edit mode off, e.g. for a wall display:
+Set `editable: true` at the top level of `config.yaml` to turn edit mode on:
 
 ```yaml
-editable: false
+editable: true
 ```
+
+Without it, the pencil button is hidden and the server refuses every change from the browser (layout, theme,
+background pictures).
 
 With Docker, mount a `layout.yaml` so edits survive a container rebuild (see `docker-compose.yml`), and a
 `backgrounds` folder for uploaded background pictures. The paths can also be changed with the `LAYOUT_FILE` and

@@ -75,6 +75,21 @@ describe('API app', () => {
         expect(res.headers['access-control-allow-origin']).toBeUndefined();
     });
 
+    it('ignores service calls another site could make: GET, URL parameters and form posts', async () => {
+        const get = await request(server).get('/api?service=transmission');
+        expect(get.status).toBe(404);
+
+        const form = await request(server).post('/api?service=transmission').type('form').send('service=transmission');
+        expect(form.status).toBe(415);
+
+        const text = await request(server).post('/api?service=transmission').set('Content-Type', 'text/plain').send('{"service":"transmission"}');
+        expect(text.status).toBe(415);
+
+        // URL parameters are ignored even on a JSON post
+        const query = await request(server).post('/api?service=transmission').send({});
+        expect(query.status).toBe(400);
+    });
+
     it('serves the sanitized config without caching', async () => {
         const res = await request(server).get('/api/config');
         expect(res.status).toBe(200);

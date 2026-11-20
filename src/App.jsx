@@ -88,7 +88,7 @@ function Dashboard({ config }) {
     const headerEntities = useMemo(() => headerWidgetEntityIds(config), [config]);
     // Single pages can have their own header only in configs with `pages`
     const activePageName = Array.isArray(config.pages) && activePage ? activePage.name || String(activePage.id ?? pageIndex + 1) : undefined;
-    const editable = config.editable !== false && !!activePage && activePage.type !== 'iframe';
+    const editable = config.editable === true && !!activePage && activePage.type !== 'iframe';
     const sidebarOn = layout.sidebar?.enabled === true;
     const sidebarPages = useMemo(
         () => pages.map((page, idx) => ({ key: pageKey(page, idx), index: idx, name: page.name || String(page.id ?? idx + 1), hidden: !!page.hidden, excluded: !!page.excluded })),
@@ -162,7 +162,7 @@ function Dashboard({ config }) {
                         onEditBackground: () => layout.openBackgroundEditor(),
                         onEditPage: () => layout.openPageSettings(activeKey),
                         sidebar: sidebarOn,
-                        onToggleSidebar: config.editable !== false ? () => layout.setSidebarEnabled(!sidebarOn) : undefined,
+                        onToggleSidebar: config.editable === true ? () => layout.setSidebarEnabled(!sidebarOn) : undefined,
                     }}
                 />
 
@@ -212,7 +212,7 @@ function Dashboard({ config }) {
                                                 globalConfig={liveConfig}
                                                 editing={layout.editing && idx === pageIndex}
                                                 onLayoutChange={(cards) => layout.change(pageKey(page, idx), cards)}
-                                                onRequestEdit={config.editable !== false ? layout.start : undefined}
+                                                onRequestEdit={config.editable === true ? layout.start : undefined}
                                                 onExitEdit={layout.finish}
                                                 onEditCard={(index) => layout.openEditor(pageKey(page, idx), index)}
                                                 onEditIcon={(index) => layout.openIconEditor(pageKey(page, idx), index)}
