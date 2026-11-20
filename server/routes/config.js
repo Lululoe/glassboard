@@ -169,10 +169,12 @@ const layoutBody = z.object({
 });
 
 /**
- * Throws a 403 HttpError when editing is turned off in config.yaml.
+ * Throws a 403 HttpError unless editing is turned on with `editable: true` in config.yaml. Editing is
+ * off by default because the dashboard has no login: whoever can edit cards can choose which Home
+ * Assistant entities and actions the dashboard may control, and which URLs the server connects to.
  */
 function assertEditable() {
-    if (getBaseConfig().editable === false) throw new HttpError(403, 'Editing is disabled in config.yaml');
+    if (getBaseConfig().editable !== true) throw new HttpError(403, 'Editing is off; set editable: true in config.yaml to turn it on');
 }
 
 /**

@@ -41,7 +41,7 @@ appearance:
 ```
 
 A style chosen in the Theme menu is saved in `layout.yaml` and wins over `config.yaml`; picking the style of
-`config.yaml` again removes it from `layout.yaml`. When `editable: false` is set, the style can only be set in
+`config.yaml` again removes it from `layout.yaml`. Unless `editable: true` is set, the style can only be set in
 `config.yaml`. `themeToggle: false` hides the Theme button.
 
 ### Transparency

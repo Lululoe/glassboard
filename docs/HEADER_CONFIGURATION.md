@@ -66,7 +66,7 @@ headerAutoHide: with-page-header
 ## Edit Button
 The pencil button turns on edit mode, where cards can be moved, resized, edited, added and removed; the header
 then shows **+** (add a card), the header menu's editor, **Reset** and **Done**. See [Editing the Dashboard](CARD_CONFIGURATION#editing-the-dashboard).
-The button is hidden on iframe pages and when `editable: false` is set.
+The button is hidden on iframe pages and unless `editable: true` is set.
 
 ---
 
