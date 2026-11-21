@@ -5,6 +5,8 @@ import { graphSettings, hoursOf, makeBuckets, slotsFor } from './haGraph.js';
 import { robotsOf, simplifyValetudoMap } from './haVacuum.js';
 import { printerOf } from './haPrinter.js';
 import { cleanTemplateOutput, findHeaderTemplate, headerWidgetEntityIds } from '../../shared/pageHeader.js';
+import { normalizeKiosk } from '../../shared/kiosk.js';
+import { kioskCall } from './haKiosk.js';
 import {
     climateCall, controlCalls, fallbackIcon, getClimateConfigs, getControlEntityIds, getMediaEntityIds, mediaCall,
 } from './homeassistant.js';
@@ -823,12 +825,82 @@ function headerSensorState(entityId) {
     };
 }
 
+/** The kiosk's brightness and screen in the demo, changed by its control center. */
+const kioskStore = { brightness: 60, screen: true };
+
+/** Entities the kiosk options offer in the demo: [entity id, name, device class, unit]. */
+const DEMO_KIOSK_ENTITIES = [
+    ['media_player.kitchen_speaker', 'Kitchen Speaker'],
+    ['media_player.living_room_speaker', 'Living Room Speaker'],
+    ['media_player.tablet', 'Tablet'],
+    ['switch.tablet_screen', 'Tablet Screen'],
+    ['switch.tablet_mute', 'Tablet Microphone Mute'],
+    ['switch.coffee_machine', 'Coffee Machine'],
+    ['input_boolean.guest_mode', 'Guest Mode'],
+    ['light.kitchen_ceiling', 'Kitchen Ceiling'],
+    ['light.kitchen_shelf', 'Kitchen Shelf'],
+    ['fan.extractor_hood', 'Extractor Hood'],
+    ['binary_sensor.kitchen_presence', 'Kitchen Presence', 'occupancy'],
+    ['binary_sensor.tablet_face_looking', 'Tablet Face Looking at Screen'],
+    ['sensor.kitchen_illuminance', 'Kitchen Illuminance', 'illuminance', 'lx'],
+    ['number.tablet_brightness', 'Tablet Brightness'],
+    ['weather.home', 'Home'],
+];
+
+/**
+ * The entities the kiosk options offer in the demo.
+ * @returns {Array<{entity_id: string, name: string, device_class?: string, unit?: string}>} The entities.
+ */
+export function demoKioskEntities() {
+    return DEMO_KIOSK_ENTITIES.map(([id, name, deviceClass, unit]) => ({
+        entity_id: id, name, ...(deviceClass ? { device_class: deviceClass } : {}), ...(unit ? { unit } : {}),
+    }));
+}
+
+/**
+ * The state of one of the kiosk's own entities in the demo: someone is always there but not
+ * looking, the light follows the time of day, and the brightness and screen keep what was set.
+ * @param {string} entityId - The entity.
+ * @returns {Object|null} Its state, or null when it isn't one of the kiosk's own entities.
+ */
+function kioskState(entityId) {
+    const kiosk = normalizeKiosk(getConfig().kiosk);
+    const hour = new Date().getHours();
+    const state = (value, attributes = {}) => ({ entity_id: entityId, state: String(value), attributes: { friendly_name: titleOf(entityId), ...attributes } });
+    if (entityId === kiosk.presence_entity) return state('on', { device_class: 'occupancy' });
+    if (entityId === kiosk.face_entity) return state('off');
+    if (entityId === kiosk.illuminance_entity) return state(hour >= 7 && hour < 20 ? 240 : 2, { unit_of_measurement: 'lx', device_class: 'illuminance' });
+    if (entityId === kiosk.brightness_entity) return state(kioskStore.brightness, { min: 0, max: 100, step: 1 });
+    if (entityId === kiosk.screen_entity) return state(kioskStore.screen ? 'on' : 'off');
+    if (entityId === kiosk.weather_entity) {
+        return state('partlycloudy', { temperature: round(drift(4, 11, 1800), 0), temperature_unit: '°C' });
+    }
+    return null;
+}
+
+/**
+ * Carries out a control center action in the demo.
+ * @param {Object} params - The action (see kioskCall).
+ * @returns {Array<Object>} The changed state.
+ */
+function kioskAction(params) {
+    const kiosk = normalizeKiosk(getConfig().kiosk);
+    const { service, body } = kioskCall(params, { attributes: { min: 0, max: 100 } });
+    if (params.action === 'brightness') kioskStore.brightness = body.value;
+    else if (params.action === 'screen') kioskStore.screen = service === 'turn_on';
+    else if (params.action === 'toggle') haStates.set(body.entity_id, service === 'turn_on' ? 'on' : 'off');
+    const id = params.action === 'brightness' ? kiosk.brightness_entity : body.entity_id;
+    return [kioskState(id) ?? entityState(id, 0)];
+}
+
 function entityState(entityId, index) {
     if (/^(sensor|number|input_number)\./.test(entityId) && headerWidgetEntityIds(getConfig()).has(entityId)) {
         return headerSensorState(entityId);
     }
     if (thermostatCards().some(card => card.entity_id === entityId)) return climateState(entityId);
     if (getMediaEntityIds().has(entityId)) return mediaState(entityId);
+    const kioskOwn = kioskState(entityId);
+    if (kioskOwn) return kioskOwn;
     if (entityId.startsWith('group.')) return groupState(entityId);
     if (entityId.startsWith('light.')) {
         if (!lightStore.has(entityId)) addLight(entityId, titleOf(entityId), 'color', index % 3 !== 1, 80, { ct: 3000 });
@@ -840,7 +912,7 @@ function entityState(entityId, index) {
         const on = index % 3 !== 1;
         haStates.set(entityId, on ? (entity?.on_state || 'on') : (entity?.off_state || 'off'));
     }
-    return { entity_id: entityId, state: haStates.get(entityId), attributes: {} };
+    return { entity_id: entityId, state: haStates.get(entityId), attributes: { friendly_name: titleOf(entityId) } };
 }
 
 /**
@@ -874,6 +946,7 @@ function homeassistant(params) {
     if (endpoint === 'printer_action') return demoPrinterAction(params);
     if (endpoint === 'climate') return climate(params);
     if (endpoint === 'media') return mediaAction(params);
+    if (endpoint === 'kiosk') return kioskAction(params);
     if (endpoint === 'details') return details(params);
     if (endpoint === 'control') return control(params);
     if (endpoint === 'services') {
@@ -970,6 +1043,8 @@ export function resetDemoState() {
     robotStore.clear();
     printerStore.clear();
     haStates.clear();
+    kioskStore.brightness = 60;
+    kioskStore.screen = true;
     climateStates.clear();
     mediaStates.clear();
     lightStore.clear();

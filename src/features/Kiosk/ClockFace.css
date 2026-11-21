@@ -1,0 +1,300 @@
+/* Kiosk clock faces. Sizes follow the face's own box (--u is 1% of its width on a 3:2 screen),
+   so the same face works full screen and as a small preview. Night colours are dark red on black. */
+.kiosk-clock-face {
+    --u: min(1cqw, 1.5cqh);
+    --kc-ink: #fff;
+    --kc-ink-2: rgba(255, 255, 255, 0.62);
+    --kc-ink-3: rgba(255, 255, 255, 0.35);
+    --kc-accent: #ff9f0a;
+    --kc-panel: #141416;
+    position: absolute;
+    inset: 0;
+    container-type: size;
+    overflow: hidden;
+    color: var(--kc-ink);
+    background: #000;
+    font-family: var(--font-family);
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.kiosk-clock-face.is-night {
+    --kc-ink: #b3241b;
+    --kc-ink-2: #6e140f;
+    --kc-ink-3: #3a0b08;
+    --kc-accent: #6e140f;
+    --kc-panel: #0a0202;
+    background: #000;
+}
+
+.kc-weather {
+    display: inline-flex;
+    align-items: center;
+    gap: calc(var(--u) * 1);
+    color: var(--kc-ink-2);
+}
+
+.kc-weather-icon {
+    width: 1.3em;
+    height: 1.3em;
+    color: var(--kc-accent);
+}
+
+/* ===== Lock Screen: over the blurred dashboard by day ===== */
+.kc-lockscreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(calc(40px * var(--blur-scale))) saturate(1.2);
+    -webkit-backdrop-filter: blur(calc(40px * var(--blur-scale))) saturate(1.2);
+}
+
+.kc-lockscreen.is-night {
+    background: #000;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.kc-lockscreen .kc-date {
+    margin-top: calc(var(--u) * 8);
+    font-size: calc(var(--u) * 2.4);
+    font-weight: 600;
+    color: var(--kc-ink-2);
+}
+
+.kc-lockscreen .kc-time {
+    font-size: calc(var(--u) * 21);
+    font-weight: 700;
+    line-height: 0.95;
+    letter-spacing: -0.035em;
+    color: var(--kc-ink);
+}
+
+.kc-widgets {
+    position: absolute;
+    bottom: calc(var(--u) * 6);
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: calc(var(--u) * 1.6);
+}
+
+.kc-widget {
+    padding: calc(var(--u) * 1.3) calc(var(--u) * 2);
+    border-radius: calc(var(--u) * 2.2);
+    background: rgba(255, 255, 255, 0.12);
+    font-size: calc(var(--u) * 1.9);
+    font-weight: 600;
+}
+
+.kc-widget .kc-weather {
+    color: var(--kc-ink);
+}
+
+.is-night .kc-widget {
+    background: none;
+    box-shadow: inset 0 0 0 calc(var(--u) * 0.12) var(--kc-ink-3);
+}
+
+/* ===== Analog ===== */
+.kc-analog {
+    display: grid;
+    place-items: center;
+}
+
+.kc-dial {
+    height: 86%;
+    width: auto;
+    max-width: 92%;
+}
+
+.kc-tick { stroke: #555; stroke-width: 1; stroke-linecap: round; }
+.kc-tick-hour { stroke: var(--kc-ink); stroke-width: 2.4; stroke-linecap: round; }
+.kc-hand-hour { stroke: var(--kc-ink); stroke-width: 6; stroke-linecap: round; }
+.kc-hand-minute { stroke: var(--kc-ink); stroke-width: 4; stroke-linecap: round; }
+.kc-hand-second line { stroke: var(--kc-accent); stroke-width: 1.6; stroke-linecap: round; }
+.kc-pin { fill: var(--kc-accent); }
+.kc-pin-hole { fill: #000; }
+.kc-date-window { fill: #1c1c1e; }
+.kc-date-text { fill: var(--kc-accent); font-size: 9px; font-weight: 700; font-family: var(--font-family); }
+
+.is-night .kc-tick { stroke: var(--kc-ink-3); }
+.is-night .kc-tick-hour { stroke: var(--kc-ink-2); }
+.is-night .kc-date-window { fill: var(--kc-ink-3); }
+.is-night .kc-date-text { fill: var(--kc-ink); }
+
+.kc-hand-second {
+    transform-origin: 100px 100px;
+    animation: kc-sweep 60s linear infinite;
+}
+
+@keyframes kc-sweep {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.kc-corner {
+    position: absolute;
+    left: calc(var(--u) * 5);
+    bottom: calc(var(--u) * 4.5);
+    display: grid;
+    gap: calc(var(--u) * 0.4);
+    font-size: calc(var(--u) * 1.6);
+    color: var(--kc-ink-3);
+}
+
+.kc-corner .kc-weather {
+    font-size: calc(var(--u) * 2.2);
+    font-weight: 600;
+    color: var(--kc-ink);
+}
+
+/* ===== StandBy ===== */
+.kc-standby {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: calc(var(--u) * 2);
+    padding: calc(var(--u) * 3);
+}
+
+.kc-panel {
+    min-width: 0;
+    border-radius: calc(var(--u) * 3.6);
+    background: var(--kc-panel);
+    padding: calc(var(--u) * 3);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.kc-standby .kc-time {
+    font-size: calc(var(--u) * 15);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 0.9;
+    background: linear-gradient(160deg, #ffd60a, #ff9f0a 45%, #ff375f);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.kc-standby.is-night .kc-time {
+    background: none;
+    color: var(--kc-ink);
+}
+
+.kc-standby .kc-date {
+    margin-top: calc(var(--u) * 1.6);
+    font-size: calc(var(--u) * 2.2);
+    font-weight: 600;
+    color: var(--kc-ink-2);
+}
+
+.kc-standby .kc-weather {
+    margin-top: calc(var(--u) * 1);
+    font-size: calc(var(--u) * 1.8);
+}
+
+.kc-month-name {
+    margin-bottom: calc(var(--u) * 1.4);
+    font-size: calc(var(--u) * 1.8);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #ff453a;
+}
+
+.is-night .kc-month-name { color: var(--kc-ink); }
+
+.kc-month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: calc(var(--u) * 0.6) calc(var(--u) * 0.2);
+    text-align: center;
+    font-size: calc(var(--u) * 1.8);
+    font-weight: 600;
+}
+
+.kc-month-grid > span {
+    display: grid;
+    place-items: center;
+    height: calc(var(--u) * 3.4);
+}
+
+.kc-month-dow {
+    font-size: calc(var(--u) * 1.3);
+    color: var(--kc-ink-3);
+}
+
+.kc-month-other { color: rgba(255, 255, 255, 0.22); }
+.is-night .kc-month-other { color: var(--kc-ink-3); }
+
+.kc-month-today {
+    width: calc(var(--u) * 3.4);
+    margin: 0 auto;
+    border-radius: var(--radius-round);
+    background: #ff453a;
+    color: #fff;
+}
+
+.is-night .kc-month-today {
+    background: var(--kc-ink-2);
+    color: #000;
+}
+
+/* ===== Stacked ===== */
+.kc-stacked {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: calc(var(--u) * 6);
+    padding: 0 calc(var(--u) * 6);
+}
+
+.kc-digits {
+    display: grid;
+    font-size: calc(var(--u) * 30);
+    font-weight: 800;
+    line-height: 0.8;
+    letter-spacing: -0.05em;
+}
+
+.kc-digits span:first-child { color: #ffb340; }
+.kc-digits span:last-child { color: rgba(255, 179, 64, 0.6); }
+.is-night .kc-digits span:first-child { color: var(--kc-ink); }
+.is-night .kc-digits span:last-child { color: var(--kc-ink-2); }
+
+.kc-side {
+    display: grid;
+    gap: calc(var(--u) * 3);
+    align-content: center;
+}
+
+.kc-day {
+    font-size: calc(var(--u) * 3.6);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--kc-ink);
+}
+
+.kc-day small {
+    display: block;
+    font-size: calc(var(--u) * 2);
+    font-weight: 500;
+    color: var(--kc-ink-3);
+}
+
+.kc-stacked .kc-weather {
+    font-size: calc(var(--u) * 2);
+}
+
+.kc-stacked .kc-weather-icon { color: #ffb340; }
+.kc-stacked.is-night .kc-weather-icon { color: var(--kc-ink); }
+
+/* Ticks once a second instead of sweeping */
+@media (prefers-reduced-motion: reduce) {
+    .kc-hand-second { animation-timing-function: steps(60); }
+}

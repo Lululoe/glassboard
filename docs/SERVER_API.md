@@ -83,7 +83,7 @@ States are answered from a live copy that the server keeps over Home Assistant's
 REST while that connection is down, so polling is cheap.
 Only entities that appear on an `hacontrol` card, as the `entity_id` of a `thermostat` card, in the first six
 `rooms` of a `thermostats` card, as a player or speaker of a `mediaplayer` card, or in a page header widget
-(`entity_id` and `entity_id2`, for all pages or a single page) can be read. Of
+(`entity_id` and `entity_id2`, for all pages or a single page), or in the [kiosk options](KIOSK_MODE) can be read. Of
 `hacontrol` entities only the configured `on_action` / `off_action` and the control dialog actions below can be called; thermostat entities only accept
 the climate actions below.
 
@@ -102,7 +102,7 @@ the climate actions below.
   - `set_preset_mode` with `preset_mode`; when the card has `presets`, only their `preset` values (`403` otherwise),
   - `set_hvac_mode` with `hvac_mode` `off` or the card's `hvac_mode` (default `heat`).
 - **Control a media player**: `{ "service": "homeassistant", "endpoint": "media", "entity_id": "media_player.living_room", "action": "volume_set", "volume_level": 0.4 }`.
-  The entity must be a player or speaker of a `mediaplayer` card. `action` is one of `media_play_pause`,
+  The entity must be a player or speaker of a `mediaplayer` card, or a kiosk player or `volume_entity`. `action` is one of `media_play_pause`,
   `media_next_track`, `media_previous_track`, `media_seek` (with `seek_position` in seconds), `volume_set` (with
   `volume_level` 0–1), `join` (with `group_members`, other players or speakers of media player cards) and `unjoin`.
 - **Load a graph card**: `{ "service": "homeassistant", "endpoint": "graph", "card_id": "temperatures", "range": "24h" }`
@@ -137,6 +137,14 @@ the climate actions below.
   `403` otherwise); 1–50 entities. `action` is `turn_on` or `turn_off`. Lights are called with `light.turn_on` /
   `light.turn_off` and, for `turn_on`, optional `brightness_pct` (1–100), `color_temp_kelvin` (1000–12000) or
   `hs_color` (`[hue 0–360, saturation 0–100]`); other entities with `homeassistant.turn_on` / `turn_off`.
+- **Kiosk control center**: `{ "service": "homeassistant", "endpoint": "kiosk", "action": "brightness", "value": 60 }`.
+  `action` is one of:
+  - `brightness` with `value` 0–100, the share of the `brightness_entity`'s range (its `min` to `max`), set with
+    `number.set_value` / `input_number.set_value`,
+  - `screen` with `on` (a boolean), which turns the `screen_entity` on or off,
+  - `toggle` with `entity_id` (one of the kiosk `toggles`) and `on`, using `homeassistant.turn_on` / `turn_off`.
+
+  `403` when the entity isn't set in the kiosk options, `400` for other values. See [Kiosk Mode](KIOSK_MODE).
 - **Render a page header template**: `{ "service": "homeassistant", "endpoint": "template", "page": "home", "line": "title" }`
   returns `{ "text": "21.5 °C" }`. `page` is the page key (its id, or its position without one, `default` for
   top-level `cards`) and `line` is `title` or `subtitle`. Only the template that line has in the config is rendered,
@@ -286,6 +294,20 @@ goes back to the sidebar of `config.yaml`; left out, the saved one is kept. One 
   }
 }
 ```
+
+### `PUT /api/config/kiosk`
+Saves the [kiosk options](KIOSK_MODE) in `layout.yaml` (`403` when editing is off). The body has the same keys as
+`kiosk` in `config.yaml`; entity options may be `null` to leave them unset. Unknown keys, entities of the wrong
+domain, more than 12 players or toggles and numbers out of range are rejected with `400`. Options equal to
+`config.yaml`'s are not stored. Answers `{ "ok": true }`; open dashboards pick up the change from the configuration change stream.
+
+### `DELETE /api/config/kiosk`
+Removes the kiosk options saved from the browser, so `config.yaml`'s apply again. Answers `{ "ok": true }`.
+
+### `GET /api/config/entities`
+Lists Home Assistant entities the kiosk options can pick from (`403` when editing is off):
+`{ "domains": ["media_player", ...], "entities": [{ "entity_id", "name", "device_class", "unit" }] }`, sorted by
+entity id. In demo mode a fixed list is returned.
 
 ### `DELETE /api/config/layout`
 Removes everything saved from the browser, so the dashboard goes back to `config.yaml`. A copy is kept as

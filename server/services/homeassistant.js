@@ -7,6 +7,8 @@ import { createHaSocket } from './haSocket.js';
 import { getGraphEntityIds, graphData } from './haGraph.js';
 import { getVacuumEntityIds, vacuumAction, vacuumData, vacuumMap } from './haVacuum.js';
 import { getPrinterEntityIds, printerAction, printerData } from './haPrinter.js';
+import { kioskCall, listedEntities } from './haKiosk.js';
+import { kioskEntityIds, kioskMediaIds } from '../../shared/kiosk.js';
 
 /**
  * Resolves Home Assistant connection settings.
@@ -310,8 +312,8 @@ export function mediaPlayersOf(card) {
 }
 
 /**
- * Collects the media player entities of all media player cards: their players and the
- * speakers listed for grouping and volume.
+ * Collects the media player entities of all media player cards (their players and the
+ * speakers listed for grouping and volume) and those of kiosk mode.
  * @returns {Set<string>} Allowed media player entity ids.
  */
 export function getMediaEntityIds() {
@@ -324,6 +326,7 @@ export function getMediaEntityIds() {
             if (id) ids.add(id);
         });
     });
+    kioskMediaIds(getConfig().kiosk).forEach(id => ids.add(id));
     return ids;
 }
 
@@ -396,7 +399,8 @@ export async function fetchArtwork(entityId) {
 }
 
 /**
- * Collects every entity id referenced by hacontrol, thermostat, media player, graph, vacuum and printer cards.
+ * Collects every entity id referenced by hacontrol, thermostat, media player, graph, vacuum and printer cards,
+ * page header widgets and kiosk mode.
  * Only these entities may be read through the API.
  * @returns {Set<string>} Allowed entity ids.
  */
@@ -414,6 +418,7 @@ export function getValidEntityIds() {
     getPrinterEntityIds().forEach(id => entityIds.add(id));
     // Page header widgets only read their entities' states
     headerWidgetEntityIds(getConfig()).forEach(id => entityIds.add(id));
+    kioskEntityIds(getConfig().kiosk).forEach(id => entityIds.add(id));
     return entityIds;
 }
 
@@ -651,6 +656,14 @@ export async function renderHeaderTemplate(params) {
     }
 }
 
+/**
+ * Lists the Home Assistant entities the kiosk options can pick from (see listedEntities).
+ * @returns {Promise<Array<{entity_id: string, name: string, device_class?: string, unit?: string}>>} The entities.
+ */
+export async function listKioskEntities() {
+    return listedEntities(await haFetch('/states'));
+}
+
 /** Forgets rendered header templates. Intended for tests. */
 export function resetTemplateCache() {
     templateCache.clear();
@@ -677,6 +690,8 @@ export function resetTemplateCache() {
  *   `printer_action` controls it (see printerAction).
  * - `endpoint: 'template'` with `page` and `line` renders that page header line's template
  *   (see renderHeaderTemplate).
+ * - `endpoint: 'kiosk'` with `action` sets the kiosk's brightness, switches its screen or one of
+ *   its control center toggles (see kioskCall).
  * @param {Object} params - Request parameters.
  * @returns {Promise<Object>} Home Assistant response data.
  */
@@ -743,6 +758,15 @@ export async function handleHaRequest(params) {
     if (endpoint === 'vacuum_map') return vacuumMap(params);
     if (endpoint === 'printer') return printerData(params);
     if (endpoint === 'printer_action') return printerAction(params);
+
+    if (endpoint === 'kiosk') {
+        const brightness = getConfig().kiosk?.brightness_entity;
+        const state = params.action === 'brightness' && typeof brightness === 'string'
+            ? await getState(brightness).catch(() => null)
+            : null;
+        const { domain, service, body } = kioskCall(params, state);
+        return haFetch(`/services/${domain}/${service}`, { method: 'POST', body: JSON.stringify(body) });
+    }
 
     if (endpoint === 'media') {
         const { service, body } = mediaCall(params);

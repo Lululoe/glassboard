@@ -123,3 +123,20 @@ export function restoreLayout() {
 export function resetLayout() {
     return send('DELETE', '/api/config/layout');
 }
+
+/**
+ * Saves the kiosk mode options. They replace the `kiosk` of config.yaml.
+ * @param {Object} kiosk - The options.
+ * @returns {Promise<*>} The server response.
+ */
+export function saveKiosk(kiosk) {
+    return send('PUT', '/api/config/kiosk', kiosk);
+}
+
+/**
+ * Lists the Home Assistant entities the kiosk options pick from.
+ * @returns {Promise<Array<{entity_id: string, name: string, device_class?: string, unit?: string}>>} The entities.
+ */
+export async function listKioskEntities() {
+    return (await send('GET', '/api/config/entities')).entities;
+}

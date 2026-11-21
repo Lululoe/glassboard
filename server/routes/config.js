@@ -21,6 +21,10 @@ import { isDemoMode } from '../services/demo.js';
 import { appearanceSchema } from '../configSchema.js';
 import { DEFAULT_TRANSPARENCY } from '../../shared/appearance.js';
 import { BACKGROUND_MOTIONS, WEATHER_EFFECTS } from '../../shared/pageBackground.js';
+import { CLOCK_FACES, KIOSK_ENTITY_FIELDS, MAX_PLAYERS, MAX_TOGGLES, TOGGLE_DOMAINS, isEntityOf } from '../../shared/kiosk.js';
+import { listKioskEntities } from '../services/homeassistant.js';
+import { LISTED_DOMAINS } from '../services/haKiosk.js';
+import { demoKioskEntities } from '../services/demo.js';
 
 const KEEP_ALIVE_INTERVAL = 30 * 1000;
 
@@ -275,6 +279,7 @@ router.put('/layout', (req, res, next) => {
             headerAutoHide: autoHide === (getBaseConfig().headerAutoHide ?? 'never') ? undefined : autoHide,
             sidebar: sidebarSetting && !deepEqual(sidebarSetting, getBaseConfig().sidebar) ? sidebarSetting : undefined,
             appearance: previous.appearance,
+            kiosk: previous.kiosk,
         });
         // A reset keeps a copy of the layout it removed, so its pictures stay until that copy is gone
         const backup = readLayoutBackup();
@@ -371,6 +376,79 @@ router.put('/appearance', (req, res, next) => {
         logger.info('Saved dashboard appearance');
         loadConfig();
         res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * An entity setting of the kiosk options: an id of one of the domains, or null for none.
+ * @param {string[]} domains - Allowed domains.
+ * @returns {import('zod').ZodType} The schema.
+ */
+const kioskEntity = (domains) => z.string().max(255)
+    .refine(id => isEntityOf(id, domains), `must be an entity of ${domains.join(', ')}`)
+    .nullable().optional();
+
+/** The kiosk options as the browser saves them. Its entities become readable, and its toggles switchable. */
+const kioskBody = z.object({
+    media_players: z.array(z.string().max(255).refine(id => isEntityOf(id, ['media_player']), 'must be a media player'))
+        .max(MAX_PLAYERS).optional(),
+    toggles: z.array(z.string().max(255).refine(id => isEntityOf(id, TOGGLE_DOMAINS), `must be an entity of ${TOGGLE_DOMAINS.join(', ')}`))
+        .max(MAX_TOGGLES).optional(),
+    clock: z.enum(CLOCK_FACES).optional(),
+    idle_timeout: z.number().min(5).max(3600).optional(),
+    pause_timeout: z.number().min(0).max(86400).optional(),
+    night_below: z.number().min(0).max(100000).optional(),
+    ...Object.fromEntries(Object.entries(KIOSK_ENTITY_FIELDS).map(([key, domains]) => [key, kioskEntity(domains)])),
+}).strict();
+
+/**
+ * Saves the kiosk mode options: the players that take over the screen, the clock face, the
+ * control center's toggles and the entities that tell whether someone is there. They replace
+ * the `kiosk` of config.yaml. Kiosk mode itself is turned on per screen
+ * with the `kiosk` URL parameter.
+ */
+router.put('/kiosk', (req, res, next) => {
+    try {
+        assertEditable();
+        const parsed = kioskBody.safeParse(req.body);
+        if (!parsed.success) {
+            const issue = parsed.error.issues[0];
+            throw new HttpError(400, `Invalid kiosk options: ${issue.path.join('.')} ${issue.message}`.trim());
+        }
+        const kiosk = Object.fromEntries(Object.entries(parsed.data).filter(([, value]) => value !== null && value !== undefined));
+        writeLayout({ ...readLayout(), kiosk: deepEqual(kiosk, getBaseConfig().kiosk) ? undefined : kiosk });
+        logger.info('Saved kiosk options');
+        loadConfig();
+        res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/** Removes the kiosk options saved in the browser, so those of config.yaml apply again. */
+router.delete('/kiosk', (req, res, next) => {
+    try {
+        assertEditable();
+        writeLayout({ ...readLayout(), kiosk: undefined });
+        logger.info('Removed kiosk options');
+        loadConfig();
+        res.json({ ok: true });
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * Lists the Home Assistant entities the kiosk options pick from: media players, switches,
+ * sensors and the like, by id and name only. Only while editing is on, like the options themselves.
+ */
+router.get('/entities', async (req, res, next) => {
+    try {
+        assertEditable();
+        const entities = isDemoMode() ? demoKioskEntities() : await listKioskEntities();
+        res.set('Cache-Control', 'no-store').json({ domains: LISTED_DOMAINS, entities });
     } catch (err) {
         next(err);
     }

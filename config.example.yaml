@@ -174,6 +174,19 @@ pages:
   #   type: iframe
   #   url: "https://status.example.com"
 
+# Kiosk mode for wall tablets, turned on by opening the dashboard with ?kiosk (see docs/KIOSK_MODE.md)
+# kiosk:
+#   media_players: [media_player.kitchen]
+#   clock: lockscreen
+#   illuminance_entity: sensor.kitchen_illuminance
+#   weather_entity: weather.home
+#   brightness_entity: number.tablet_brightness
+#   toggles: [light.kitchen_ceiling, switch.extractor_hood]
+#   presence_entity: binary_sensor.kitchen_presence
+#   face_entity: binary_sensor.tablet_face_looking
+#   screen_entity: switch.tablet_screen
+#   idle_timeout: 60
+
 launcher:
   apps:
     - name: "Home Assistant"

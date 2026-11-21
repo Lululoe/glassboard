@@ -25,7 +25,7 @@ const formatTime = (seconds) => {
  * @param {string} props.className - Placement class.
  * @returns {JSX.Element} The artwork.
  */
-const Artwork = ({ player, className }) => {
+export const Artwork = ({ player, className }) => {
     const [failed, setFailed] = useState(/** @type {string|null} */ (null));
     const seed = parseInt(hashText(player.title || player.album || player.name), 36);
     const hue = seed % 360;
@@ -56,7 +56,7 @@ const Artwork = ({ player, className }) => {
  * @param {boolean} [props.compact] - Smaller buttons for the half tile.
  * @returns {JSX.Element} The controls.
  */
-const Transport = ({ player, actions, compact = false }) => (
+export const Transport = ({ player, actions, compact = false }) => (
     <div className={`mp-transport${compact ? ' compact' : ''}`}>
         {player.can.previous && (
             <button type="button" className="button-reset mp-skip" aria-label={`Previous on ${player.name}`} disabled={!player.available} onClick={() => actions.previous(player)}>
@@ -89,7 +89,7 @@ const Transport = ({ player, actions, compact = false }) => (
  * @param {Object} [props.actions] - Actions; omit for a display-only bar.
  * @returns {JSX.Element|null} The progress bar.
  */
-const Progress = ({ player, now, actions }) => {
+export const Progress = ({ player, now, actions }) => {
     const ref = useRef(null);
     const drag = useRef(/** @type {{id: number, value: number}|null} */ (null));
     const keyTimer = useRef(/** @type {ReturnType<typeof setTimeout>|undefined} */ (undefined));
@@ -170,7 +170,7 @@ const Progress = ({ player, now, actions }) => {
  * @param {boolean} props.dimmed - Shown faded when the speaker is not in the group.
  * @returns {JSX.Element} The slider.
  */
-const VolumeSlider = ({ speaker, onChange, dimmed }) => {
+export const VolumeSlider = ({ speaker, onChange, dimmed }) => {
     const ref = useRef(null);
     const drag = useRef(/** @type {{id: number, value: number}|null} */ (null));
     const keyTimer = useRef(/** @type {ReturnType<typeof setTimeout>|undefined} */ (undefined));
