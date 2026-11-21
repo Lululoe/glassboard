@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useRef } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useConfig } from './hooks/useConfig';
 import { usePageNavigation } from './hooks/usePageNavigation';
@@ -36,6 +36,10 @@ import Sidebar from './components/Sidebar/Sidebar';
 import SidebarItemEditor from './components/Editor/SidebarItemEditor';
 import { entryAt, isFolder, normalizeItems, replaceEntry, ungroup } from './components/Sidebar/sidebarModel';
 import { NoticePage, NoticesProvider } from './context/NoticeScopes';
+import KioskLayer from './features/Kiosk/KioskLayer';
+import KioskSettings from './features/Kiosk/KioskSettings';
+import { useKioskUser } from './features/Kiosk/useKioskUser';
+import { kioskFromUrl } from '../shared/kiosk.js';
 import './App.css';
 
 /**
@@ -60,6 +64,10 @@ function Dashboard({ config }) {
     const layout = useDashboardEditing(config, configPages);
     // Pages hidden with the `hide` URL parameter, read once when the dashboard opens
     const urlHidden = useMemo(() => hiddenPagesFromUrl(window.location.search), []);
+    // Kiosk mode is turned on per screen with the `kiosk` URL parameter, read once when the dashboard opens
+    const isKiosk = useMemo(() => kioskFromUrl(window.location.search), []);
+    const [kioskSettingsOpen, setKioskSettingsOpen] = useState(false);
+    const kioskUser = useKioskUser(config, isKiosk);
     // Pages added, renamed or deleted in edit mode show right away
     const pages = excludeUrlHiddenPages(layout.withDraftPages(configPages), urlHidden);
     const { pageIndex, goTo, goToKey, next, prev, hasNext, hasPrev } = usePageNavigation(pages);
@@ -112,7 +120,7 @@ function Dashboard({ config }) {
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
         if (layout.editing) {
             if (e.key === 'Escape' && !layout.editor && !layout.adding && !layout.editingMenu && !layout.editingBackground
-                && !layout.pageDialog && !layout.confirmingReset && !layout.editingHeader && !layout.editingSidebar) layout.finish();
+                && !layout.pageDialog && !layout.confirmingReset && !layout.editingHeader && !layout.editingSidebar && !kioskSettingsOpen) layout.finish();
             return;
         }
         if (e.key === 'ArrowRight') next();
@@ -146,6 +154,7 @@ function Dashboard({ config }) {
                     config={liveConfig}
                     autoHide={headerBarHidden}
                     page={pageIndex}
+                    user={kioskUser}
                     edit={{
                         available: editable,
                         active: layout.editing,
@@ -163,6 +172,7 @@ function Dashboard({ config }) {
                         onEditPage: () => layout.openPageSettings(activeKey),
                         sidebar: sidebarOn,
                         onToggleSidebar: config.editable === true ? () => layout.setSidebarEnabled(!sidebarOn) : undefined,
+                        onEditKiosk: config.editable === true ? () => setKioskSettingsOpen(true) : undefined,
                     }}
                 />
 
@@ -237,6 +247,10 @@ function Dashboard({ config }) {
                         </button>
                     )}
                 </div>
+
+                {isKiosk && <KioskLayer config={config} suspended={layout.editing || kioskSettingsOpen} />}
+
+                {kioskSettingsOpen && <KioskSettings kiosk={config.kiosk} onClose={() => setKioskSettingsOpen(false)} />}
 
                 {layout.confirmingReset && (
                     <ConfirmDialog

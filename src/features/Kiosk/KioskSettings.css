@@ -1,0 +1,130 @@
+/* Kiosk options: previews of the player and the clock on the left, the options on the right */
+.kiosk-preview {
+    gap: 4px;
+    padding-bottom: 20px;
+}
+
+.kiosk-preview .card-editor-preview-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.kiosk-preview-screen {
+    position: relative;
+    margin: 8px 24px 12px;
+    aspect-ratio: 3 / 2;
+    max-width: calc(100% - 48px);
+    border-radius: var(--radius-12);
+    overflow: hidden;
+    background: #000;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+    flex-shrink: 0;
+}
+
+.kiosk-preview .card-editor-no-preview {
+    margin: 8px 24px 12px;
+    padding: 0;
+}
+
+.kiosk-preview-night {
+    padding: 2px 10px;
+    border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-size: var(--fs-12);
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    cursor: pointer;
+}
+
+.kiosk-preview-night[aria-pressed="true"] {
+    background: #b3241b;
+}
+
+.kiosk-preview-night:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 2px;
+}
+
+.kiosk-note {
+    margin: 0;
+}
+
+.kiosk-note code {
+    font-family: var(--font-mono);
+    font-size: 0.95em;
+}
+
+.kiosk-checklist {
+    margin-top: 8px;
+    max-height: 240px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: var(--radius-10);
+    background: var(--bg-fill);
+}
+
+.kiosk-check {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 10px;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+}
+
+.kiosk-check + .kiosk-check {
+    border-top: 0.5px solid var(--border-popup);
+}
+
+.kiosk-check input {
+    grid-row: span 2;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--color-primary);
+}
+
+.kiosk-check-name {
+    font-size: var(--fs-14);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kiosk-check-id {
+    font-size: var(--fs-12);
+    color: var(--text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.kiosk-check.is-on .kiosk-check-name {
+    font-weight: 600;
+}
+
+.kiosk-check-empty {
+    margin: 0;
+    padding: 12px;
+    font-size: var(--fs-13);
+    color: var(--text-tertiary);
+}
+
+/* Phones: the previews go above the options */
+@media (max-width: 760px) {
+    .kiosk-settings .card-editor-columns {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .kiosk-settings .card-editor-preview {
+        flex: none;
+        min-width: 0;
+        max-width: none;
+        overflow: visible;
+    }
+}

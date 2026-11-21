@@ -4,6 +4,7 @@
 ### Setup & Configuration
 - [Card Configuration](CARD_CONFIGURATION)
 - [Header Configuration](HEADER_CONFIGURATION)
+- [Kiosk Mode](KIOSK_MODE)
 - [Sidebar](SIDEBAR)
 - [Theming Guide](THEMING)
 

@@ -6,6 +6,25 @@ import {
 import { childCardsOf } from '../shared/containerCards.js';
 import { APPEARANCE_STYLES, isAccent } from '../shared/appearance.js';
 import { BACKGROUND_MOTIONS, WEATHER_EFFECTS } from '../shared/pageBackground.js';
+import { CLOCK_FACES, KIOSK_ENTITY_FIELDS, TOGGLE_DOMAINS, isEntityOf } from '../shared/kiosk.js';
+
+/**
+ * An entity id of one of the domains, for the kiosk options.
+ * @param {string[]} domains - Allowed domains.
+ * @returns {import('zod').ZodType} The schema.
+ */
+const kioskEntity = (domains) => z.string().refine(id => isEntityOf(id, domains), `Use an entity of ${domains.join(', ')}`);
+
+/** Kiosk mode: what takes over the screen, the clock, the control center and the sensors. */
+export const kioskSchema = z.looseObject({
+    media_players: z.array(kioskEntity(['media_player'])).optional(),
+    toggles: z.array(kioskEntity(TOGGLE_DOMAINS)).optional(),
+    clock: z.enum(CLOCK_FACES).optional(),
+    idle_timeout: z.number().min(5).max(3600).optional(),
+    pause_timeout: z.number().min(0).max(86400).optional(),
+    night_below: z.number().min(0).optional(),
+    ...Object.fromEntries(Object.entries(KIOSK_ENTITY_FIELDS).map(([key, domains]) => [key, kioskEntity(domains).optional()])),
+});
 
 /** The dashboard's style, accent color and the transparency of Glass and Liquid Glass cards. */
 export const appearanceSchema = z.object({
@@ -121,6 +140,7 @@ export const configSchema = z.looseObject({
         links_title: z.string().optional(),
     }).optional(),
     sidebar: sidebar.optional(),
+    kiosk: kioskSchema.optional(),
     background: z.looseObject({
         color: z.string().optional(),
         image: z.string().optional(),

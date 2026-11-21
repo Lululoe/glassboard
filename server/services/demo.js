@@ -5,6 +5,8 @@ import { graphSettings, hoursOf, makeBuckets, slotsFor } from './haGraph.js';
 import { robotsOf, simplifyValetudoMap } from './haVacuum.js';
 import { printerOf } from './haPrinter.js';
 import { cleanTemplateOutput, findHeaderTemplate, headerWidgetEntityIds } from '../../shared/pageHeader.js';
+import { normalizeKiosk } from '../../shared/kiosk.js';
+import { kioskCall } from './haKiosk.js';
 import {
     climateCall, controlCalls, fallbackIcon, getClimateConfigs, getControlEntityIds, getMediaEntityIds, mediaCall,
 } from './homeassistant.js';
@@ -823,12 +825,121 @@ function headerSensorState(entityId) {
     };
 }
 
+/**
+ * The kiosk's brightness and screen in the demo, changed by its control center, and when the
+ * demo person logged in (null while logged out; they log in again a minute after logging out).
+ */
+const kioskStore = { brightness: 60, screen: true, loggedInAt: Date.now(), loggedOutAt: 0 };
+
+/** How long the demo person stays logged in, in ms. */
+const DEMO_SESSION_MS = 30 * 60 * 1000;
+
+/** Entities the kiosk options offer in the demo: [entity id, name, device class, unit]. */
+const DEMO_KIOSK_ENTITIES = [
+    ['media_player.kitchen_speaker', 'Kitchen Speaker'],
+    ['media_player.living_room_speaker', 'Living Room Speaker'],
+    ['media_player.tablet', 'Tablet'],
+    ['switch.tablet_screen', 'Tablet Screen'],
+    ['switch.tablet_mute', 'Tablet Microphone Mute'],
+    ['switch.coffee_machine', 'Coffee Machine'],
+    ['input_boolean.guest_mode', 'Guest Mode'],
+    ['light.kitchen_ceiling', 'Kitchen Ceiling'],
+    ['light.kitchen_shelf', 'Kitchen Shelf'],
+    ['fan.extractor_hood', 'Extractor Hood'],
+    ['binary_sensor.kitchen_presence', 'Kitchen Presence', 'occupancy'],
+    ['binary_sensor.tablet_face_looking', 'Tablet Face Looking at Screen'],
+    ['sensor.kitchen_illuminance', 'Kitchen Illuminance', 'illuminance', 'lx'],
+    ['number.tablet_brightness', 'Tablet Brightness'],
+    ['weather.home', 'Home'],
+    ['sensor.tablet_face_id_person', 'Tablet Face ID Person'],
+    ['button.tablet_face_id_logout', 'Tablet Face ID Log Out'],
+];
+
+/**
+ * The profile picture of the demo person while they are logged in: a portrait drawn as SVG,
+ * since the demo has no Home Assistant to take a photo from.
+ * @returns {{contentType: string, body: Buffer}|null} The image, or null while nobody is logged in.
+ */
+export function demoKioskAvatar() {
+    const kiosk = normalizeKiosk(getConfig().kiosk);
+    if (!kiosk.user_entity || kioskState(kiosk.user_entity)?.state === 'none') return null;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#64d2ff"/><stop offset="1" stop-color="#0a84ff"/></linearGradient></defs>
+<rect width="96" height="96" fill="url(#bg)"/>
+<circle cx="48" cy="38" r="17" fill="#f2c9a5"/>
+<path d="M30 33c0-12 9-19 19-19s18 7 17 19c-4-6-10-8-18-8s-14 2-18 8z" fill="#5b3a29"/>
+<path d="M14 96c2-20 16-30 34-30s32 10 34 30z" fill="#1c1c1e"/>
+</svg>`;
+    return { contentType: 'image/svg+xml', body: Buffer.from(svg) };
+}
+
+/**
+ * The entities the kiosk options offer in the demo.
+ * @returns {Array<{entity_id: string, name: string, device_class?: string, unit?: string}>} The entities.
+ */
+export function demoKioskEntities() {
+    return DEMO_KIOSK_ENTITIES.map(([id, name, deviceClass, unit]) => ({
+        entity_id: id, name, ...(deviceClass ? { device_class: deviceClass } : {}), ...(unit ? { unit } : {}),
+    }));
+}
+
+/**
+ * The state of one of the kiosk's own entities in the demo: someone is always there but not
+ * looking, the light follows the time of day, and the brightness and screen keep what was set.
+ * @param {string} entityId - The entity.
+ * @returns {Object|null} Its state, or null when it isn't one of the kiosk's own entities.
+ */
+function kioskState(entityId) {
+    const kiosk = normalizeKiosk(getConfig().kiosk);
+    const hour = new Date().getHours();
+    const state = (value, attributes = {}) => ({ entity_id: entityId, state: String(value), attributes: { friendly_name: titleOf(entityId), ...attributes } });
+    if (entityId === kiosk.presence_entity) return state('on', { device_class: 'occupancy' });
+    if (entityId === kiosk.face_entity) return state('off');
+    if (entityId === kiosk.illuminance_entity) return state(hour >= 7 && hour < 20 ? 240 : 2, { unit_of_measurement: 'lx', device_class: 'illuminance' });
+    if (entityId === kiosk.brightness_entity) return state(kioskStore.brightness, { min: 0, max: 100, step: 1 });
+    if (entityId === kiosk.screen_entity) return state(kioskStore.screen ? 'on' : 'off');
+    if (entityId === kiosk.user_entity) {
+        if (kioskStore.loggedInAt === null && Date.now() - kioskStore.loggedOutAt > 60_000) kioskStore.loggedInAt = Date.now();
+        const since = kioskStore.loggedInAt;
+        return since === null
+            ? state('none', { since: null, expires: null })
+            : state('Lukas', { since: new Date(since).toISOString(), expires: new Date(since + DEMO_SESSION_MS).toISOString() });
+    }
+    if (entityId === kiosk.weather_entity) {
+        return state('partlycloudy', { temperature: round(drift(4, 11, 1800), 0), temperature_unit: '°C' });
+    }
+    return null;
+}
+
+/**
+ * Carries out a control center action in the demo.
+ * @param {Object} params - The action (see kioskCall).
+ * @returns {Array<Object>} The changed state.
+ */
+function kioskAction(params) {
+    const kiosk = normalizeKiosk(getConfig().kiosk);
+    const { service, body } = kioskCall(params, { attributes: { min: 0, max: 100 } });
+    if (params.action === 'brightness') kioskStore.brightness = body.value;
+    else if (params.action === 'screen') kioskStore.screen = service === 'turn_on';
+    else if (params.action === 'toggle') haStates.set(body.entity_id, service === 'turn_on' ? 'on' : 'off');
+    else if (params.action === 'logout') {
+        kioskStore.loggedInAt = null;
+        kioskStore.loggedOutAt = Date.now();
+    }
+    const id = params.action === 'brightness' ? kiosk.brightness_entity
+        : params.action === 'logout' ? kiosk.user_entity : body.entity_id;
+    if (!id) return [];
+    return [kioskState(id) ?? entityState(id, 0)];
+}
+
 function entityState(entityId, index) {
     if (/^(sensor|number|input_number)\./.test(entityId) && headerWidgetEntityIds(getConfig()).has(entityId)) {
         return headerSensorState(entityId);
     }
     if (thermostatCards().some(card => card.entity_id === entityId)) return climateState(entityId);
     if (getMediaEntityIds().has(entityId)) return mediaState(entityId);
+    const kioskOwn = kioskState(entityId);
+    if (kioskOwn) return kioskOwn;
     if (entityId.startsWith('group.')) return groupState(entityId);
     if (entityId.startsWith('light.')) {
         if (!lightStore.has(entityId)) addLight(entityId, titleOf(entityId), 'color', index % 3 !== 1, 80, { ct: 3000 });
@@ -840,7 +951,7 @@ function entityState(entityId, index) {
         const on = index % 3 !== 1;
         haStates.set(entityId, on ? (entity?.on_state || 'on') : (entity?.off_state || 'off'));
     }
-    return { entity_id: entityId, state: haStates.get(entityId), attributes: {} };
+    return { entity_id: entityId, state: haStates.get(entityId), attributes: { friendly_name: titleOf(entityId) } };
 }
 
 /**
@@ -874,6 +985,7 @@ function homeassistant(params) {
     if (endpoint === 'printer_action') return demoPrinterAction(params);
     if (endpoint === 'climate') return climate(params);
     if (endpoint === 'media') return mediaAction(params);
+    if (endpoint === 'kiosk') return kioskAction(params);
     if (endpoint === 'details') return details(params);
     if (endpoint === 'control') return control(params);
     if (endpoint === 'services') {
@@ -970,6 +1082,10 @@ export function resetDemoState() {
     robotStore.clear();
     printerStore.clear();
     haStates.clear();
+    kioskStore.brightness = 60;
+    kioskStore.screen = true;
+    kioskStore.loggedInAt = Date.now();
+    kioskStore.loggedOutAt = 0;
     climateStates.clear();
     mediaStates.clear();
     lightStore.clear();
