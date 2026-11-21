@@ -1,7 +1,7 @@
 import express from 'express';
 import { HttpError } from '../errors.js';
-import { demoCameraImage, demoHandlers, isDemoMode } from '../services/demo.js';
-import { fetchArtwork } from '../services/homeassistant.js';
+import { demoCameraImage, demoHandlers, demoKioskAvatar, isDemoMode } from '../services/demo.js';
+import { fetchArtwork, fetchKioskAvatar } from '../services/homeassistant.js';
 import { fetchRobotImage } from '../services/haVacuum.js';
 import { serviceHandlers } from '../services/index.js';
 import { mdiNames, mdiSvg } from '../services/mdi.js';
@@ -22,6 +22,23 @@ router.get('/ha/artwork', async (req, res, next) => {
             return;
         }
         res.set({ 'Content-Type': art.contentType, 'Cache-Control': 'private, max-age=300' }).send(art.body);
+    } catch (err) {
+        next(err);
+    }
+});
+
+/**
+ * The profile picture of whoever is logged in on the kiosk tablet, for the bubble in the header.
+ * `404` when nobody is logged in or they have no picture, so the bubble shows their initial.
+ */
+router.get('/ha/kiosk-avatar', async (req, res, next) => {
+    try {
+        const avatar = isDemoMode() ? demoKioskAvatar() : await fetchKioskAvatar();
+        if (!avatar) {
+            res.status(404).set('Cache-Control', 'no-store').end();
+            return;
+        }
+        res.set({ 'Content-Type': avatar.contentType, 'Cache-Control': 'private, max-age=300' }).send(avatar.body);
     } catch (err) {
         next(err);
     }

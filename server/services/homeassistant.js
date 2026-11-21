@@ -7,8 +7,8 @@ import { createHaSocket } from './haSocket.js';
 import { getGraphEntityIds, graphData } from './haGraph.js';
 import { getVacuumEntityIds, vacuumAction, vacuumData, vacuumMap } from './haVacuum.js';
 import { getPrinterEntityIds, printerAction, printerData } from './haPrinter.js';
-import { kioskCall, listedEntities } from './haKiosk.js';
-import { kioskEntityIds, kioskMediaIds } from '../../shared/kiosk.js';
+import { currentKiosk, findPerson, kioskCall, listedEntities, personIdOf } from './haKiosk.js';
+import { kioskEntityIds, kioskMediaIds, loggedInName } from '../../shared/kiosk.js';
 
 /**
  * Resolves Home Assistant connection settings.
@@ -383,19 +383,59 @@ export function mediaCall(params) {
  */
 export async function fetchArtwork(entityId) {
     if (!getMediaEntityIds().has(entityId)) throw new HttpError(403, `Entity not authorized: ${entityId}`);
-    const { url, token } = getHaConfig();
     const state = await getState(entityId);
-    const picture = state?.attributes?.entity_picture;
-    if (typeof picture !== 'string' || !picture) return null;
+    return fetchPicture(state?.attributes?.entity_picture, 'artwork');
+}
 
+/**
+ * Downloads an entity picture: one of Home Assistant's own with the token, or one elsewhere without it.
+ * @param {*} picture - The `entity_picture` attribute.
+ * @param {string} label - What the picture is, for errors.
+ * @returns {Promise<{contentType: string, body: Buffer}|null>} The image, or null without a picture.
+ */
+async function fetchPicture(picture, label) {
+    if (typeof picture !== 'string' || !picture) return null;
+    const { url, token } = getHaConfig();
     const absolute = /^https?:\/\//.test(picture);
     const response = await fetch(absolute ? picture : `${url}${picture.startsWith('/') ? '' : '/'}${picture}`, {
         headers: absolute ? {} : { Authorization: `Bearer ${token}` },
     });
-    if (!response.ok) throw await upstreamError('Home Assistant artwork', response);
+    if (!response.ok) throw await upstreamError(`Home Assistant ${label}`, response);
     const contentType = response.headers.get('content-type') || 'image/jpeg';
-    if (!contentType.startsWith('image/')) throw new HttpError(502, 'Artwork is not an image');
+    if (!contentType.startsWith('image/')) throw new HttpError(502, `The ${label} is not an image`);
     return { contentType, body: Buffer.from(await response.arrayBuffer()) };
+}
+
+const PEOPLE_TTL = 5 * 60 * 1000;
+/** Every person's state, for finding people by name; refreshed every few minutes. */
+let peopleCache = { at: 0, states: /** @type {Array<Object>} */ ([]) };
+
+/**
+ * The profile picture of whoever is logged in on the kiosk tablet: the picture of the Home
+ * Assistant person named by the kiosk's user entity. Nobody else's picture can be fetched.
+ * @returns {Promise<{contentType: string, body: Buffer}|null>} The image, or null when nobody is
+ *   logged in, no person has that name or the person has no picture.
+ */
+export async function fetchKioskAvatar() {
+    const kiosk = currentKiosk();
+    if (!kiosk.user_entity) throw new HttpError(403, 'No user entity is set up for the kiosk');
+    const name = loggedInName((await getState(kiosk.user_entity))?.state);
+    if (!name) return null;
+
+    let person = await getState(personIdOf(name)).catch(() => null);
+    if (!person?.attributes?.entity_picture) {
+        if (Date.now() - peopleCache.at > PEOPLE_TTL) {
+            const states = await haFetch('/states');
+            peopleCache = { at: Date.now(), states: (Array.isArray(states) ? states : []).filter(st => st?.entity_id?.startsWith('person.')) };
+        }
+        person = findPerson(name, peopleCache.states);
+    }
+    return fetchPicture(person?.attributes?.entity_picture, 'profile picture');
+}
+
+/** Forgets the people found by name. Intended for tests. */
+export function resetPeopleCache() {
+    peopleCache = { at: 0, states: [] };
 }
 
 /**

@@ -186,6 +186,8 @@ pages:
 #   face_entity: binary_sensor.tablet_face_looking
 #   screen_entity: switch.tablet_screen
 #   idle_timeout: 60
+#   user_entity: sensor.tablet_face_id_person
+#   logout_entity: button.tablet_face_id_logout
 
 launcher:
   apps:

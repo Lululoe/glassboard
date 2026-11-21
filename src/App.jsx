@@ -38,6 +38,7 @@ import { entryAt, isFolder, normalizeItems, replaceEntry, ungroup } from './comp
 import { NoticePage, NoticesProvider } from './context/NoticeScopes';
 import KioskLayer from './features/Kiosk/KioskLayer';
 import KioskSettings from './features/Kiosk/KioskSettings';
+import { useKioskUser } from './features/Kiosk/useKioskUser';
 import { kioskFromUrl } from '../shared/kiosk.js';
 import './App.css';
 
@@ -66,6 +67,7 @@ function Dashboard({ config }) {
     // Kiosk mode is turned on per screen with the `kiosk` URL parameter, read once when the dashboard opens
     const isKiosk = useMemo(() => kioskFromUrl(window.location.search), []);
     const [kioskSettingsOpen, setKioskSettingsOpen] = useState(false);
+    const kioskUser = useKioskUser(config, isKiosk);
     // Pages added, renamed or deleted in edit mode show right away
     const pages = excludeUrlHiddenPages(layout.withDraftPages(configPages), urlHidden);
     const { pageIndex, goTo, goToKey, next, prev, hasNext, hasPrev } = usePageNavigation(pages);
@@ -152,6 +154,7 @@ function Dashboard({ config }) {
                     config={liveConfig}
                     autoHide={headerBarHidden}
                     page={pageIndex}
+                    user={kioskUser}
                     edit={{
                         available: editable,
                         active: layout.editing,

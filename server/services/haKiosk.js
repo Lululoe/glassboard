@@ -19,6 +19,7 @@ export const currentKiosk = () => normalizeKiosk(getConfig().kiosk);
  * - `brightness` with `value` (0–100, kept within the entity's min and max) sets the brightness.
  * - `screen` with `on` switches the screen.
  * - `toggle` with `entity_id` and `on` switches one of the toggles.
+ * - `logout` presses the logout entity, logging out whoever is logged in on the tablet.
  * @param {Object} params - Request parameters.
  * @param {Object|null} [brightnessState] - The brightness entity's state, for its range.
  * @returns {{domain: string, service: string, body: Object}} The call to make.
@@ -39,6 +40,13 @@ export function kioskCall(params, brightnessState = null) {
         const hi = Number.isFinite(max) ? max : 100;
         const level = Math.round(Math.min(hi, Math.max(lo, value)));
         return { domain: entityId.split('.')[0], service: 'set_value', body: { entity_id: entityId, value: level } };
+    }
+
+    if (action === 'logout') {
+        const entityId = kiosk.logout_entity;
+        if (!entityId) throw new HttpError(403, 'No logout entity is set up for the kiosk');
+        const domain = entityId.split('.')[0];
+        return { domain, service: domain === 'script' ? 'turn_on' : 'press', body: { entity_id: entityId } };
     }
 
     if (typeof params.on !== 'boolean') throw new HttpError(400, 'on must be true or false');
@@ -75,4 +83,30 @@ export function listedEntities(states) {
             };
         })
         .sort((a, b) => a.entity_id.localeCompare(b.entity_id));
+}
+
+/**
+ * The Home Assistant person id a name most likely belongs to, like `person.anna_maria` for
+ * "Anna Maria".
+ * @param {string} name - The name.
+ * @returns {string} The entity id.
+ */
+export function personIdOf(name) {
+    const slug = name.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+    return `person.${slug}`;
+}
+
+/**
+ * Finds the Home Assistant person with a name: by display name, or by entity id.
+ * @param {string} name - The name, as the kiosk's user entity reports it.
+ * @param {Array<Object>} states - All states, as Home Assistant's `/api/states` returns them.
+ * @returns {Object|null} The person's state, or null when nobody has that name.
+ */
+export function findPerson(name, states) {
+    const wanted = name.trim().toLowerCase();
+    const people = (Array.isArray(states) ? states : []).filter(s => typeof s?.entity_id === 'string' && s.entity_id.startsWith('person.'));
+    return people.find(s => String(s.attributes?.friendly_name ?? '').trim().toLowerCase() === wanted)
+        ?? people.find(s => s.entity_id === personIdOf(name))
+        ?? null;
 }

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest';
-import { KIOSK_DEFAULTS, kioskEntityIds, kioskFromUrl, kioskMediaIds, normalizeKiosk } from './kiosk.js';
+import { KIOSK_DEFAULTS, kioskEntityIds, kioskFromUrl, kioskMediaIds, loggedInName, normalizeKiosk } from './kiosk.js';
 
 describe('kiosk settings', () => {
     it('fills in defaults and leaves out malformed values', () => {
@@ -31,10 +31,13 @@ describe('kiosk settings', () => {
             toggles: ['switch.mute'],
             screen_entity: 'switch.screen',
             illuminance_entity: 'sensor.lux',
+            user_entity: 'sensor.face_person',
+            logout_entity: 'button.face_logout',
         };
         expect(kioskMediaIds(raw)).toEqual(['media_player.kitchen', 'media_player.tablet']);
+        // The logout button is pressed but never read
         expect(kioskEntityIds(raw).sort()).toEqual([
-            'media_player.kitchen', 'media_player.tablet', 'sensor.lux', 'switch.mute', 'switch.screen',
+            'media_player.kitchen', 'media_player.tablet', 'sensor.face_person', 'sensor.lux', 'switch.mute', 'switch.screen',
         ]);
     });
 
@@ -46,5 +49,13 @@ describe('kiosk settings', () => {
         expect(kioskFromUrl('?hide=x&kiosk=true')).toBe(true);
         expect(kioskFromUrl('?kiosk=0')).toBe(false);
         expect(kioskFromUrl('?kiosk=off')).toBe(false);
+    });
+
+    it('reads who is logged in from the user entity', () => {
+        expect(loggedInName('Lukas')).toBe('Lukas');
+        expect(loggedInName('  Anna Maria ')).toBe('Anna Maria');
+        ['none', 'None', '', 'unknown', 'unavailable', null, undefined].forEach(state => expect(loggedInName(state)).toBeNull());
+        expect(normalizeKiosk({ user_entity: 'person.lukas', logout_entity: 'switch.x' })).not.toHaveProperty('user_entity');
+        expect(normalizeKiosk({ logout_entity: 'button.face_logout' }).logout_entity).toBe('button.face_logout');
     });
 });

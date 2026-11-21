@@ -309,6 +309,23 @@ const KioskSettings = ({ kiosk, onClose }) => {
                                 onChange={(value) => set('idle_timeout', value ?? 60)}
                             />
                         </Group>
+
+                        <Group title="Logged In" description="A bubble next to the app menu shows who is logged in on this tablet, for example from face recognition.">
+                            <EntitySelect
+                                label="Person logged in"
+                                value={draft.user_entity}
+                                entities={of(KIOSK_ENTITY_FIELDS.user_entity)}
+                                onChange={(value) => set('user_entity', value)}
+                                hint="Its state is the person’s name, or none when nobody is logged in. Optional since and expires attributes show when the login started and ends."
+                            />
+                            <EntitySelect
+                                label="Log out"
+                                value={draft.logout_entity}
+                                entities={of(KIOSK_ENTITY_FIELDS.logout_entity)}
+                                onChange={(value) => set('logout_entity', value)}
+                                hint="A button or script that logs the person out. Without it the bubble has no Log Out button."
+                            />
+                        </Group>
                     </div>
                 </div>
             </div>

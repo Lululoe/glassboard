@@ -4,6 +4,7 @@ import './Header.css';
 import { LayoutTemplate, Palette, LayoutGrid, Pencil, SquarePen, Plus, Wallpaper, FilePen, RotateCcw, PanelLeft, TabletSmartphone } from 'lucide-react';
 import LauncherPopup from './LauncherPopup';
 import ThemeMenu from './ThemeMenu';
+import UserBubble from '../../features/Kiosk/UserBubble';
 
 /** The top-left corner that reveals an auto-hiding header when the mouse is in it, in pixels. */
 // eslint-disable-next-line react-refresh/only-export-components
@@ -42,10 +43,12 @@ const inRevealCorner = (x, y) => x <= REVEAL_CORNER.width && y <= REVEAL_CORNER.
  * @param {() => void} [props.edit.onEditKiosk] - Opens the kiosk mode options.
  * @param {boolean} [props.autoHide] - Hides the bar until it is pointed at, tapped at the top of the
  *   screen or reached with the keyboard. It stays while it is used and while its menu is open.
+ * @param {import('../../features/Kiosk/useKioskUser').KioskUser|null} [props.user] - Who is logged in on
+ *   the kiosk tablet; a bubble next to the app menu shows them.
  * @param {number} [props.page] - The page shown; when it changes, whether it is scrolled is read again.
  * @returns {JSX.Element} The rendered header.
  */
-const Header = ({ config, edit, autoHide = false, page }) => {
+const Header = ({ config, edit, autoHide = false, page, user = null }) => {
     const [isLauncherOpen, setIsLauncherOpen] = useState(false);
     const [isThemeOpen, setIsThemeOpen] = useState(false);
     const { hidden, reveal, hideSoon } = useAutoHide(autoHide, isLauncherOpen || isThemeOpen);
@@ -253,6 +256,7 @@ const Header = ({ config, edit, autoHide = false, page }) => {
                     >
                         <LayoutGrid size={20} aria-hidden="true" />
                     </button>
+                    {user && <UserBubble user={user} />}
                 </div>
                 )}
 

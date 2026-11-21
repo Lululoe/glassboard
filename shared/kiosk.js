@@ -28,7 +28,24 @@ export const KIOSK_ENTITY_FIELDS = {
     face_entity: ['binary_sensor', 'input_boolean'],
     illuminance_entity: ['sensor'],
     weather_entity: ['weather'],
+    /** Who is logged in on the tablet: its state is the person's name, or none. */
+    user_entity: ['sensor', 'text', 'input_text'],
+    /** Pressed to log that person out. */
+    logout_entity: ['button', 'input_button', 'script'],
 };
+
+/** States of the user entity that mean nobody is logged in. */
+const NOBODY = new Set(['', 'none', 'nobody', 'unknown', 'unavailable', 'off', 'idle']);
+
+/**
+ * The name of the person logged in, from the user entity's state.
+ * @param {string|null|undefined} state - The state.
+ * @returns {string|null} The name, or null when nobody is logged in.
+ */
+export function loggedInName(state) {
+    const name = typeof state === 'string' ? state.trim() : '';
+    return NOBODY.has(name.toLowerCase()) ? null : name;
+}
 
 /** Settings left out of the config. */
 export const KIOSK_DEFAULTS = {
@@ -74,7 +91,7 @@ const numberSetting = (value, fallback, min, max) => (
  * @returns {{media_players: string[], toggles: string[], clock: string, idle_timeout: number,
  *   pause_timeout: number, night_below: number, volume_entity?: string, brightness_entity?: string,
  *   screen_entity?: string, presence_entity?: string, face_entity?: string,
- *   illuminance_entity?: string, weather_entity?: string}} The settings.
+ *   illuminance_entity?: string, weather_entity?: string, user_entity?: string, logout_entity?: string}} The settings.
  */
 export function normalizeKiosk(raw) {
     const kiosk = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
@@ -106,13 +123,13 @@ export function kioskMediaIds(raw) {
 }
 
 /**
- * Every entity the kiosk reads.
+ * Every entity the kiosk reads. The logout button is pressed, never read.
  * @param {*} raw - `config.kiosk`.
  * @returns {string[]} Entity ids.
  */
 export function kioskEntityIds(raw) {
     const kiosk = normalizeKiosk(raw);
-    const single = Object.keys(KIOSK_ENTITY_FIELDS).map(key => kiosk[key]).filter(Boolean);
+    const single = Object.keys(KIOSK_ENTITY_FIELDS).filter(key => key !== 'logout_entity').map(key => kiosk[key]).filter(Boolean);
     return [...new Set([...kiosk.media_players, ...kiosk.toggles, ...single])];
 }
 

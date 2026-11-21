@@ -143,6 +143,8 @@ the climate actions below.
     `number.set_value` / `input_number.set_value`,
   - `screen` with `on` (a boolean), which turns the `screen_entity` on or off,
   - `toggle` with `entity_id` (one of the kiosk `toggles`) and `on`, using `homeassistant.turn_on` / `turn_off`.
+  - `logout`, which presses the `logout_entity` (`button.press` / `input_button.press`, or `script.turn_on` for a
+    script).
 
   `403` when the entity isn't set in the kiosk options, `400` for other values. See [Kiosk Mode](KIOSK_MODE).
 - **Render a page header template**: `{ "service": "homeassistant", "endpoint": "template", "page": "home", "line": "title" }`
@@ -230,6 +232,14 @@ search. `GET /api/icons/mdi/<name>.svg` returns a Material Design Icon (the icon
 **Description**: Returns the cover art of a player or speaker of a `mediaplayer` card. The server reads the picture
 URL from the entity's state and fetches it with the Home Assistant token (external picture URLs without it). `404`
 when there is no artwork, including in demo mode; `403` for other entities.
+
+### Kiosk profile picture
+**Endpoint**: `GET /api/ha/kiosk-avatar`
+**Description**: Returns the profile picture of whoever is logged in on the kiosk tablet: the `entity_picture` of
+the Home Assistant `person` whose display name or id matches the state of the kiosk's `user_entity` (see
+[Kiosk Mode](KIOSK_MODE#who-is-logged-in)). Only that person's picture can be fetched. `404` when nobody is logged
+in, nobody has that name or the person has no picture; `403` without a `user_entity`. In demo mode a drawn
+portrait is returned while the demo person is logged in.
 
 ## 2. Configuration API
 **Endpoint**: `GET /api/config`

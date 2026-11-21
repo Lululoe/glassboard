@@ -42,6 +42,10 @@ kiosk:
   screen_entity: switch.tablet_screen
   # Seconds without a touch or a look before the clock comes back (default 60)
   idle_timeout: 60
+
+  # Who is logged in on the tablet, shown in a bubble next to the app menu
+  user_entity: sensor.tablet_face_id_person
+  logout_entity: button.tablet_face_id_logout
 ```
 
 | Option | Entities | Description |
@@ -59,6 +63,8 @@ kiosk:
 | `face_entity` | `binary_sensor`, `input_boolean` | `on` while a face looks at the screen. |
 | `screen_entity` | `switch`, `input_boolean` | Turns the tablet's display on and off. |
 | `idle_timeout` | | Seconds (5–3600) the dashboard stays after the last touch or look. |
+| `user_entity` | `sensor`, `text`, `input_text` | Who is logged in: its state is the person's name, or `none`. |
+| `logout_entity` | `button`, `input_button`, `script` | Pressed (or run) by the bubble's Log Out button. |
 
 ## What the screen shows
 
@@ -92,10 +98,27 @@ Drag down from the top edge of the screen to open it, and tap outside it or pres
 - a tile for each toggle, with the icon Home Assistant shows for it,
 - a **Clock** tile that shows the clock right away, until the screen is touched again.
 
+## Who is logged in
+
+With a `user_entity`, a round bubble with the person's initial appears next to the app menu in the header, but
+only on kiosk screens and only while someone is logged in. The entity's state is the person's name. `none`, an
+empty state, `unknown` and `unavailable` mean nobody is logged in. It is made for a face recognition sensor on
+the tablet, but any sensor or text entity holding a name works.
+
+The bubble shows the person's profile picture from Home Assistant, and their initial when they have none. The
+picture is the one of the `person` entity with that display name, or with that name as its id (`Anna Maria` finds
+`person.anna_maria`). Set it under **Settings › People** in Home Assistant.
+
+Tapping the bubble shows the name and, when the entity has `since` and `expires` attributes (ISO times), since
+when the person is logged in and until when. With a `logout_entity`, a **Log Out** button presses it (a script is
+run instead). The bubble disappears at once, and comes back if the entity still names someone at the next
+reading.
+
 ## Security
 
-The browser can read only the entities named in the kiosk options. It can change only the brightness (within the
-entity's range), the screen switch and the toggles, and it can control the media players. See
+The browser can read only the entities named in the kiosk options, apart from the logout entity, which it can only
+press. It can change only the brightness (within the entity's range), the screen switch and the toggles, and it
+can control the media players. See
 [Server API](SERVER_API#homeassistant).
 
 ## Things to set up on the tablet

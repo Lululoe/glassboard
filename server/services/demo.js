@@ -825,8 +825,14 @@ function headerSensorState(entityId) {
     };
 }
 
-/** The kiosk's brightness and screen in the demo, changed by its control center. */
-const kioskStore = { brightness: 60, screen: true };
+/**
+ * The kiosk's brightness and screen in the demo, changed by its control center, and when the
+ * demo person logged in (null while logged out; they log in again a minute after logging out).
+ */
+const kioskStore = { brightness: 60, screen: true, loggedInAt: Date.now(), loggedOutAt: 0 };
+
+/** How long the demo person stays logged in, in ms. */
+const DEMO_SESSION_MS = 30 * 60 * 1000;
 
 /** Entities the kiosk options offer in the demo: [entity id, name, device class, unit]. */
 const DEMO_KIOSK_ENTITIES = [
@@ -845,7 +851,27 @@ const DEMO_KIOSK_ENTITIES = [
     ['sensor.kitchen_illuminance', 'Kitchen Illuminance', 'illuminance', 'lx'],
     ['number.tablet_brightness', 'Tablet Brightness'],
     ['weather.home', 'Home'],
+    ['sensor.tablet_face_id_person', 'Tablet Face ID Person'],
+    ['button.tablet_face_id_logout', 'Tablet Face ID Log Out'],
 ];
+
+/**
+ * The profile picture of the demo person while they are logged in: a portrait drawn as SVG,
+ * since the demo has no Home Assistant to take a photo from.
+ * @returns {{contentType: string, body: Buffer}|null} The image, or null while nobody is logged in.
+ */
+export function demoKioskAvatar() {
+    const kiosk = normalizeKiosk(getConfig().kiosk);
+    if (!kiosk.user_entity || kioskState(kiosk.user_entity)?.state === 'none') return null;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#64d2ff"/><stop offset="1" stop-color="#0a84ff"/></linearGradient></defs>
+<rect width="96" height="96" fill="url(#bg)"/>
+<circle cx="48" cy="38" r="17" fill="#f2c9a5"/>
+<path d="M30 33c0-12 9-19 19-19s18 7 17 19c-4-6-10-8-18-8s-14 2-18 8z" fill="#5b3a29"/>
+<path d="M14 96c2-20 16-30 34-30s32 10 34 30z" fill="#1c1c1e"/>
+</svg>`;
+    return { contentType: 'image/svg+xml', body: Buffer.from(svg) };
+}
 
 /**
  * The entities the kiosk options offer in the demo.
@@ -872,6 +898,13 @@ function kioskState(entityId) {
     if (entityId === kiosk.illuminance_entity) return state(hour >= 7 && hour < 20 ? 240 : 2, { unit_of_measurement: 'lx', device_class: 'illuminance' });
     if (entityId === kiosk.brightness_entity) return state(kioskStore.brightness, { min: 0, max: 100, step: 1 });
     if (entityId === kiosk.screen_entity) return state(kioskStore.screen ? 'on' : 'off');
+    if (entityId === kiosk.user_entity) {
+        if (kioskStore.loggedInAt === null && Date.now() - kioskStore.loggedOutAt > 60_000) kioskStore.loggedInAt = Date.now();
+        const since = kioskStore.loggedInAt;
+        return since === null
+            ? state('none', { since: null, expires: null })
+            : state('Lukas', { since: new Date(since).toISOString(), expires: new Date(since + DEMO_SESSION_MS).toISOString() });
+    }
     if (entityId === kiosk.weather_entity) {
         return state('partlycloudy', { temperature: round(drift(4, 11, 1800), 0), temperature_unit: '°C' });
     }
@@ -889,7 +922,13 @@ function kioskAction(params) {
     if (params.action === 'brightness') kioskStore.brightness = body.value;
     else if (params.action === 'screen') kioskStore.screen = service === 'turn_on';
     else if (params.action === 'toggle') haStates.set(body.entity_id, service === 'turn_on' ? 'on' : 'off');
-    const id = params.action === 'brightness' ? kiosk.brightness_entity : body.entity_id;
+    else if (params.action === 'logout') {
+        kioskStore.loggedInAt = null;
+        kioskStore.loggedOutAt = Date.now();
+    }
+    const id = params.action === 'brightness' ? kiosk.brightness_entity
+        : params.action === 'logout' ? kiosk.user_entity : body.entity_id;
+    if (!id) return [];
     return [kioskState(id) ?? entityState(id, 0)];
 }
 
@@ -1045,6 +1084,8 @@ export function resetDemoState() {
     haStates.clear();
     kioskStore.brightness = 60;
     kioskStore.screen = true;
+    kioskStore.loggedInAt = Date.now();
+    kioskStore.loggedOutAt = 0;
     climateStates.clear();
     mediaStates.clear();
     lightStore.clear();
