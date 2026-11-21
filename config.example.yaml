@@ -19,8 +19,10 @@ themes: []
 
 # Cards can be moved, resized, edited, added and removed in the browser (long-press a card, or the
 # pencil button in the header). Changes are saved to layout.yaml, not to this file. There is no login
-# yet, so anyone who can open the dashboard can do this. Set to false to turn it off.
-# editable: false
+# yet, so anyone who can open the dashboard could do this, including choosing which Home Assistant
+# entities and actions it may control. That's why it is off unless turned on here. Only turn it on
+# where strangers can't reach the dashboard.
+# editable: true
 
 # The header bar (title, menu and edit buttons) can hide itself until you point at or tap the top of the
 # screen: never (default), with-page-header (on pages that show the page header below) or always.

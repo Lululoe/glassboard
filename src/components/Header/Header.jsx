@@ -245,7 +245,7 @@ const Header = ({ config, edit, autoHide = false, page }) => {
 
                 {isThemeOpen && (
                     <ThemeMenu
-                        editable={config?.editable !== false}
+                        editable={config?.editable === true}
                         onClose={() => {
                             setIsThemeOpen(false);
                             if (autoHide) hideSoon();
