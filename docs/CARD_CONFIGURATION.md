@@ -66,11 +66,17 @@ can go:
   `config.yaml`. The card can also be removed here.
 - **Change an icon**: tap the icon in a card's header (it has a small pencil badge) to pick its icon, color and
   background.
-- **Add a page**: the **+** next to the page dots at the bottom adds a page after the others and opens it. Give it a
-  name; its address follows from the name (`Garden` becomes `/garden`).
-- **Edit a page**: the page button in the header (**Edit page**) opens the settings of the page you are on. Pages
-  added in the browser can be renamed and deleted there; deleting a page also deletes its cards. Pages from
-  `config.yaml` can't be renamed or deleted in the browser. **Page background…** opens the page's background.
+- **Add a page**: the **+** next to the page dots at the bottom, or **Add page** in **Settings** → **Page** or
+  **Sidebar**, adds a page after the others. From the dots it opens right away; from the settings window it joins
+  the lists there. Give it a name; its address follows from the name (`Garden` becomes `/garden`).
+- **Settings**: the gear in the header opens the settings of the dashboard and of the page you are on, in one window:
+  **Page**, **Background**, **Header Menu**, **Sidebar**, **Appearance**, **Kiosk Mode** and **Reset…**. Changes in
+  every section wait for **Save**, which keeps them all. Appearance and Kiosk Mode are stored right away; the others
+  join the layout and are stored with **Done**. **Cancel** drops them, and the dashboard shows the saved appearance
+  again. Cards keep their own editors, opened with their pencil.
+- **Edit a page**: **Settings** → **Page** shows the page you are on. Pages added in the browser can be renamed and
+  deleted there; deleting a page also deletes its cards. Pages from `config.yaml` can't be renamed or deleted in the
+  browser.
 - **Page header**: the header above the cards has its own editors. The pencil on its corner opens **Header**:
   show or hide it, its style (colored or monochrome), alignment, where the widgets go and the language of names. Tap the title or the
   subtitle (they have a pencil badge) to change what it shows, its format and its color, or to hide it; a hidden
@@ -131,7 +137,7 @@ iconBackgrounds:
 The selfh.st catalog and its icons load from jsDelivr, so that tab needs internet access.
 
 ### Page background
-The picture button in the header (**Edit background**) sets the background behind the cards. At the top, choose
+**Settings** → **Background** sets the background behind the cards. At the top, choose
 whether it is the background of **All pages** or of **This page** only. A page shows the background of all pages
 unless it has its own; on **This page**, **All pages** goes back to that. Each background can be:
 
@@ -214,7 +220,7 @@ in the browser live only in `layout.yaml`, and cards removed in the browser are 
 edited in the browser replaces `launcher` from `config.yaml` as a whole, as do `iconBackgrounds`, `background` and `sidebar`.
 Pages added in the browser are listed under `addedPages` (id and name) and come after the pages of `config.yaml`;
 their cards are stored like other cards added in the browser. Cards added
-to `config.yaml` later appear after the saved ones. Deleting `layout.yaml` (or **Reset…**) restores the dashboard
+to `config.yaml` later appear after the saved ones. Deleting `layout.yaml` (or **Settings** → **Reset…**) restores the dashboard
 from `config.yaml`. **Reset…** asks first and offers **Undo** in the header afterwards, using a copy it keeps as
 `layout.yaml.bak`.
 

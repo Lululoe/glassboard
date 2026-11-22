@@ -26,7 +26,9 @@ appearance:
 | `neon` | A near-black page with solid zinc cards, round buttons and Inter. Every card has its own color, taken from its icon: the icon's background, the icon's own color or, for a logo on the neutral background, the logo's main color (read from the image when its site allows it). Thermostats are orange, and blue while cooling; cards without a colored icon use the accent. A card with a colored icon has its header in that color and its body the same but darker; a thermostat is filled with its color while it is on. The color tints the card's hairline edge, the card glows in it from underneath, and selected options are a gradient of it. The app grid stays neutral, and its icons glow in their own colors. Anything that is off, such as an off tile or thermostat, has a plain edge and a grey glow. Color shows where something is on: an on Home Assistant tile becomes a deep gradient of its color, the entity's `color` or else the accent, with lit text and a soft glow, and selected controls are a pale tint of the accent. Header buttons float over the page, and the name fades out when the page is scrolled. In light mode, cards are white and on tiles pastel. |
 | `terminal` | Monospace type, square corners, flat dark panels outlined in the accent, and card titles in `[ brackets ]`. Graphs are drawn with block characters (`▁▃▅█`) and the forecast with ASCII art; app icons turn monochrome. Without a page background of its own, the page is a dark screen. |
 
-The Theme menu offers Glass, Liquid Glass, Material and Neon. Terminal is held back from the menu for now: it can
+The Theme menu offers Glass, Liquid Glass, Material and Neon. In edit mode, **Settings** → **Appearance** sets the same
+style, accent and transparency with a preview: the dashboard and a few sample cards show a pick right away, and
+**Save** keeps it (**Cancel** goes back). Terminal is held back from the menu for now: it can
 still be set in `config.yaml`, and the menu shows it while the dashboard uses it.
 
 To lock the theme, set `locked: true`. The style, accent and transparency of `config.yaml` then always apply: the

@@ -225,34 +225,48 @@ export function useArrangeable({ rootRef, lists, selection, onSelect, onRemove }
 }
 
 /**
- * Animates elements carrying `data-flip-id` from where they were to where they are now.
+ * Animates elements carrying `data-flip-id` from where they were to where they are now, when the
+ * items were rearranged. Positions are read relative to the element holding them, and nothing
+ * moves while that element is hidden, changes width or zoom: those are the layout settling (a
+ * section shown, a window opening), not items moving. Growing taller is left out, as adding an
+ * item can do that.
  * @param {import('react').RefObject<HTMLElement>} rootRef - Element holding them.
  * @param {number} zoom - CSS zoom of that element, which transforms are multiplied by.
  */
 export function useMoveAnimation(rootRef, zoom = 1) {
-    const before = useRef(new Map());
+    const before = useRef(/** @type {{items: Map<string, {left: number, top: number}>, width: number, zoom: number}|null} */ (null));
 
     useLayoutEffect(() => {
         const root = rootRef.current;
         if (!root) return;
-        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-        const now = new Map();
+        const box = root.getBoundingClientRect();
+        const items = new Map();
         root.querySelectorAll('[data-flip-id]').forEach((/** @type {HTMLElement} */ el) => {
             const rect = el.getBoundingClientRect();
-            now.set(el.dataset.flipId, rect);
-            const old = before.current.get(el.dataset.flipId);
-            if (reduced || !el.animate) return;
+            items.set(el.dataset.flipId, { left: rect.left - box.left, top: rect.top - box.top });
+        });
+        const last = before.current;
+        const hidden = box.width === 0 && box.height === 0;
+        before.current = hidden ? last : { items, width: box.width, zoom };
+
+        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        const settling = !last || hidden || last.zoom !== zoom || Math.abs(last.width - box.width) >= 1;
+        if (reduced || settling) return;
+
+        root.querySelectorAll('[data-flip-id]').forEach((/** @type {HTMLElement} */ el) => {
+            if (!el.animate) return;
+            const now = items.get(el.dataset.flipId);
+            const old = last.items.get(el.dataset.flipId);
             if (!old) {
-                if (before.current.size > 0) {
+                if (last.items.size > 0) {
                     el.animate([{ transform: 'scale(0.4)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 320, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
                 }
                 return;
             }
-            const dx = old.left - rect.left;
-            const dy = old.top - rect.top;
+            const dx = old.left - now.left;
+            const dy = old.top - now.top;
             if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
             el.animate([{ transform: `translate(${dx / zoom}px, ${dy / zoom}px)` }, { transform: 'none' }], { duration: 240, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
         });
-        before.current = now;
     });
 }

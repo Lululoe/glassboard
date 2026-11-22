@@ -60,15 +60,12 @@ export function useDashboardEditing(config, pages) {
     const [adding, setAdding] = useState(false);
     const [carry, setCarry] = useState(null);
     const [shared, setShared] = useState(/** @type {{launcher?: Object, iconBackgrounds: string[], background?: Object, pageBackgrounds: Object<string, Object>, pageHeader?: *, pageHeaders: Object<string, *>, headerAutoHide?: string, sidebar?: Object}|null} */ (null));
-    const [editingBackground, setEditingBackground] = useState(/** @type {false|'all'|'page'} */ (false));
     const [editingHeader, setEditingHeader] = useState(/** @type {null|'layout'|'title'|'subtitle'|'widget'|'widget-add'} */ (null));
     const [editingWidget, setEditingWidget] = useState(/** @type {number|null} */ (null));
     const [newWidgetType, setNewWidgetType] = useState(/** @type {string|null} */ (null));
     const [pageDrafts, setPageDrafts] = useState(/** @type {Array<{id: string, name?: string}>|null} */ (null));
-    const [pageDialog, setPageDialog] = useState(/** @type {{id?: string}|null} */ (null));
-    const [editingMenu, setEditingMenu] = useState(false);
+    const [pageDialog, setPageDialog] = useState(/** @type {{}|null} */ (null));
     const [editingSidebar, setEditingSidebar] = useState(/** @type {import('../components/Sidebar/sidebarModel').EntryPath|null} */ (null));
-    const [confirmingReset, setConfirmingReset] = useState(false);
     const [canUndoReset, setCanUndoReset] = useState(false);
     const [undoFailed, setUndoFailed] = useState(false);
 
@@ -223,7 +220,7 @@ export function useDashboardEditing(config, pages) {
     };
 
     const finish = async () => {
-        if (saving || editor || adding || editingMenu || editingBackground || editingHeader || editingSidebar || pageDialog || confirmingReset) return;
+        if (saving || editor || adding || editingHeader || editingSidebar || pageDialog) return;
         const original = Object.fromEntries(gridPages.map(({ page, key }) => [key, page.cards || []]));
         const unchanged = JSON.stringify(drafts) === JSON.stringify(original)
             && JSON.stringify(shared) === JSON.stringify(savedShared)
@@ -277,7 +274,6 @@ export function useDashboardEditing(config, pages) {
     };
 
     const reset = async () => {
-        setConfirmingReset(false);
         try {
             await resetLayout();
             setSavedFor(config);
@@ -301,7 +297,6 @@ export function useDashboardEditing(config, pages) {
 
     return {
         editing, saving, status, cardsOf, start, change, finish, reset, moveToPage,
-        confirmingReset, requestReset: () => setConfirmingReset(true), cancelReset: () => setConfirmingReset(false),
         canUndoReset, undoFailed, undoReset,
         carry, clearCarry,
         editor, editingCard, openEditor, openIconEditor, saveCard, removeCard, cancelEditor,
@@ -309,9 +304,6 @@ export function useDashboardEditing(config, pages) {
         launcher: shared ? shared.launcher : config.launcher,
         iconBackgrounds: shared ? shared.iconBackgrounds : savedShared.iconBackgrounds,
         setIconBackgrounds: (iconBackgrounds) => setShared(prev => ({ ...prev, iconBackgrounds })),
-        editingMenu,
-        openMenuEditor: () => setEditingMenu(true),
-        closeMenuEditor: () => setEditingMenu(false),
         /** When the header bar hides itself, as in the draft while editing. */
         headerAutoHide: shared ? shared.headerAutoHide : config.headerAutoHide,
         /**
@@ -319,10 +311,7 @@ export function useDashboardEditing(config, pages) {
          * @param {Object} launcher - The header menu.
          * @param {string} [headerAutoHide] - When the header bar hides itself.
          */
-        saveMenu: (launcher, headerAutoHide) => {
-            setShared(prev => ({ ...prev, launcher, headerAutoHide }));
-            setEditingMenu(false);
-        },
+        saveMenu: (launcher, headerAutoHide) => setShared(prev => ({ ...prev, launcher, headerAutoHide })),
         /** The sidebar, as in the draft while editing. */
         sidebar: shared ? shared.sidebar : config.sidebar,
         /**
@@ -350,19 +339,8 @@ export function useDashboardEditing(config, pages) {
         withDraftPages, addPage, renamePage, deletePage,
         pageDialog,
         openAddPage: () => setPageDialog({}),
-        openPageSettings: (id) => setPageDialog({ id }),
         closePageDialog: () => setPageDialog(null),
         background: shared ? shared.background : config.background,
-        editingBackground,
-        /**
-         * Opens the background dialog.
-         * @param {'all'|'page'} [scope] - Which background it starts on; by default the page's, if it has its own.
-         */
-        openBackgroundEditor: (scope) => {
-            setPageDialog(null);
-            setEditingBackground(scope || 'all');
-        },
-        closeBackgroundEditor: () => setEditingBackground(false),
         /** The page header of all pages, as in the draft while editing. */
         pageHeader: shared ? shared.pageHeader : config.pageHeader,
         /**
@@ -428,7 +406,6 @@ export function useDashboardEditing(config, pages) {
                 const { [key]: _old, ...others } = prev.pageBackgrounds;
                 return { ...prev, background, pageBackgrounds: pageBackground ? { ...others, [key]: pageBackground } : others };
             });
-            setEditingBackground(false);
         },
     };
 }

@@ -1,0 +1,83 @@
+/* Appearance settings: a few real cards on the page background, in the style being picked */
+.appearance-preview {
+    gap: 4px;
+    padding-bottom: 20px;
+}
+
+.appearance-preview-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 10px 24px 0;
+    font-family: var(--font-family);
+    color: var(--text-primary);
+}
+
+.appearance-preview-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: var(--radius-10);
+    background: var(--bg-toolbar);
+    backdrop-filter: blur(calc(14px * var(--blur-scale)));
+    -webkit-backdrop-filter: blur(calc(14px * var(--blur-scale)));
+    font-size: var(--fs-15);
+    font-weight: 600;
+}
+
+.appearance-preview-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--radius-round);
+    background: var(--color-primary);
+}
+
+.appearance-preview-tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.appearance-preview-tiles .ha-tile {
+    min-height: 64px;
+}
+
+.appearance-preview-page .two-tone-card {
+    min-height: 216px;
+}
+
+.appearance-preview-usage {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px 12px;
+    padding: 12px 14px 0;
+    font-size: var(--fs-13);
+    color: var(--text-secondary);
+}
+
+.appearance-preview-pills {
+    display: flex;
+    gap: 6px;
+    padding: 12px 14px 14px;
+}
+
+.appearance-preview-note {
+    margin: 14px 24px 0;
+    font-size: var(--fs-12);
+    line-height: 1rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.appearance-styles {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+}
+
+.appearance-settings .theme-menu-style-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+}

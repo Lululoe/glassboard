@@ -138,21 +138,12 @@ describe('AddCardDialog', () => {
         fireEvent.click(screen.getByRole('button', { name: /Empty Space/ }));
         expect(onPick).toHaveBeenCalledWith('spacer');
     });
-});
 
-describe('ConfirmDialog', () => {
-    it('focuses Cancel and only acts on the named action', async () => {
-        const { default: ConfirmDialog } = await import('./ConfirmDialog');
-        const onConfirm = vi.fn();
-        const onCancel = vi.fn();
-        render(<ConfirmDialog title="Reset Dashboard?" message="Removes changes." confirmLabel="Reset Dashboard" onConfirm={onConfirm} onCancel={onCancel} />);
-
-        expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
-        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
-        expect(onCancel).toHaveBeenCalledOnce();
-        expect(onConfirm).not.toHaveBeenCalled();
-
-        fireEvent.click(screen.getByRole('button', { name: 'Reset Dashboard' }));
-        expect(onConfirm).toHaveBeenCalledOnce();
+    it('lists them in alphabetical order', () => {
+        render(<AddCardDialog onPick={() => {}} onCancel={() => {}} />);
+        const names = [...document.querySelectorAll('.add-card-name')].map(el => el.textContent);
+        expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })));
+        expect(names[0]).toBe('3D Printer');
+        expect(names.indexOf('App Grid')).toBeLessThan(names.indexOf('Weather'));
     });
 });

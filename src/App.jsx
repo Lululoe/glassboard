@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FilePen, LayoutGrid, Palette, PanelLeft, Plus, RotateCcw, TabletSmartphone, Wallpaper } from 'lucide-react';
 import { useConfig } from './hooks/useConfig';
 import { usePageNavigation } from './hooks/usePageNavigation';
 import { useSwipe } from './hooks/useSwipe';
@@ -12,12 +12,9 @@ import { pageKey, useDashboardEditing } from './hooks/useDashboardEditing';
 import { splitControlCards } from './features/HomeAssistant/haControlModel';
 import BentoGrid from './components/Grid/BentoGrid';
 import AddCardDialog from './components/Editor/AddCardDialog';
-import BackgroundEditor from './components/Editor/BackgroundEditor';
 import PageDialog from './components/Editor/PageDialog';
 import CardEditor from './components/Editor/CardEditor';
 import CardIconEditor from './components/Editor/CardIconEditor';
-import ConfirmDialog from './components/Editor/ConfirmDialog';
-import HeaderMenuEditor from './components/Editor/HeaderMenuEditor';
 import IframeView from './components/Layout/IframeView';
 import Header from './components/Header/Header';
 import PageHeader, { AddPageHeader } from './components/PageHeader/PageHeader';
@@ -37,7 +34,14 @@ import SidebarItemEditor from './components/Editor/SidebarItemEditor';
 import { entryAt, isFolder, normalizeItems, replaceEntry, ungroup } from './components/Sidebar/sidebarModel';
 import { NoticePage, NoticesProvider } from './context/NoticeScopes';
 import KioskLayer from './features/Kiosk/KioskLayer';
-import KioskSettings from './features/Kiosk/KioskSettings';
+import SettingsDialog from './components/Settings/SettingsDialog';
+import PageSettings from './components/Settings/PageSettings';
+import BackgroundSettings from './components/Settings/BackgroundSettings';
+import HeaderMenuSettings from './components/Settings/HeaderMenuSettings';
+import SidebarSettings from './components/Settings/SidebarSettings';
+import AppearanceSettings from './components/Settings/AppearanceSettings';
+import KioskSettings from './components/Settings/KioskSettings';
+import ResetSettings from './components/Settings/ResetSettings';
 import { useKioskUser } from './features/Kiosk/useKioskUser';
 import { kioskFromUrl } from '../shared/kiosk.js';
 import './App.css';
@@ -66,7 +70,7 @@ function Dashboard({ config }) {
     const urlHidden = useMemo(() => hiddenPagesFromUrl(window.location.search), []);
     // Kiosk mode is turned on per screen with the `kiosk` URL parameter, read once when the dashboard opens
     const isKiosk = useMemo(() => kioskFromUrl(window.location.search), []);
-    const [kioskSettingsOpen, setKioskSettingsOpen] = useState(false);
+    const [settingsOpen, setSettingsOpen] = useState(false);
     const kioskUser = useKioskUser(config, isKiosk);
     // Pages added, renamed or deleted in edit mode show right away
     const pages = excludeUrlHiddenPages(layout.withDraftPages(configPages), urlHidden);
@@ -116,11 +120,114 @@ function Dashboard({ config }) {
         return target && target.type !== 'iframe' && !target.excluded ? from + direction : -1;
     };
 
+    // The page whose settings the settings window shows: the one shown, unless it is a web page
+    const settingsPage = activePage && activePage.type !== 'iframe' ? activePage : null;
+    const settingsPageName = settingsPage ? settingsPage.name || String(settingsPage.id ?? pageIndex + 1) : undefined;
+    /** @type {import('./components/Settings/SettingsDialog').SettingsSection[]} */
+    const settingsSections = [
+        ...(settingsPage ? [{
+            id: 'page',
+            group: 'This Page',
+            title: 'Page',
+            icon: FilePen,
+            color: '#8e8e93',
+            render: () => (
+                <PageSettings
+                    page={{ id: String(settingsPage.id ?? pageIndex + 1), name: settingsPage.name, addedInEditor: !!settingsPage.addedInEditor }}
+                    cardCount={layout.cardsOf(settingsPage, pageIndex)?.length}
+                    onRename={(name) => layout.renamePage(String(settingsPage.id), name)}
+                    onDelete={settingsPage.addedInEditor ? () => {
+                        setSettingsOpen(false);
+                        layout.deletePage(String(settingsPage.id));
+                    } : undefined}
+                    onAddPage={layout.openAddPage}
+                />
+            ),
+        }] : []),
+        {
+            id: 'background',
+            group: 'Dashboard',
+            title: 'Background',
+            icon: Wallpaper,
+            color: '#0a84ff',
+            render: () => (
+                <BackgroundSettings
+                    background={layout.background}
+                    pageBackground={activeBackground}
+                    pageName={settingsPageName}
+                    onSave={(saved) => layout.saveBackground(saved, activeKey)}
+                />
+            ),
+        },
+        {
+            id: 'header',
+            group: 'Dashboard',
+            title: 'Header Menu',
+            icon: LayoutGrid,
+            color: '#5e5ce6',
+            wide: true,
+            render: () => <HeaderMenuSettings launcher={layout.launcher} headerAutoHide={layout.headerAutoHide} onSave={layout.saveMenu} />,
+        },
+        {
+            id: 'sidebar',
+            group: 'Dashboard',
+            title: 'Sidebar',
+            icon: PanelLeft,
+            color: '#30d158',
+            wide: true,
+            render: () => (
+                <SidebarSettings
+                    enabled={sidebarOn}
+                    items={layout.sidebar?.items}
+                    pages={sidebarPages}
+                    onSave={({ enabled, items }) => {
+                        if (enabled !== sidebarOn) layout.setSidebarEnabled(enabled);
+                        if (items) layout.setSidebarItems(items);
+                    }}
+                    onAddPage={layout.openAddPage}
+                />
+            ),
+        },
+        {
+            id: 'appearance',
+            group: 'Dashboard',
+            title: 'Appearance',
+            icon: Palette,
+            color: '#ff375f',
+            wide: true,
+            render: () => <AppearanceSettings />,
+        },
+        {
+            id: 'kiosk',
+            group: 'Dashboard',
+            title: 'Kiosk Mode',
+            icon: TabletSmartphone,
+            color: '#ff9f0a',
+            wide: true,
+            render: () => <KioskSettings kiosk={config.kiosk} />,
+        },
+        {
+            id: 'reset',
+            title: 'Reset…',
+            icon: RotateCcw,
+            color: '#ff453a',
+            danger: true,
+            render: () => (
+                <ResetSettings
+                    onReset={() => {
+                        setSettingsOpen(false);
+                        layout.reset();
+                    }}
+                />
+            ),
+        },
+    ];
+
     const onKeyDown = useEffectEvent((e) => {
         if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
         if (layout.editing) {
-            if (e.key === 'Escape' && !layout.editor && !layout.adding && !layout.editingMenu && !layout.editingBackground
-                && !layout.pageDialog && !layout.confirmingReset && !layout.editingHeader && !layout.editingSidebar && !kioskSettingsOpen) layout.finish();
+            if (e.key === 'Escape' && !layout.editor && !layout.adding && !settingsOpen
+                && !layout.pageDialog && !layout.editingHeader && !layout.editingSidebar) layout.finish();
             return;
         }
         if (e.key === 'ArrowRight') next();
@@ -162,17 +269,11 @@ function Dashboard({ config }) {
                         status: layout.status,
                         onStart: layout.start,
                         onDone: layout.finish,
-                        onReset: layout.requestReset,
                         canUndoReset: layout.canUndoReset,
                         undoFailed: layout.undoFailed,
                         onUndoReset: layout.undoReset,
                         onAdd: layout.openAdd,
-                        onEditMenu: layout.openMenuEditor,
-                        onEditBackground: () => layout.openBackgroundEditor(),
-                        onEditPage: () => layout.openPageSettings(activeKey),
-                        sidebar: sidebarOn,
-                        onToggleSidebar: config.editable === true ? () => layout.setSidebarEnabled(!sidebarOn) : undefined,
-                        onEditKiosk: config.editable === true ? () => setKioskSettingsOpen(true) : undefined,
+                        onSettings: () => setSettingsOpen(true),
                     }}
                 />
 
@@ -248,42 +349,24 @@ function Dashboard({ config }) {
                     )}
                 </div>
 
-                {isKiosk && <KioskLayer config={config} suspended={layout.editing || kioskSettingsOpen} />}
+                {isKiosk && <KioskLayer config={config} suspended={layout.editing} />}
 
-                {kioskSettingsOpen && <KioskSettings kiosk={config.kiosk} onClose={() => setKioskSettingsOpen(false)} />}
-
-                {layout.confirmingReset && (
-                    <ConfirmDialog
-                        title="Reset Dashboard?"
-                        message="This removes everything changed in the browser, including cards you added, and goes back to config.yaml."
-                        confirmLabel="Reset Dashboard"
-                        onConfirm={layout.reset}
-                        onCancel={layout.cancelReset}
+                {settingsOpen && layout.editing && (
+                    <SettingsDialog
+                        sections={settingsSections}
+                        onSaved={() => setSettingsOpen(false)}
+                        onCancel={() => setSettingsOpen(false)}
                     />
                 )}
 
-                {layout.pageDialog && (() => {
-                    const page = layout.pageDialog.id ? pages.find(p => String(p.id) === layout.pageDialog.id) : null;
-                    return (
-                        <PageDialog
-                            page={page ? { id: String(page.id), name: page.name, addedInEditor: !!page.addedInEditor } : undefined}
-                            cardCount={page ? layout.cardsOf(page, pages.indexOf(page))?.length : 0}
-                            onSave={(name) => (page ? layout.renamePage(String(page.id), name) : goToKey(layout.addPage(name)))}
-                            onDelete={page?.addedInEditor ? () => layout.deletePage(String(page.id)) : undefined}
-                            onEditBackground={page ? () => layout.openBackgroundEditor('page') : undefined}
-                            onCancel={layout.closePageDialog}
-                        />
-                    );
-                })()}
-
-                {layout.editingBackground && (
-                    <BackgroundEditor
-                        background={layout.background}
-                        pageBackground={activeBackground}
-                        pageName={activePage && activePage.type !== 'iframe' ? activePage.name || String(activePage.id) : undefined}
-                        initialScope={layout.editingBackground}
-                        onSave={(saved) => layout.saveBackground(saved, activeKey)}
-                        onCancel={layout.closeBackgroundEditor}
+                {layout.pageDialog && (
+                    <PageDialog
+                        onSave={(name) => {
+                            const key = layout.addPage(name);
+                            // From the settings window the new page shows up in its lists; it opens once the window closes
+                            if (!settingsOpen) goToKey(key);
+                        }}
+                        onCancel={layout.closePageDialog}
                     />
                 )}
 
@@ -365,15 +448,6 @@ function Dashboard({ config }) {
                             onSave={layout.saveCard}
                             onCancel={layout.cancelEditor}
                             onRemove={layout.removeCard}
-                        />
-                    )}
-
-                    {layout.editingMenu && (
-                        <HeaderMenuEditor
-                            launcher={layout.launcher}
-                            headerAutoHide={layout.headerAutoHide}
-                            onSave={layout.saveMenu}
-                            onCancel={layout.closeMenuEditor}
                         />
                     )}
                 </IconBackgroundsContext>

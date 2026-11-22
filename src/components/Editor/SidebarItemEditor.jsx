@@ -18,6 +18,53 @@ import './CardEditor.css';
 const withoutEmpty = (entry) => Object.fromEntries(Object.entries(entry).filter(([, v]) => v !== undefined && v !== ''));
 
 /**
+ * The settings of a sidebar page or folder: a folder's name, and the icon with its color and
+ * background. Each change is reported right away.
+ * @param {Object} props
+ * @param {import('../Sidebar/sidebarModel').Entry} props.entry - The page or folder.
+ * @param {string} [props.pageName] - The page's name; pages are renamed in their own settings.
+ * @param {(entry: import('../Sidebar/sidebarModel').Entry) => void} props.onChange - Receives the changed entry.
+ * @param {() => void} [props.onUngroup] - Removes the folder and keeps its pages.
+ * @returns {JSX.Element} The fields.
+ */
+export const SidebarEntryFields = ({ entry, pageName, onChange, onUngroup }) => {
+    const folder = isFolder(entry);
+    const name = folder ? (/** @type {any} */ (entry).name ?? '') : (pageName ?? '');
+    const { ref } = readIcon(entry.icon);
+    const color = entry.iconColor;
+    const change = (patch) => onChange(/** @type {any} */ (withoutEmpty({ ...entry, ...patch })));
+    const setIcon = (nextRef, nextColor) => change({ icon: nextRef || undefined, iconColor: storedColor(nextRef, nextColor) });
+
+    return (
+        <section className="icon-inspector" aria-label={folder ? 'Folder' : 'Sidebar icon'}>
+            {folder ? (
+                <TextField label="Name" value={name} placeholder={NEW_FOLDER_NAME} onChange={(value = '') => change({ name: value })} />
+            ) : (
+                <Field label="Page" hint="Rename the page in its settings.">
+                    <p className="sidebar-editor-page">{pageName}</p>
+                </Field>
+            )}
+            <IconPicker value={ref} onChange={(next) => setIcon(next, color)} />
+            {ref && (
+                <div className="sidebar-editor-icon-row">
+                    <code className="icon-code">{ref}</code>
+                    <button type="button" className="button-reset editor-dialog-action" onClick={() => setIcon('', undefined)}>
+                        {folder ? 'Use folder icon' : 'Use first letter'}
+                    </button>
+                </div>
+            )}
+            <IconColorField iconRef={ref} value={color} onChange={(next) => setIcon(ref, next)} />
+            <BackgroundField value={entry.iconBackground} onChange={(background) => change({ iconBackground: background })} />
+            {folder && onUngroup && (
+                <button type="button" className="button-reset editor-dialog-action destructive sidebar-editor-ungroup" onClick={onUngroup}>
+                    Remove Folder
+                </button>
+            )}
+        </section>
+    );
+};
+
+/**
  * Dialog that changes a sidebar icon: the icon of a page, or a folder's name and icon. It uses
  * the same icon picker, icon color and background as the icons of cards and apps, and shows the
  * icon as it will look in the sidebar.
@@ -34,16 +81,12 @@ const SidebarItemEditor = ({ entry, pageName, onSave, onCancel, onUngroup }) => 
     const [draft, setDraft] = useState(entry);
     const folder = isFolder(draft);
     const name = folder ? (/** @type {any} */ (draft).name ?? '') : (pageName ?? '');
-    const { ref } = readIcon(draft.icon);
-    const color = draft.iconColor;
 
     useEffect(() => {
         const dialog = dialogRef.current;
         if (dialog && !dialog.open) dialog.showModal?.();
     }, []);
 
-    const change = (patch) => setDraft(prev => withoutEmpty({ ...prev, ...patch }));
-    const setIcon = (nextRef, nextColor) => change({ icon: nextRef || undefined, iconColor: storedColor(nextRef, nextColor) });
     const save = () => onSave(/** @type {any} */ (folder ? { ...draft, name: name.trim() || NEW_FOLDER_NAME } : draft));
 
     return (
@@ -79,31 +122,7 @@ const SidebarItemEditor = ({ entry, pageName, onSave, onCancel, onUngroup }) => 
                     </Stage>
                 </div>
                 <div className="editor-dialog-body">
-                    <section className="icon-inspector" aria-label={folder ? 'Folder' : 'Sidebar icon'}>
-                        {folder ? (
-                            <TextField label="Name" value={name} placeholder={NEW_FOLDER_NAME} onChange={(value = '') => change({ name: value })} />
-                        ) : (
-                            <Field label="Page" hint="Rename the page in its settings.">
-                                <p className="sidebar-editor-page">{pageName}</p>
-                            </Field>
-                        )}
-                        <IconPicker value={ref} onChange={(next) => setIcon(next, color)} />
-                        {ref && (
-                            <div className="sidebar-editor-icon-row">
-                                <code className="icon-code">{ref}</code>
-                                <button type="button" className="button-reset editor-dialog-action" onClick={() => setIcon('', undefined)}>
-                                    {folder ? 'Use folder icon' : 'Use first letter'}
-                                </button>
-                            </div>
-                        )}
-                        <IconColorField iconRef={ref} value={color} onChange={(next) => setIcon(ref, next)} />
-                        <BackgroundField value={draft.iconBackground} onChange={(background) => change({ iconBackground: background })} />
-                        {folder && onUngroup && (
-                            <button type="button" className="button-reset editor-dialog-action destructive sidebar-editor-ungroup" onClick={onUngroup}>
-                                Remove Folder
-                            </button>
-                        )}
-                    </section>
+                    <SidebarEntryFields entry={draft} pageName={pageName} onChange={setDraft} onUngroup={onUngroup} />
                 </div>
             </div>
         </dialog>

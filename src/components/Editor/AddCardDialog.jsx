@@ -4,7 +4,7 @@ import Icon from '../Shared/Icon';
 import './CardEditor.css';
 
 /**
- * Modal list of card types to add to the current page.
+ * Modal list of card types to add to the current page, in alphabetical order.
  * @param {Object} props
  * @param {(type: string) => void} props.onPick - Receives the chosen card type.
  * @param {() => void} props.onCancel - Closes without adding.
@@ -33,7 +33,10 @@ const AddCardDialog = ({ onPick, onCancel, exclude = [] }) => {
             </header>
             <div className="editor-dialog-body">
                 <ul className="add-card-list">
-                    {Object.entries(cardInfo).filter(([type]) => !exclude.includes(type)).map(([type, info]) => (
+                    {Object.entries(cardInfo)
+                        .filter(([type]) => !exclude.includes(type))
+                        .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }))
+                        .map(([type, info]) => (
                         <li key={type}>
                             <button type="button" className="button-reset add-card-option" onClick={() => onPick(type)}>
                                 <span className="add-card-icon" aria-hidden="true">

@@ -11,8 +11,9 @@ Kiosk mode is set **per browser**: add `?kiosk` to the dashboard's address, e.g.
 `https://glassboard.local/?kiosk` (`?kiosk=1` and `?kiosk=true` also work; `?kiosk=0`, `false`, `off` and `no`
 leave it off). Other screens that open the same dashboard are not affected.
 
-The options are stored under `kiosk` in `config.yaml`. They can also be changed from edit mode with the
-**Kiosk mode** button in the header, whether or not the screen is in kiosk mode. Options changed in edit mode are
+The options are stored under `kiosk` in `config.yaml`. They can also be changed from edit mode in
+**Settings** (the gear in the header) → **Kiosk Mode**, whether or not the screen is in kiosk mode; the clock
+faces are drawn there to pick from. Options changed in edit mode are
 saved in `layout.yaml`, like the rest of the layout. Every option is optional.
 
 ```yaml

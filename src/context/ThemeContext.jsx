@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { SURFACE_TOKENS, accentVariables, fadeSurface, normalizeAppearance, transparencyVariables } from '../../shared/appearance.js';
 import { refractionSupported } from '../styles/refraction.js';
 
@@ -15,6 +15,7 @@ export const ThemeContext = createContext(/** @type {any} */ ({
     transparency: 0.5,
     locked: false,
     setAppearance: async () => {},
+    previewAppearance: () => {},
     refraction: { supported: false, enabled: false, active: false, setEnabled: () => {} },
     screenEffects: { enabled: true, active: false, setEnabled: () => {} },
 }));
@@ -171,6 +172,13 @@ export const ThemeProvider = ({ children, config }) => {
     };
 
     /**
+     * Shows a style, accent and transparency on the page without saving them, as the settings window
+     * does while they are picked.
+     * @param {{style?: string, accent?: string|null, transparency?: number}|null} draft - What to show; null shows the saved appearance again.
+     */
+    const previewAppearance = useCallback((draft) => setPending(draft), []);
+
+    /**
      * Turns liquid glass refraction on or off in this browser.
      * @param {boolean} enabled - Whether to refract.
      */
@@ -254,6 +262,7 @@ export const ThemeProvider = ({ children, config }) => {
             // config.yaml keeps the style, accent and transparency; the Theme menu can't change them
             locked: config?.appearance?.locked === true,
             setAppearance,
+            previewAppearance,
             refraction: { supported, enabled: refractionOn, active: refractionActive, setEnabled: setRefractionEnabled },
             screenEffects: { enabled: effectsOn, active: effectsActive, setEnabled: setEffectsEnabled },
         }}>

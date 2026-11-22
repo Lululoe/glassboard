@@ -1,16 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Plus } from 'lucide-react';
 import yaml from 'js-yaml';
 import AppIcon from '../Shared/AppIcon';
 import Icon from '../Shared/Icon';
 import '../Header/LauncherPopup.css';
-import { SegmentedField, TextField } from './EditorFields';
-import { Animated, StageHint } from './icons/AppGridStage';
-import ArrangeSlot from './icons/ArrangeSlot';
-import ItemInspector from './icons/ItemInspector';
-import Stage from './icons/Stage';
-import { useArrangeable, useArrangedList } from './icons/useArrangeable';
-import './CardEditor.css';
+import { SegmentedField, TextField } from '../Editor/EditorFields';
+import { Animated, StageHint } from '../Editor/icons/AppGridStage';
+import ArrangeSlot from '../Editor/icons/ArrangeSlot';
+import ItemInspector from '../Editor/icons/ItemInspector';
+import Stage from '../Editor/icons/Stage';
+import { useArrangeable, useArrangedList } from '../Editor/icons/useArrangeable';
+import { useSectionCommit } from './settingsSection';
+import '../Editor/CardEditor.css';
 
 /** Most apps the header menu shows, in its 4 × 3 grid. */
 const MAX_APPS = 12;
@@ -32,18 +33,17 @@ const AUTO_HIDE_HINTS = {
 const NEW_LINK = { name: '', url: '', icon: 'lu-Link' };
 
 /**
- * Editor of the header menu (the launcher). The menu is drawn as it appears: apps and links are
- * arranged on it directly, and apps past the first 12 wait in a tray. Saving keeps the changes
- * in the dashboard's draft, like a card; "Done" stores them in layout.yaml.
+ * Header Menu section of the settings window: the header menu (the launcher) and when the header bar
+ * hides itself. The menu is drawn as it appears: apps and links are arranged on it directly, and
+ * apps past the first 12 wait in a tray. The window's Save keeps the changes in the dashboard's
+ * draft, like a card; "Done" stores them in layout.yaml.
  * @param {Object} props
  * @param {Object} [props.launcher] - The header menu config.
  * @param {string} [props.headerAutoHide] - When the header bar hides itself: never, with-page-header or always.
  * @param {(launcher: Object, headerAutoHide: string) => void} props.onSave - Receives the edited menu and auto-hide.
- * @param {() => void} props.onCancel - Closes without changes.
- * @returns {JSX.Element} The dialog.
+ * @returns {JSX.Element} The section.
  */
-const HeaderMenuEditor = ({ launcher, headerAutoHide, onSave, onCancel }) => {
-    const dialogRef = useRef(null);
+const HeaderMenuSettings = ({ launcher, headerAutoHide, onSave }) => {
     const rootRef = useRef(null);
     const [draft, setDraft] = useState(() => ({ apps: [], links: [], ...launcher }));
     const [selection, setSelection] = useState(null);
@@ -52,11 +52,6 @@ const HeaderMenuEditor = ({ launcher, headerAutoHide, onSave, onCancel }) => {
     const [yamlText, setYamlText] = useState('');
     const [error, setError] = useState(null);
     const [autoHide, setAutoHide] = useState(headerAutoHide || 'never');
-
-    useEffect(() => {
-        const dialog = dialogRef.current;
-        if (dialog && !dialog.open) dialog.showModal?.();
-    }, []);
 
     const apps = useArrangedList({
         name: 'apps',
@@ -107,13 +102,7 @@ const HeaderMenuEditor = ({ launcher, headerAutoHide, onSave, onCancel }) => {
         }
     };
 
-    const save = () => {
-        try {
-            onSave(tab === 'yaml' ? parseYaml() : draft, autoHide);
-        } catch (err) {
-            setError(err.message);
-        }
-    };
+    useSectionCommit(() => onSave(tab === 'yaml' ? parseYaml() : draft, autoHide));
 
     const tile = (app, index, inTray) => {
         const label = app.name || 'New app';
@@ -150,25 +139,17 @@ const HeaderMenuEditor = ({ launcher, headerAutoHide, onSave, onCancel }) => {
         : setDraft({ ...draft, links: draft.links.map((l, i) => (i === selection.index ? next : l)) });
 
     return (
-        <dialog
-            ref={dialogRef}
-            className="editor-dialog has-stage is-split"
-            aria-labelledby="header-menu-editor-title"
-            onCancel={(e) => {
-                e.preventDefault();
-                if (selection) setSelection(null);
-                else onCancel();
+        <div
+            className="header-menu-settings is-split"
+            onKeyDown={(e) => {
+                // Escape first lets go of the selected app or link
+                if (e.key === 'Escape' && selection) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelection(null);
+                }
             }}
         >
-            <header className="editor-dialog-header">
-                <button type="button" className="button-reset editor-dialog-action" onClick={onCancel}>Cancel</button>
-                <h2 id="header-menu-editor-title" className="editor-dialog-title">
-                    Header Menu
-                    <span className="editor-dialog-subtitle">launcher</span>
-                </h2>
-                <button type="button" className="button-reset editor-dialog-action primary" onClick={save}>Save</button>
-            </header>
-
             <div className="editor-tabs" role="tablist" aria-label="Edit as">
                 <button type="button" role="tab" aria-selected={tab === 'settings'} className="button-reset" onClick={() => showTab('settings')}>Settings</button>
                 <button type="button" role="tab" aria-selected={tab === 'yaml'} className="button-reset" onClick={() => showTab('yaml')}>YAML</button>
@@ -310,8 +291,8 @@ const HeaderMenuEditor = ({ launcher, headerAutoHide, onSave, onCancel }) => {
                     </section>
                 </div>
             )}
-        </dialog>
+        </div>
     );
 };
 
-export default HeaderMenuEditor;
+export default HeaderMenuSettings;

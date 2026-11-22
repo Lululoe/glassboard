@@ -9,7 +9,8 @@ the arrow keys still go through the pages in the order of `config.yaml`.
 
 ## Turning it on
 
-In edit mode, use the sidebar button in the header bar, then **Done**. Or in `config.yaml`:
+In edit mode, open **Settings** (the gear in the header) → **Sidebar**, turn on **Show sidebar**, **Save**, then
+**Done**. Or in `config.yaml`:
 
 ```yaml
 sidebar:
@@ -32,6 +33,15 @@ In edit mode the icons have a dashed outline and can be arranged directly:
   apps. The pencil button at the end of an open folder changes the folder's name and icon, or removes it while keeping
   its pages.
 - With the keyboard, **Shift and an arrow key** moves the focused icon. **Escape** cancels a drag.
+
+The same can be done in **Settings** → **Sidebar**, with a preview of the rail next to it:
+
+- The list shows every page and folder in order. The arrows move one up or down, and the **folder menu** of a
+  page moves it into a folder, out of it, or into a new folder with the page after it.
+- **Select** a page or folder, in the list or in the preview, to change its icon, color and background, or a
+  folder's name. **Remove Folder** keeps its pages.
+- **Add page** adds a page after the others; it joins the list at the end.
+- **Save** keeps the changes in the draft, like everything else in the window.
 
 Changes are saved with the rest of the dashboard in `layout.yaml` when you press **Done**.
 
