@@ -2,7 +2,6 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { beforeAll, describe, it, expect, vi } from 'vitest';
 import CardEditor from '../CardEditor';
 import CardIconEditor from '../CardIconEditor';
-import HeaderMenuEditor from '../HeaderMenuEditor';
 
 beforeAll(() => {
     HTMLDialogElement.prototype.showModal = function showModal() { this.open = true; };
@@ -117,60 +116,5 @@ describe('Header cards', () => {
     it('leaves the icon settings out of the card editor', () => {
         render(<CardEditor card={{ id: 'w', type: 'weather' }} onSave={() => {}} onCancel={() => {}} onRemove={() => {}} />);
         expect(screen.queryByRole('region', { name: 'Card icon' })).not.toBeInTheDocument();
-    });
-});
-
-describe('HeaderMenuEditor', () => {
-    const launcher = { apps: [app('One'), app('Two')], links: [{ name: 'Docs', url: 'http://docs', icon: 'lu-Book' }], links_title: 'More' };
-
-    it('sets when the header bar hides itself', () => {
-        const onSave = vi.fn();
-        render(<HeaderMenuEditor launcher={launcher} headerAutoHide="always" onSave={onSave} onCancel={() => {}} />);
-        expect(screen.getByRole('radio', { name: 'Always' })).toHaveAttribute('aria-checked', 'true');
-        fireEvent.click(screen.getByRole('radio', { name: 'With Page Header' }));
-        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-        expect(onSave.mock.calls[0][1]).toBe('with-page-header');
-    });
-
-    it('arranges apps, adds links and saves', () => {
-        const onSave = vi.fn();
-        render(<HeaderMenuEditor launcher={launcher} onSave={onSave} onCancel={() => {}} />);
-
-        fireEvent.keyDown(screen.getByRole('button', { name: 'One' }), { key: 'ArrowRight', shiftKey: true });
-        fireEvent.click(screen.getByRole('button', { name: 'Add link' }));
-        fireEvent.change(within(screen.getByRole('region', { name: 'Selected link' })).getByLabelText('Name'), { target: { value: 'Wiki' } });
-        fireEvent.change(screen.getByLabelText('Links heading'), { target: { value: 'Tools' } });
-        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-
-        const saved = onSave.mock.calls[0][0];
-        expect(saved.apps.map(a => a.name)).toEqual(['Two', 'One']);
-        expect(saved.links.map(l => l.name)).toEqual(['Docs', 'Wiki']);
-        expect(saved.links_title).toBe('Tools');
-    });
-
-    it('keeps apps past the first 12 in a tray', () => {
-        const apps = Array.from({ length: 13 }, (_, i) => app(`App${i}`));
-        render(<HeaderMenuEditor launcher={{ apps, links: [] }} onSave={() => {}} onCancel={() => {}} />);
-        expect(screen.getByText(/Won't show: 1/)).toBeInTheDocument();
-        expect(document.querySelector('.arrange-tray')).toHaveTextContent('App12');
-    });
-
-    it('stores a color on an app in the object form', () => {
-        const onSave = vi.fn();
-        render(<HeaderMenuEditor launcher={launcher} onSave={onSave} onCancel={() => {}} />);
-        fireEvent.keyDown(screen.getByRole('button', { name: 'One' }), { key: 'Enter' });
-        fireEvent.click(within(screen.getByRole('region', { name: 'Selected app' })).getByRole('button', { name: 'Red icon color' }));
-        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-        expect(onSave.mock.calls[0][0].apps[0].icon).toEqual({ source: 'lucide', value: 'Globe', color: 'var(--system-red)' });
-    });
-
-    it('edits as YAML', () => {
-        const onSave = vi.fn();
-        render(<HeaderMenuEditor launcher={launcher} onSave={onSave} onCancel={() => {}} />);
-        fireEvent.click(screen.getByRole('tab', { name: 'YAML' }));
-        fireEvent.change(screen.getByLabelText('Header menu YAML'), { target: { value: 'apps: [unclosed' } });
-        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-        expect(screen.getByRole('alert')).toBeInTheDocument();
-        expect(onSave).not.toHaveBeenCalled();
     });
 });

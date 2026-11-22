@@ -102,24 +102,6 @@
 }
 
 /* Edit mode controls */
-.header-menu-edit {
-    position: relative;
-}
-
-.header-menu-edit-badge {
-    position: absolute;
-    top: -5px;
-    left: -5px;
-    width: 16px;
-    height: 16px;
-    border-radius: var(--radius-round);
-    display: grid;
-    place-items: center;
-    background: var(--bg-tile, #fff);
-    color: #1c1c1e;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
-}
-
 .header-edit-status {
     font-size: var(--fs-13);
     line-height: 1.125rem;
@@ -185,17 +167,6 @@
     box-shadow: var(--focus-ring);
 }
 
-/* Reset shows its label; on narrow screens only its icon (see below) */
-.header-reset-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.header-reset-icon {
-    display: none;
-}
-
 /* While editing, the title gives way before the buttons, so Done is always on screen */
 .app-header.is-editing .header-left {
     flex: 0 1 auto;
@@ -216,22 +187,6 @@
 @media (max-width: 640px) {
     .app-header.is-editing .header-title,
     .app-header.is-editing .header-demo-badge {
-        display: none;
-    }
-
-    .header-reset-button {
-        width: 32px;
-        min-height: 32px;
-        padding: 0;
-        border-radius: var(--radius-9);
-        margin-right: 6px;
-    }
-
-    .header-reset-icon {
-        display: block;
-    }
-
-    .header-reset-label {
         display: none;
     }
 }
@@ -319,8 +274,3 @@
     }
 }
 
-/* The sidebar toggle in edit mode shows whether the sidebar is on */
-.icon-button.header-sidebar-toggle.is-on {
-    background: var(--bg-fill-hover);
-    color: var(--color-primary, var(--system-blue));
-}

@@ -15,8 +15,8 @@ Defined under `launcher.apps`.
 | `icon` | string/object | URL (svg/png) or icon name (e.g. `sh-plex`, `lu-Mail`, `mdi:lightbulb`), or `{ source, value, color }` for an icon with a color. |
 | `bgColor` | string | Optional. CSS background property (color or gradient) for the icon container. |
 
-The menu can also be edited in the browser: in edit mode, the grid button with the pencil opens it, with the apps and
-links arranged directly on the menu. See [Editing icons](CARD_CONFIGURATION#editing-icons). The menu shows the first 12
+The menu can also be edited in the browser: in edit mode, **Settings** (the gear in the header) → **Header Menu**,
+with the apps and links arranged directly on the menu. See [Editing icons](CARD_CONFIGURATION#editing-icons). The menu shows the first 12
 apps; further ones wait under **Won't show**. Changes are saved to `layout.yaml` and then replace `launcher` from
 `config.yaml` as a whole, until **Reset**.
 

@@ -1,0 +1,305 @@
+/* The settings window: the list of sections on the left, the chosen one on the right.
+   On a phone it fills the screen, and the list and a section take turns. */
+dialog.editor-dialog.settings-dialog {
+    width: min(1080px, calc(100vw - 32px));
+    height: min(780px, calc(100dvh - 48px));
+    max-height: none;
+}
+
+.settings-dialog-leading {
+    display: flex;
+}
+
+/* Back to the list only on a phone, while a section is shown */
+.settings-dialog-back,
+.settings-dialog-title-section {
+    display: none;
+}
+
+.settings-dialog-back {
+    align-items: center;
+    gap: 2px;
+    padding-left: 4px;
+}
+
+.settings-dialog-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+}
+
+.settings-dialog-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 8px;
+    border-right: 0.5px solid var(--color-separator);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.settings-nav-heading {
+    margin: 14px 10px 4px;
+    font-size: var(--fs-12);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+.settings-nav-heading:first-child {
+    margin-top: 4px;
+}
+
+.settings-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 40px;
+    padding: 0 10px;
+    border-radius: var(--radius-8);
+    font-size: var(--fs-15);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+/* The sections without a heading (Reset) sit at the bottom of the list */
+.settings-nav-item.is-last {
+    margin-top: auto;
+}
+
+.settings-nav-item.is-last ~ .settings-nav-item.is-last {
+    margin-top: 0;
+}
+
+.settings-nav-item.is-danger {
+    color: var(--system-red-text);
+}
+
+@media (pointer: fine) {
+    .settings-nav-item:hover {
+        background: var(--bg-fill);
+    }
+}
+
+.settings-nav-item[aria-current="page"] {
+    background: var(--color-primary);
+    color: #fff;
+}
+
+.settings-nav-item:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+.settings-nav-icon {
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: var(--radius-7);
+    display: grid;
+    place-items: center;
+    color: #fff;
+}
+
+.settings-nav-label {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.settings-nav-error {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-round);
+    background: var(--system-red);
+}
+
+.settings-nav-chevron {
+    display: none;
+    color: var(--text-tertiary);
+}
+
+.settings-dialog-pane {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 22px 26px 30px;
+    gap: 20px;
+}
+
+.settings-dialog-pane[hidden] {
+    display: none;
+}
+
+/* Sections with a preview beside them fill the pane; their own columns scroll */
+.settings-dialog-pane.is-wide {
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+}
+
+.settings-dialog-pane.is-wide > .settings-pane-error {
+    margin: 12px 26px 0;
+}
+
+/* A column of groups in a section */
+.settings-form {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+/* A section's previews on the page background, with its options next to them */
+.settings-columns {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+}
+
+.settings-columns > .card-editor-preview {
+    flex: 0 0 44%;
+    min-width: 320px;
+}
+
+.settings-columns > .settings-columns-main {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 20px 24px 28px;
+}
+
+@media (max-width: 960px) {
+    .settings-columns {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .settings-columns > .card-editor-preview {
+        flex: none;
+        min-width: 0;
+        max-width: none;
+        max-height: none;
+        overflow: visible;
+    }
+
+    .settings-columns > .settings-columns-main {
+        overflow: visible;
+    }
+}
+
+.settings-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--fs-15);
+}
+
+.settings-danger-button {
+    align-self: flex-start;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: var(--radius-9);
+    background: var(--bg-fill);
+    color: var(--system-red-text);
+    font-size: var(--fs-15);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+@media (pointer: fine) {
+    .settings-danger-button:hover {
+        background: var(--bg-fill-hover);
+    }
+}
+
+.settings-danger-button:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* Phone: the list fills the screen, and a section replaces it */
+@media (max-width: 768px) {
+    dialog.editor-dialog.settings-dialog {
+        width: 100vw;
+        height: 100dvh;
+        max-width: none;
+        border-radius: 0;
+    }
+
+    .settings-dialog-body {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .settings-dialog:not(.is-detail) .settings-dialog-pane,
+    .settings-dialog.is-detail .settings-dialog-nav {
+        display: none;
+    }
+
+    .settings-dialog.is-detail .settings-dialog-back {
+        display: inline-flex;
+    }
+
+    .settings-dialog.is-detail .settings-dialog-cancel,
+    .settings-dialog.is-detail .settings-dialog-title-list {
+        display: none;
+    }
+
+    .settings-dialog.is-detail .settings-dialog-title-section {
+        display: block;
+    }
+
+
+    .settings-dialog-nav {
+        border-right: 0;
+        padding: 8px 12px 16px;
+    }
+
+    .settings-nav-item {
+        min-height: 48px;
+    }
+
+    .settings-nav-item[aria-current="page"] {
+        background: none;
+        color: var(--text-primary);
+    }
+
+    .settings-nav-item.is-danger[aria-current="page"] {
+        color: var(--system-red-text);
+    }
+
+    .settings-nav-chevron {
+        display: block;
+    }
+
+    .settings-dialog-pane {
+        padding: 16px;
+    }
+}
+
+/* The header menu's stage and inspector fill the pane under its tabs */
+.header-menu-settings {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.header-menu-settings > .editor-tabs {
+    margin: 14px 26px 0;
+}
+
+.header-menu-settings > .editor-dialog-body {
+    flex: 1;
+    min-height: 0;
+}
