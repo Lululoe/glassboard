@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-    headerFor, isOn, lineForm, lineFromForm, templateOf, withArrangement, withLine, withPageArrangement, withPageLine,
+    headerFor, isOn, lineForm, lineFromForm, moveWidget, templateOf, withArrangement, withLine, withPageArrangement, withPageLine,
 } from './headerSettings';
 
 const arrangement = (patch = {}) => ({ align: 'left', layout: 'auto', locale: '', ...patch });
@@ -59,5 +59,21 @@ describe('header settings', () => {
         expect(withPageLine(undefined, 'subtitle', false, true)).toEqual({ subtitle: false });
         expect(withPageLine({ subtitle: false }, 'subtitle', undefined, true)).toBeUndefined();
         expect(withPageLine({ subtitle: false }, 'subtitle', undefined, false)).toEqual({});
+    });
+});
+
+describe('moveWidget', () => {
+    const widgets = [{ id: 'a', entity_id: 'sensor.a' }, { id: 'b', entity_id: 'sensor.b' }, { id: 'c', entity_id: 'sensor.c' }];
+
+    it('moves a widget in the list of all pages', () => {
+        const moved = moveWidget({ pageHeader: { widgets }, pageOwn: undefined, hasPage: true }, 0, 2, 'a');
+        expect(moved?.pageHeader.widgets.map(w => w.id)).toEqual(['b', 'c', 'a']);
+        expect(moved?.pageOwn).toBeUndefined();
+    });
+
+    it("moves it in the page's own list when the page has one, and does nothing when it stays", () => {
+        const moved = moveWidget({ pageHeader: true, pageOwn: { widgets }, hasPage: true }, 2, 0, 'c');
+        expect(moved?.pageOwn.widgets.map(w => w.id)).toEqual(['c', 'a', 'b']);
+        expect(moveWidget({ pageHeader: { widgets }, pageOwn: undefined, hasPage: false }, 1, 1, 'b')).toBeNull();
     });
 });

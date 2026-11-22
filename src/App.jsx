@@ -22,6 +22,7 @@ import { useHeaderEntrance } from './hooks/useHeaderEntrance';
 import HeaderLayoutEditor from './components/Editor/HeaderLayoutEditor';
 import HeaderLineEditor from './components/Editor/HeaderLineEditor';
 import HeaderWidgetEditor from './components/Editor/HeaderWidgetEditor';
+import { moveWidget } from './components/Editor/headerSettings';
 import AddWidgetDialog from './components/Editor/AddWidgetDialog';
 import { HeaderEntitiesContext } from './context/headerEntities';
 import { headerBarHides, headerWidgetEntityIds, resolvePageHeader } from '../shared/pageHeader';
@@ -310,6 +311,11 @@ function Dashboard({ config }) {
                                             pageKey={activeKey}
                                             entering={headerEntering}
                                             onEdit={layout.editing && editable ? layout.openHeaderEditor : undefined}
+                                            onMoveWidget={layout.editing && editable ? (from, to, id) => {
+                                                const hasPage = activePageName !== undefined;
+                                                const moved = moveWidget({ pageHeader: layout.pageHeader, pageOwn: activeHeaderOwn, hasPage }, from, to, id);
+                                                if (moved) layout.saveHeader(moved, hasPage ? activeKey : undefined);
+                                            } : undefined}
                                         />
                                     )}
                                     {idx === pageIndex && !activeHeader && layout.editing && editable && (

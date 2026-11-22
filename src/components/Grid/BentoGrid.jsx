@@ -16,6 +16,10 @@ const TOUCH_LIFT_MS = 220;
 const DRAG_THRESHOLD = 6;
 const SWAP_COOLDOWN_MS = 180;
 const EDGE_SCROLL_ZONE = 70;
+/** Wheel movement that scrolls a container in edit mode by one row of cards. */
+const WHEEL_ROW_DELTA = 40;
+/** Time after a row step in which the wheel is ignored. */
+const WHEEL_STEP_PAUSE_MS = 280;
 const EDGE_PAGE_ZONE = 48;
 const EDGE_DWELL_MS = 650;
 const INTERACTIVE = 'button, a, input, select, textarea, [role="slider"], [role="button"], [contenteditable="true"]';
@@ -162,6 +166,7 @@ const BentoGrid = ({
     const dragEndedRef = useRef(0);
     const beginRef = useRef(null);
     const placeRef = useRef(null);
+    const wheelRef = useRef({ delta: 0, at: 0 });
     const pendingRef = useRef(null);
     const [dragKey, setDragKey] = useState(null);
     const [intoKey, setIntoKey] = useState(/** @type {string|null} */ (null));
@@ -748,10 +753,22 @@ const BentoGrid = ({
      * @param {import('react').WheelEvent<HTMLElement>} e - The wheel event.
      */
     const scrollContainer = (e) => {
-        const body = e.currentTarget.closest('[data-key]')?.querySelector('.container-card-body');
+        const body = /** @type {HTMLElement|null|undefined} */ (e.currentTarget.closest('[data-key]')?.querySelector('.container-card-body'));
         if (!body || body.scrollHeight <= body.clientHeight) return;
+        // The container scrolls a row of cards at a time, so the wheel's small steps add up to one
+        // and a trackpad's glide after a step doesn't run through every row
+        const wheel = wheelRef.current;
+        if (now() - wheel.at < WHEEL_STEP_PAUSE_MS) return;
+        wheel.delta += e.deltaY;
+        if (Math.abs(wheel.delta) < WHEEL_ROW_DELTA) return;
+        const direction = Math.sign(wheel.delta);
+        wheel.delta = 0;
+        wheel.at = now();
+        const grid = body.querySelector('.container-card-grid');
+        const styles = grid ? getComputedStyle(grid) : null;
+        const row = (parseFloat(styles?.gridAutoRows ?? '') || body.clientHeight) + (parseFloat(styles?.rowGap ?? '') || 0);
         const before = body.scrollTop;
-        body.scrollTop += e.deltaY;
+        body.scrollTop = Math.round(before / row + direction) * row;
         if (body.scrollTop !== before) placeRef.current?.();
     };
 

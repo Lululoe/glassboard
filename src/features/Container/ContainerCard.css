@@ -36,7 +36,9 @@
     text-overflow: ellipsis;
 }
 
-/* The space the cards share; rows are measured against its height */
+/* The space the cards share; rows are measured against its height. It scrolls a row of cards at
+   a time and always comes to rest at the top of a row, so it never shows half a card: the rows fill
+   it exactly, and the end of the grid is the top of a row too. */
 .container-card-body {
     flex: 1;
     min-height: 0;
@@ -44,6 +46,11 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: none;
+    scroll-snap-type: y mandatory;
+}
+
+.container-card-grid > * {
+    scroll-snap-align: start;
 }
 
 .container-card-body::-webkit-scrollbar {

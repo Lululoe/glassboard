@@ -442,13 +442,15 @@ router.delete('/kiosk', (req, res, next) => {
 
 /**
  * Lists the Home Assistant entities the kiosk options pick from: media players, switches,
- * sensors and the like, by id and name only. Only while editing is on, like the options themselves.
+ * sensors and the like, by id and name only. With `?all=1`, every entity, for the entity pickers
+ * of cards and header widgets. Only while editing is on, like the options themselves.
  */
 router.get('/entities', async (req, res, next) => {
     try {
         assertEditable();
-        const entities = isDemoMode() ? demoKioskEntities() : await listKioskEntities();
-        res.set('Cache-Control', 'no-store').json({ domains: LISTED_DOMAINS, entities });
+        const all = req.query.all === '1';
+        const entities = isDemoMode() ? demoKioskEntities({ all }) : await listKioskEntities({ all });
+        res.set('Cache-Control', 'no-store').json({ domains: all ? null : LISTED_DOMAINS, entities });
     } catch (err) {
         next(err);
     }

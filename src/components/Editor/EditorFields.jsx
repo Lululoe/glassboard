@@ -1,6 +1,7 @@
 import { useId, useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { setIn } from './setIn';
+import { EntityPicker } from './EntityPicker';
 import './EditorFields.css';
 
 /**
@@ -150,13 +151,26 @@ export const Group = ({ title, description, children }) => (
 /**
  * Text input of one property of a list item, with its own label.
  * @param {Object} props
- * @param {{key: string, label: string, placeholder?: string, hint?: string}} props.column - The property.
+ * @param {{key: string, label: string, placeholder?: string, hint?: string, entity?: boolean|string[]}} props.column - The
+ *   property; `entity` picks a Home Assistant entity, of the domains listed when it is a list.
  * @param {*} props.value - Current value.
  * @param {(value: string|undefined) => void} props.onChange - Receives the new value.
  * @returns {JSX.Element} The field.
  */
 const ItemInput = ({ column, value, onChange }) => {
     const id = useId();
+    if (column.entity) {
+        return (
+            <EntityPicker
+                label={column.label}
+                value={value}
+                onChange={onChange}
+                domains={Array.isArray(column.entity) ? column.entity : undefined}
+                placeholder={column.placeholder}
+                hint={column.hint}
+            />
+        );
+    }
     return (
         <Field label={column.label} hint={column.hint} htmlFor={id}>
             <input
@@ -179,7 +193,7 @@ const ItemInput = ({ column, value, onChange }) => {
  * @param {string} props.label - Title of the list.
  * @param {Array<Object>} props.items - The items.
  * @param {(items: Array<Object>) => void} props.onChange - Receives the new list.
- * @param {Array<{key: string, label: string, placeholder?: string, hint?: string}>} props.columns - Properties
+ * @param {Array<{key: string, label: string, placeholder?: string, hint?: string, entity?: boolean|string[]}>} props.columns - Properties
  *   of an item. The first one names the item when it has no `name`.
  * @param {(item: Object, key: string, value: string|undefined) => Object} [props.onItemChange] - Updates an item; defaults to setting the key.
  * @param {() => Object} [props.newItem] - Creates the item added by "Add".

@@ -1,3 +1,4 @@
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { Plus, Pencil, EyeOff } from 'lucide-react';
 import {
     formatStateValue, headerColorCss, widgetFraction, widgetIcon, widgetVisible,
@@ -117,7 +118,7 @@ function Widget({ widget, states, locale, monochrome }) {
     const fraction = widgetFraction(widget, state);
     const short = shortValue(state, locale);
     const small = short.length > 4 ? ' is-long' : '';
-    return (
+    const circle = (
         <div className={`ph-s ph-type-${widget.type}`} role="img" aria-label={label} title={name}>
             {widget.type === 'ring' && <Ring fraction={fraction} color={color} />}
             {widget.type === 'gauge' && <Gauge fraction={fraction} color={color} />}
@@ -134,11 +135,150 @@ function Widget({ widget, states, locale, monochrome }) {
             )}
         </div>
     );
+    if (!widget.name) return circle;
+    // A label of its own goes under the circle, like a caption
+    return (
+        <div className="ph-s-labeled">
+            {circle}
+            <span className="ph-s-label" aria-hidden="true" style={monochrome ? undefined : { color }}>{widget.name}</span>
+        </div>
+    );
+}
+
+/**
+ * The places of the widgets as laid out, without the dragged one's own offset.
+ * @param {Object} d - The drag.
+ * @returns {Array<{index: number, left: number, right: number, top: number, bottom: number}>} The places.
+ */
+function placesOf(d) {
+    d.el.style.transform = 'none';
+    return [...d.list.querySelectorAll('[data-widget-index]')].map((/** @type {HTMLElement} */ el) => {
+        const r = el.getBoundingClientRect();
+        return { index: Number(el.dataset.widgetIndex), left: r.left, right: r.right, top: r.top, bottom: r.bottom };
+    });
+}
+
+/**
+ * Puts the dragged widget under the pointer, from where it is laid out now.
+ * @param {Object} d - The drag.
+ * @param {ReturnType<typeof placesOf>} [places] - The places, when just measured.
+ */
+function followPointer(d, places = placesOf(d)) {
+    const own = places.find(p => p.index === d.index);
+    if (!own) return;
+    d.el.style.transform = `translate(${d.x - d.grabX - own.left}px, ${d.y - d.grabY - own.top}px) scale(1.06)`;
+}
+
+/** Pixels the pointer moves before a press on a widget becomes a drag. */
+const DRAG_THRESHOLD = 5;
+
+/**
+ * Lets the widgets be dragged to another place while editing. The list is changed as the dragged
+ * widget passes the middle of another one, so the others make room as it goes; the dragged one
+ * follows the pointer. A press that doesn't move stays a click and opens the widget's editor.
+ * @param {(from: number, to: number, id: string) => void} [onMove] - Moves a widget.
+ * @returns {{pressProps: (index: number, id: string) => Object, wasDragged: () => boolean}} Props for
+ *   each widget, and whether the click that follows a press ended a drag.
+ */
+function useWidgetDrag(onMove) {
+    const drag = useRef(null);
+    const latest = useRef(onMove);
+    const suppressClick = useRef(false);
+
+    useEffect(() => {
+        latest.current = onMove;
+    });
+
+    useEffect(() => {
+        /**
+         * Moves the dragged widget once the pointer is over another one and past its middle in
+         * the direction of the move, so it doesn't flip back when the two differ in width.
+         */
+        const reorder = (d) => {
+            const list = placesOf(d);
+            const over = list.find(p => p.index !== d.index
+                && d.x >= p.left && d.x <= p.right && d.y >= p.top - 6 && d.y <= p.bottom + 6);
+            followPointer(d, list);
+            if (!over) return;
+            const middle = (over.left + over.right) / 2;
+            const ahead = over.index > d.index;
+            if (ahead ? d.x < middle : d.x > middle) return;
+            latest.current?.(d.index, over.index, d.id);
+            d.index = over.index;
+        };
+
+        const onMove = (e) => {
+            const d = drag.current;
+            if (!d || e.pointerId !== d.pointerId) return;
+            d.x = e.clientX;
+            d.y = e.clientY;
+            if (!d.started) {
+                if (Math.hypot(d.x - d.startX, d.y - d.startY) < DRAG_THRESHOLD) return;
+                d.started = true;
+                d.el.classList.add('is-dragging');
+            }
+            reorder(d);
+        };
+
+        const onUp = (e) => {
+            const d = drag.current;
+            if (!d || e.pointerId !== d.pointerId) return;
+            drag.current = null;
+            if (!d.started) return;
+            suppressClick.current = true;
+            d.el.classList.remove('is-dragging');
+            const from = d.el.style.transform;
+            d.el.style.transform = '';
+            const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+            if (from && typeof d.el.animate === 'function' && !reduced) {
+                d.el.animate([{ transform: from }, { transform: 'none' }], { duration: 200, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' });
+            }
+        };
+
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
+        return () => {
+            window.removeEventListener('pointermove', onMove);
+            window.removeEventListener('pointerup', onUp);
+            window.removeEventListener('pointercancel', onUp);
+        };
+    }, []);
+
+    // After the list re-renders in its new order, the dragged widget is put under the pointer again
+    useLayoutEffect(() => {
+        const d = drag.current;
+        if (d?.started) followPointer(d);
+    });
+
+    const pressProps = (index, id) => ({
+        'data-widget-index': index,
+        onPointerDown: (e) => {
+            if (!onMove || e.button || drag.current) return;
+            const el = /** @type {HTMLElement} */ (e.currentTarget);
+            const r = el.getBoundingClientRect();
+            suppressClick.current = false;
+            drag.current = {
+                el, id, index, pointerId: e.pointerId, list: el.parentElement, started: false,
+                startX: e.clientX, startY: e.clientY, x: e.clientX, y: e.clientY,
+                grabX: e.clientX - r.left, grabY: e.clientY - r.top,
+            };
+        },
+    });
+
+    const wasDragged = () => {
+        const dragged = suppressClick.current;
+        suppressClick.current = false;
+        return dragged;
+    };
+
+    return { pressProps, wasDragged };
 }
 
 /**
  * The header's widgets. They are the header's flex items directly, so it can wrap them together.
- * Widgets whose condition isn't met are left out, except in edit mode, where they are dimmed.
+ * Widgets whose condition isn't met are left out, except in edit mode, where they are dimmed and
+ * can be dragged, or moved with Shift and an arrow key, to another place.
  * @param {Object} props
  * @param {Array<Object>} props.widgets - The widgets, as resolvePageHeader returns them.
  * @param {Object<string, Object|null>} props.states - States by entity id.
@@ -146,9 +286,12 @@ function Widget({ widget, states, locale, monochrome }) {
  * @param {boolean} [props.monochrome] - Draws them in the text color.
  * @param {(index: number|null) => void} [props.onEdit] - Opens a widget's editor, or a new one's
  *   with null; given in edit mode.
+ * @param {(from: number, to: number, id: string) => void} [props.onMove] - Moves a widget to
+ *   another place; given in edit mode.
  * @returns {JSX.Element} The widgets.
  */
-export default function HeaderWidgets({ widgets, states, locale, monochrome = false, onEdit }) {
+export default function HeaderWidgets({ widgets, states, locale, monochrome = false, onEdit, onMove }) {
+    const { pressProps, wasDragged } = useWidgetDrag(onMove);
     return (
         <>
             {widgets.map((widget, index) => {
@@ -158,9 +301,24 @@ export default function HeaderWidgets({ widgets, states, locale, monochrome = fa
                     <button
                         key={widget.id}
                         type="button"
-                        className={`button-reset ph-widget-button${visible ? '' : ' is-hidden'}${widget.type === 'rectangle' ? ' is-wide' : ''}`}
+                        className={`button-reset ph-widget-button${visible ? '' : ' is-hidden'}${widget.type === 'rectangle' ? ' is-wide' : ''}${onMove ? ' is-movable' : ''}`}
                         aria-label={`Edit widget ${index + 1}${visible ? '' : ', hidden by its condition'}`}
-                        onClick={() => onEdit(index)}
+                        aria-keyshortcuts={onMove ? 'Shift+ArrowLeft Shift+ArrowRight' : undefined}
+                        {...pressProps(index, widget.id)}
+                        onClick={() => {
+                            if (!wasDragged()) onEdit(index);
+                        }}
+                        onKeyDown={(e) => {
+                            const step = { ArrowLeft: -1, ArrowRight: 1 }[e.key];
+                            if (!onMove || !e.shiftKey || !step) return;
+                            const target = index + step;
+                            if (target < 0 || target >= widgets.length) return;
+                            e.preventDefault();
+                            const list = e.currentTarget.parentElement;
+                            onMove(index, target, widget.id);
+                            requestAnimationFrame(() => /** @type {HTMLElement|null} */ (list
+                                ?.querySelector(`[data-widget-index="${target}"]`))?.focus());
+                        }}
                     >
                         <Widget widget={widget} states={states} locale={locale} monochrome={monochrome} />
                         <span className="grid-icon-badge ph-widget-badge" aria-hidden="true">

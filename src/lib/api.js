@@ -140,3 +140,12 @@ export function saveKiosk(kiosk) {
 export async function listKioskEntities() {
     return (await send('GET', '/api/config/entities')).entities;
 }
+
+/**
+ * Lists every Home Assistant entity, by id and name, for the entity pickers of the editors.
+ * Only works while editing is on.
+ * @returns {Promise<Array<{entity_id: string, name: string, device_class?: string, unit?: string}>>} The entities.
+ */
+export async function listEntities() {
+    return (await send('GET', '/api/config/entities?all=1')).entities;
+}

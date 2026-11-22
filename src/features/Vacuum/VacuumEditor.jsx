@@ -1,4 +1,5 @@
 import { Group, ListField, TextField, ToggleField } from '../../components/Editor/EditorFields';
+import { EntityPicker } from '../../components/Editor/EntityPicker';
 import { setIn } from '../../components/Editor/setIn';
 import { MAX_ROBOTS } from './vacuumModel';
 
@@ -16,7 +17,7 @@ export const VacuumEditor = ({ config, onChange }) => {
     return (
         <>
             <Group title="Robot">
-                <TextField label="Vacuum entity" value={config.entity_id} onChange={set('entity_id')} placeholder="vacuum.robo" />
+                <EntityPicker label="Vacuum entity" value={config.entity_id} onChange={set('entity_id')} domains={['vacuum']} placeholder="vacuum.robo" clearable={false} />
                 <TextField label="Name" value={config.name} onChange={set('name')} placeholder="From Home Assistant" />
             </Group>
             <Group title="On the card">
@@ -30,18 +31,18 @@ export const VacuumEditor = ({ config, onChange }) => {
                 <ToggleField label="Show consumables" checked={Boolean(config.show_consumables)} onChange={(on) => set('show_consumables')(on ? true : undefined)} />
             </Group>
             <Group title="Sensors and cameras" description="Optional entities of the robot.">
-                <TextField label="Battery" value={config.battery} onChange={set('battery')} placeholder="sensor.robo_battery" hint="Shown while the robot has no progress to show." />
-                <TextField label="Progress" value={config.progress} onChange={set('progress')} placeholder="sensor.robo_progress" hint="A percentage. Without one, the bar shows the battery." />
-                <TextField label="Mop wetness" value={config.wetness} onChange={set('wetness')} placeholder="select.robo_water" hint="A select entity. Without one, the wetness control is hidden." />
-                <TextField label="Map" value={config.map} onChange={set('map')} placeholder="camera.robo_map_data" hint="A camera entity. Valetudo's map data camera is drawn as a minimal map." />
-                <TextField label="Camera" value={config.camera} onChange={set('camera')} placeholder="camera.robo" />
+                <EntityPicker label="Battery" domains={['sensor']} value={config.battery} onChange={set('battery')} placeholder="sensor.robo_battery" hint="Shown while the robot has no progress to show." />
+                <EntityPicker label="Progress" domains={['sensor']} value={config.progress} onChange={set('progress')} placeholder="sensor.robo_progress" hint="A percentage. Without one, the bar shows the battery." />
+                <EntityPicker label="Mop wetness" domains={['select', 'input_select']} value={config.wetness} onChange={set('wetness')} placeholder="select.robo_water" hint="A select entity. Without one, the wetness control is hidden." />
+                <EntityPicker label="Map" domains={['camera', 'image']} value={config.map} onChange={set('map')} placeholder="camera.robo_map_data" hint="A camera entity. Valetudo's map data camera is drawn as a minimal map." />
+                <EntityPicker label="Camera" domains={['camera']} value={config.camera} onChange={set('camera')} placeholder="camera.robo" />
             </Group>
             <ListField
                 label="Stats"
                 items={entries(config.stats)}
                 onChange={set('stats')}
                 columns={[
-                    { key: 'entity_id', label: 'Entity', placeholder: 'sensor.robo_area' },
+                    { key: 'entity_id', label: 'Entity', placeholder: 'sensor.robo_area', entity: true },
                     { key: 'attribute', label: 'Attribute', placeholder: 'Optional attribute' },
                     { key: 'name', label: 'Name', placeholder: 'From Home Assistant' },
                 ]}
@@ -65,7 +66,7 @@ export const VacuumEditor = ({ config, onChange }) => {
                 items={entries(config.consumables)}
                 onChange={set('consumables')}
                 columns={[
-                    { key: 'entity_id', label: 'Remaining', placeholder: 'sensor.robo_main_brush' },
+                    { key: 'entity_id', label: 'Remaining', placeholder: 'sensor.robo_main_brush', entity: ['sensor'] },
                     { key: 'name', label: 'Name', placeholder: 'e.g. Main brush' },
                     { key: 'percent', label: 'Percentage', placeholder: 'Optional sensor with % left' },
                     { key: 'reset', label: 'Reset button', placeholder: 'Optional button.robo_reset_brush' },
@@ -94,7 +95,7 @@ export const VacuumsEditor = ({ config, onChange }) => (
             items={entries(config.robots)}
             onChange={(items) => onChange(setIn(config, ['robots'], items))}
             columns={[
-                { key: 'entity_id', label: 'Vacuum entity', placeholder: 'vacuum.robo' },
+                { key: 'entity_id', label: 'Vacuum entity', placeholder: 'vacuum.robo', entity: ['vacuum'] },
                 { key: 'name', label: 'Name', placeholder: 'From Home Assistant' },
             ]}
             addLabel="Add robot"

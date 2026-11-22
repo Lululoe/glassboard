@@ -141,11 +141,13 @@ function useWidgetStates(widgets) {
  * @param {string} props.pageKey - Key of the page, for its template lines.
  * @param {(part: 'layout'|'title'|'subtitle'|'widget', index?: number|null) => void} [props.onEdit] - Opens an
  *   editor; for a widget with its position, or null for a new one. Given in edit mode.
+ * @param {(from: number, to: number, id: string) => void} [props.onMoveWidget] - Moves a widget to another
+ *   place; given in edit mode.
  * @param {boolean} [props.entering=true] - Whether it plays its entrance; false keeps it still, e.g.
  *   when the previous page showed the same header.
  * @returns {JSX.Element} The header.
  */
-export default function PageHeader({ header, pageKey, onEdit, entering = true }) {
+export default function PageHeader({ header, pageKey, onEdit, onMoveWidget, entering = true }) {
     const { align, layout, locale, title, subtitle } = header;
     const monochrome = header.style === 'monochrome';
     const states = useWidgetStates(header.widgets);
@@ -213,6 +215,7 @@ export default function PageHeader({ header, pageKey, onEdit, entering = true })
                         locale={locale}
                         monochrome={monochrome}
                         onEdit={editing ? (index) => onEdit('widget', index) : undefined}
+                        onMove={editing ? onMoveWidget : undefined}
                     />
                 </div>
             )}

@@ -35,7 +35,7 @@ const PrinterEditor = ({ config, onChange }) => {
                 label="Spools"
                 items={entries(config.trays)}
                 onChange={set('trays')}
-                columns={[{ key: 'entity_id', label: 'Tray', placeholder: 'sensor.ams_2_tray_1' }]}
+                columns={[{ key: 'entity_id', label: 'Tray', placeholder: 'sensor.ams_2_tray_1', entity: ['sensor'] }]}
                 addLabel="Add spool"
                 hint="Optional, for example with several AMS units. Without any, the AMS's four trays and a loaded external spool show."
             />

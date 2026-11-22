@@ -16,8 +16,8 @@ const shownApps = () => screen.getAllByRole('button', { name: /^(One|Two|Three|N
 
 /** Drags an item onto another with a mouse. */
 const drag = (from, to) => {
-    from.getBoundingClientRect = () => ({ left: 0, top: 0, width: 10, height: 10 });
-    to.getBoundingClientRect = () => ({ left: 100, top: 0, width: 10, height: 10 });
+    from.getBoundingClientRect = () => ({ left: 0, top: 0, right: 10, bottom: 10, width: 10, height: 10 });
+    to.getBoundingClientRect = () => ({ left: 100, top: 0, right: 110, bottom: 10, width: 10, height: 10 });
     fireEvent.pointerDown(from, { button: 0, clientX: 5, clientY: 5 });
     fireEvent.pointerMove(window, { clientX: 105, clientY: 5 });
     fireEvent.pointerUp(window);

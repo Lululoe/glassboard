@@ -1,4 +1,5 @@
 import { Group, TextField } from '../../components/Editor/EditorFields';
+import { EntityPicker } from '../../components/Editor/EntityPicker';
 import { setIn } from '../../components/Editor/setIn';
 
 /** On/off services per entity domain, filled in when an entity id is entered. */
@@ -64,7 +65,7 @@ const HAControlEditor = ({ config, onChange }) => {
                 title="Entity"
                 description="Lights, switches, fans, covers, locks and groups get on/off actions automatically."
             >
-                <TextField label="Entity id" value={entity.entity_id} onChange={set('entity_id')} placeholder="light.kitchen" />
+                <EntityPicker label="Entity" value={entity.entity_id} onChange={set('entity_id')} placeholder="light.kitchen" clearable={false} />
                 <TextField label="Name" value={entity.name} onChange={set('name')} placeholder="Kitchen" />
                 <TextField
                     label="Icon"

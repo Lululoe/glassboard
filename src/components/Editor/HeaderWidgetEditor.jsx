@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ENTITY_ID } from '../../../shared/pageHeader';
 import { Group, NumberField, SegmentedField, TextField, ToggleField } from './EditorFields';
+import { EntityPicker } from './EntityPicker';
 import { ColorField, HeaderDialog } from './HeaderEditorParts';
 import IconPicker from './icons/IconPicker';
 import { useHeaderEntities } from '../../context/headerEntities';
@@ -21,6 +22,11 @@ const TYPE_HINTS = {
     number: 'The icon and the value, without a ring.',
     rectangle: 'One or two values, as wide as three circles.',
 };
+
+const ICON_OPTIONS = [
+    { value: 'entity', label: 'From Entity' },
+    { value: 'own', label: 'Choose' },
+];
 
 const OPERATOR_OPTIONS = [
     { value: 'above', label: 'Above' },
@@ -54,6 +60,8 @@ export default function HeaderWidgetEditor({ index, initialType, pageHeader, pag
         return adding && initialType ? { ...initial, type: initialType } : initial;
     });
     const [confirmRemove, setConfirmRemove] = useState(false);
+    // The icon picked last, kept while switching to the entity's icon and back
+    const [lastIcon, setLastIcon] = useState(form.icon);
     const saved = useHeaderEntities();
     const set = (patch) => setForm(prev => ({ ...prev, ...patch }));
 
@@ -87,11 +95,12 @@ export default function HeaderWidgetEditor({ index, initialType, pageHeader, pag
                 description={source === 'page' ? 'Shown on this page only.' : 'Shown on every page that has no widgets of its own.'}
             >
                 <SegmentedField label="Kind" value={form.type} options={TYPE_OPTIONS} onChange={(type) => set({ type })} hint={TYPE_HINTS[form.type]} />
-                <TextField
+                <EntityPicker
                     label="Entity"
-                    value={form.entity_id}
+                    value={form.entity_id || undefined}
                     onChange={(v) => set({ entity_id: (v ?? '').trim().toLowerCase() })}
                     placeholder="sensor.outside_temperature"
+                    clearable={false}
                     hint={form.entity_id && !ENTITY_ID.test(form.entity_id)
                         ? 'An entity id from Home Assistant, such as sensor.outside_temperature.'
                         : saved && form.entity_id && !saved.has(form.entity_id)
@@ -99,18 +108,22 @@ export default function HeaderWidgetEditor({ index, initialType, pageHeader, pag
                             : undefined}
                 />
                 {form.type === 'rectangle' && (
-                    <>
-                        <TextField
-                            label="Second entity (optional)"
-                            value={form.entity_id2}
-                            onChange={(v) => set({ entity_id2: (v ?? '').trim().toLowerCase() })}
-                            placeholder="sensor.energy_today"
-                            hint="Shown under the first value. Without one, the name is shown there."
-                        />
-                        {!form.entity_id2 && (
-                            <TextField label="Name (optional)" value={form.name} onChange={(v) => set({ name: v ?? '' })} placeholder="The entity's name" />
-                        )}
-                    </>
+                    <EntityPicker
+                        label="Second entity (optional)"
+                        value={form.entity_id2 || undefined}
+                        onChange={(v) => set({ entity_id2: (v ?? '').trim().toLowerCase() })}
+                        placeholder="sensor.energy_today"
+                        hint="Shown under the first value. Without one, the text below is shown there."
+                    />
+                )}
+                {!(form.type === 'rectangle' && form.entity_id2) && (
+                    <TextField
+                        label="Text (optional)"
+                        value={form.name}
+                        onChange={(v) => set({ name: v ?? '' })}
+                        placeholder={form.type === 'rectangle' ? "The entity's name" : 'e.g. Living Room'}
+                        hint={form.type === 'rectangle' ? 'Shown under the value.' : 'Shown under the circle.'}
+                    />
                 )}
             </Group>
 
@@ -126,13 +139,22 @@ export default function HeaderWidgetEditor({ index, initialType, pageHeader, pag
             )}
 
             <Group title="Appearance">
-                <ToggleField
-                    label="Icon of the entity"
-                    checked={!form.icon}
-                    onChange={(own) => set({ icon: own ? '' : 'mdi:gauge' })}
-                    hint={form.icon ? undefined : 'The icon Home Assistant shows for it.'}
+                <SegmentedField
+                    label="Icon shown"
+                    value={form.icon ? 'own' : 'entity'}
+                    options={ICON_OPTIONS}
+                    onChange={(choice) => set({ icon: choice === 'own' ? (form.icon || lastIcon || 'mdi:gauge') : '' })}
+                    hint={form.icon ? 'Search the icons below, or paste an image address.' : 'The icon Home Assistant shows for the entity.'}
                 />
-                {form.icon && <IconPicker value={form.icon} onChange={(icon) => set({ icon })} />}
+                {form.icon && (
+                    <IconPicker
+                        value={form.icon}
+                        onChange={(icon) => {
+                            setLastIcon(icon);
+                            set({ icon });
+                        }}
+                    />
+                )}
                 <ColorField value={form.color} onChange={(color) => set({ color })} />
             </Group>
 

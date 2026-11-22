@@ -699,9 +699,10 @@ export async function renderHeaderTemplate(params) {
 /**
  * Lists the Home Assistant entities the kiosk options can pick from (see listedEntities).
  * @returns {Promise<Array<{entity_id: string, name: string, device_class?: string, unit?: string}>>} The entities.
+ * @param {{all?: boolean}} [options] - `all` lists every entity, for the entity pickers of cards.
  */
-export async function listKioskEntities() {
-    return listedEntities(await haFetch('/states'));
+export async function listKioskEntities({ all = false } = {}) {
+    return listedEntities(await haFetch('/states'), all ? null : undefined);
 }
 
 /** Forgets rendered header templates. Intended for tests. */

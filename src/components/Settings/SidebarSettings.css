@@ -38,31 +38,105 @@
     align-self: center;
 }
 
+/* One grouped list, as in the system settings: rows divided by hairlines, folders with their
+   pages indented under them */
 .sidebar-editor-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
     margin: 0;
     padding: 0;
     list-style: none;
+    margin: -6px -8px;
 }
 
 .sidebar-editor-row {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 8px;
-    min-height: 48px;
-    padding: 4px 6px 4px 4px;
-    border-radius: var(--radius-12);
-    background: var(--editor-field-bg, rgba(255, 255, 255, 0.06));
+    min-height: 52px;
+    padding: 0 8px 0 2px;
+}
+
+.sidebar-editor-row + .sidebar-editor-row::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 76px;
+    height: 0.5px;
+    background: var(--color-separator);
 }
 
 .sidebar-editor-row.is-nested {
-    margin-left: 28px;
+    padding-left: 30px;
+}
+
+.sidebar-editor-row.is-nested + .sidebar-editor-row.is-nested::before {
+    left: 104px;
 }
 
 .sidebar-editor-row.is-selected {
-    box-shadow: inset 0 0 0 2px var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.sidebar-editor-row:first-child {
+    border-radius: var(--radius-12) var(--radius-12) 0 0;
+}
+
+.sidebar-editor-row:last-child {
+    border-radius: 0 0 var(--radius-12) var(--radius-12);
+}
+
+.sidebar-editor-row:only-child {
+    border-radius: var(--radius-12);
+}
+
+/* While dragging: the row follows the pointer, a line shows where it goes */
+.sidebar-editor-row.is-dragging {
+    z-index: 2;
+    border-radius: var(--radius-12);
+    background: var(--bg-fill-hover);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-editor-row.drop-before::after,
+.sidebar-editor-row.drop-after::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    height: 3px;
+    border-radius: var(--radius-2);
+    background: var(--color-primary);
+}
+
+.sidebar-editor-row.drop-before::after {
+    top: -1.5px;
+}
+
+.sidebar-editor-row.drop-after::after {
+    bottom: -1.5px;
+}
+
+.sidebar-editor-grip {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 40px;
+    border-radius: var(--radius-8);
+    color: var(--text-tertiary);
+    cursor: grab;
+    touch-action: none;
+}
+
+.sidebar-editor-row.is-dragging .sidebar-editor-grip {
+    cursor: grabbing;
+}
+
+.sidebar-editor-grip:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 .sidebar-editor-row-main {
@@ -70,9 +144,9 @@
     min-width: 0;
     display: flex;
     align-items: center;
-    gap: 10px;
-    min-height: 40px;
-    padding: 0 6px 0 2px;
+    gap: 12px;
+    min-height: 48px;
+    padding: 0 4px;
     border-radius: var(--radius-9);
     text-align: left;
     cursor: pointer;
@@ -109,6 +183,14 @@
     font-size: var(--fs-14);
 }
 
+.sidebar-editor-row-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
 .sidebar-editor-row-name {
     min-width: 0;
     overflow: hidden;
@@ -118,35 +200,62 @@
     font-weight: 500;
 }
 
-.sidebar-editor-row-hidden {
-    flex: none;
-    opacity: 0.6;
+.sidebar-editor-row.is-folder .sidebar-editor-row-name {
+    font-weight: 600;
 }
 
-.sidebar-editor-row-folder.editor-input {
-    flex: 0 1 150px;
-    width: auto;
-    min-width: 0;
-    min-height: 34px;
-    padding-block: 0;
+.sidebar-editor-row-detail {
+    font-size: var(--fs-12);
+    color: var(--text-secondary);
 }
 
-.sidebar-editor-row-moves {
+.sidebar-editor-row-tag {
     flex: none;
+    padding: 2px 8px;
+    border-radius: var(--radius-round);
+    background: var(--bg-fill);
+    font-size: var(--fs-12);
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.sidebar-editor-row-chevron {
+    flex: none;
+    color: var(--text-tertiary);
+}
+
+.sidebar-editor-row.is-selected .sidebar-editor-row-chevron {
+    color: var(--color-primary);
+}
+
+/* The selected entry's folder and order */
+.sidebar-editor-placement {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: end;
+}
+
+.sidebar-editor-moves {
     display: flex;
+    gap: 6px;
 }
 
 .sidebar-editor-move {
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-8);
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    min-height: 36px;
+    padding: 0 12px 0 8px;
+    border-radius: var(--radius-9);
+    background: var(--bg-fill);
+    font-size: var(--fs-14);
+    font-weight: 500;
     cursor: pointer;
 }
 
 .sidebar-editor-move:disabled {
-    opacity: 0.3;
+    opacity: 0.35;
     cursor: default;
 }
 
@@ -156,6 +265,10 @@
 }
 
 @media (pointer: fine) {
+    .sidebar-editor-row-main:hover .sidebar-editor-row-chevron {
+        color: var(--text-secondary);
+    }
+
     .sidebar-editor-move:not(:disabled):hover {
         background: var(--bg-fill-hover);
     }
@@ -167,14 +280,8 @@
 }
 
 @media (max-width: 520px) {
-    .sidebar-editor-row {
-        flex-wrap: wrap;
-    }
-
-    .sidebar-editor-row-folder.editor-input {
-        flex: 1 1 100%;
-        order: 3;
-        margin-left: 44px;
+    .sidebar-editor-placement {
+        grid-template-columns: 1fr;
     }
 }
 

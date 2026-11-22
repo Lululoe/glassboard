@@ -16,7 +16,7 @@ const MediaPlayerEditor = ({ config, onChange }) => {
     // Entries without a name are stored as plain entity ids
     const toList = (items) => items.map(e => (e.name ? e : e.entity_id ?? ''));
     const columns = [
-        { key: 'entity_id', label: 'Media player', placeholder: 'media_player.living_room' },
+        { key: 'entity_id', label: 'Media player', placeholder: 'media_player.living_room', entity: ['media_player'] },
         { key: 'name', label: 'Name', placeholder: 'From Home Assistant' },
     ];
 

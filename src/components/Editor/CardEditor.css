@@ -766,3 +766,16 @@ dialog.editor-dialog.page-dialog {
     overflow-wrap: anywhere;
 }
 
+
+/* Scrolling parts of editor windows keep room for their scrollbar, so a scrollbar coming and going
+   doesn't change their width: a scaled preview would follow the width, change its height, and
+   with it whether the scrollbar is needed, back and forth (seen as flicker). */
+.editor-dialog-body,
+.editor-workspace,
+.card-editor-preview,
+.card-editor-scroll,
+.settings-dialog-nav,
+.settings-dialog-pane,
+.settings-columns > .settings-columns-main {
+    scrollbar-gutter: stable;
+}

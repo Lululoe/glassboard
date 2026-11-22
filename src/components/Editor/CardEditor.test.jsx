@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeAll, describe, it, expect, vi } from 'vitest';
 import CardEditor from './CardEditor';
 import AddCardDialog from './AddCardDialog';
+import { pickEntity } from './entityTestUtils';
 
 beforeAll(() => {
     // jsdom has no modal dialogs; opening is enough for the content to be accessible
@@ -68,7 +69,7 @@ describe('CardEditor', () => {
         const onSave = vi.fn();
         render(<CardEditor card={{ id: 'h', type: 'hacontrol', data: { entities: [] } }} onSave={onSave} onCancel={() => {}} onRemove={() => {}} />);
 
-        fireEvent.change(screen.getByLabelText('Entity id'), { target: { value: 'cover.garage' } });
+        pickEntity('Entity', 'cover.garage');
         fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
         expect(onSave.mock.calls[0][0].data.entities).toEqual([{
@@ -105,7 +106,7 @@ describe('List fields', () => {
         render(<CardEditor card={graph} onSave={onSave} onCancel={() => {}} onRemove={() => {}} />);
 
         fireEvent.click(screen.getByRole('button', { name: 'Add sensor' }));
-        fireEvent.change(screen.getByLabelText('Entity'), { target: { value: 'sensor.c' } });
+        pickEntity('Entity', 'sensor.c');
         fireEvent.click(screen.getByRole('button', { name: 'Move sensor.c up' }));
         fireEvent.click(screen.getByRole('button', { name: 'Remove Living Room' }));
         fireEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -119,7 +120,7 @@ describe('HA control editor', () => {
         const onSave = vi.fn();
         render(<CardEditor card={{ id: 'h', type: 'hacontrol', data: { entities: [] } }} onSave={onSave} onCancel={() => {}} onRemove={() => {}} />);
 
-        fireEvent.change(screen.getByLabelText('Entity id'), { target: { value: 'group.living_room_lights' } });
+        pickEntity('Entity', 'group.living_room_lights');
         fireEvent.click(screen.getByRole('button', { name: 'Save' }));
 
         expect(onSave.mock.calls[0][0].data.entities[0]).toEqual({

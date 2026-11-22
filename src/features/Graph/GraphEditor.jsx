@@ -25,7 +25,7 @@ const GraphEditor = ({ config, onChange }) => {
                 items={entities}
                 onChange={(items) => onChange(setIn(config, ['entities'], items))}
                 columns={[
-                    { key: 'entity_id', label: 'Entity', placeholder: 'sensor.living_room_temperature' },
+                    { key: 'entity_id', label: 'Entity', placeholder: 'sensor.living_room_temperature', entity: true },
                     { key: 'name', label: 'Name', placeholder: 'From Home Assistant' },
                     { key: 'color', label: 'Color', placeholder: 'e.g. orange' },
                 ]}

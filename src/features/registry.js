@@ -87,7 +87,7 @@ export const cardInfo = {
         Editor: WeatherEditor,
     },
     hacontrol: {
-        name: 'Home Assistant',
+        name: 'Entity',
         description: 'A light, plug, fan or cover as a quarter tile',
         icon: 'lu-Lightbulb',
         sizes: ['quarter'],

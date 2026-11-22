@@ -394,7 +394,7 @@ statistics need a `state_class`, and without them the card works out the values 
 
 ---
 
-## HA Control (`hacontrol`)
+## Entity (`hacontrol`)
 Control a Home Assistant entity (a light, switch, etc.) from a quarter tile, like a tile in Apple Home. The tile is
 the card, without a card around it: white while the entity is on, with the material of the other cards while it is off.
 

@@ -29,7 +29,7 @@ const MultiThermostatEditor = ({ config, onChange }) => {
                 items={rooms}
                 onChange={(items) => onChange(setIn(config, ['rooms'], items))}
                 columns={[
-                    { key: 'entity_id', label: 'Climate entity', placeholder: 'climate.living_room' },
+                    { key: 'entity_id', label: 'Climate entity', placeholder: 'climate.living_room', entity: ['climate'] },
                     { key: 'name', label: 'Name', placeholder: 'From Home Assistant' },
                 ]}
                 addLabel="Add room"

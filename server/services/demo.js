@@ -238,7 +238,7 @@ function appstatus({ cardId }) {
     }
     if (card.statusCheck === false) return { statuses: [] };
     // Everything is up except the fifth app, so the offline badge can be seen
-    return { statuses: getGridApps(card).map((_app, i) => i !== 4) };
+    return { statuses: getGridApps(card).map((app, i) => (app?.statusCheck === false ? null : i !== 4)) };
 }
 
 // Home Assistant entity states, kept in memory so toggles stick for the session
@@ -855,6 +855,27 @@ const DEMO_KIOSK_ENTITIES = [
     ['button.tablet_face_id_logout', 'Tablet Face ID Log Out'],
 ];
 
+/** More entities the demo offers to the entity pickers of cards and header widgets. */
+const DEMO_OTHER_ENTITIES = [
+    ['light.living_room', 'Living Room'],
+    ['light.kitchen', 'Kitchen'],
+    ['light.bedroom', 'Bedroom'],
+    ['fan.bedroom', 'Bedroom Fan'],
+    ['climate.living_room', 'Living Room Thermostat'],
+    ['climate.bedroom', 'Bedroom Thermostat'],
+    ['vacuum.robo', 'Robo'],
+    ['media_player.living_room', 'Living Room'],
+    ['media_player.kitchen_sonos', 'Kitchen Sonos'],
+    ['weather.forecast_home', 'Forecast Home'],
+    ['sensor.living_room_temperature', 'Living Room Temperature', 'temperature', '°C'],
+    ['sensor.living_room_humidity', 'Living Room Humidity', 'humidity', '%'],
+    ['sensor.outside_temperature', 'Outside Temperature', 'temperature', '°C'],
+    ['sensor.power', 'Power', 'power', 'W'],
+    ['sensor.energy_today', 'Energy Today', 'energy', 'kWh'],
+    ['sensor.cpu_usage', 'CPU Usage', undefined, '%'],
+    ['binary_sensor.front_door', 'Front Door', 'door'],
+];
+
 /**
  * The profile picture of the demo person while they are logged in: a portrait drawn as SVG,
  * since the demo has no Home Assistant to take a photo from.
@@ -875,10 +896,11 @@ export function demoKioskAvatar() {
 
 /**
  * The entities the kiosk options offer in the demo.
+ * @param {{all?: boolean}} [options] - `all` also lists the entities cards can pick.
  * @returns {Array<{entity_id: string, name: string, device_class?: string, unit?: string}>} The entities.
  */
-export function demoKioskEntities() {
-    return DEMO_KIOSK_ENTITIES.map(([id, name, deviceClass, unit]) => ({
+export function demoKioskEntities({ all = false } = {}) {
+    return (all ? [...DEMO_KIOSK_ENTITIES, ...DEMO_OTHER_ENTITIES] : DEMO_KIOSK_ENTITIES).map(([id, name, deviceClass, unit]) => ({
         entity_id: id, name, ...(deviceClass ? { device_class: deviceClass } : {}), ...(unit ? { unit } : {}),
     }));
 }

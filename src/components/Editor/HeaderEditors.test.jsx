@@ -4,8 +4,9 @@ import HeaderLayoutEditor from './HeaderLayoutEditor';
 import HeaderLineEditor from './HeaderLineEditor';
 import HeaderWidgetEditor from './HeaderWidgetEditor';
 import AddWidgetDialog from './AddWidgetDialog';
+import { pickEntity } from './entityTestUtils';
 
-vi.mock('../../lib/api', () => ({ callService: vi.fn(() => new Promise(() => {})) }));
+vi.mock('../../lib/api', () => ({ callService: vi.fn(() => new Promise(() => {})), listEntities: vi.fn(async () => []) }));
 
 beforeAll(() => {
     HTMLDialogElement.prototype.showModal = function showModal() { this.open = true; };
@@ -114,7 +115,7 @@ describe('HeaderWidgetEditor', () => {
         editor({ onSave });
         expect(screen.getByRole('button', { name: 'Add' })).toBeDisabled();
         fireEvent.click(screen.getByRole('radio', { name: 'Open Circle' }));
-        fireEvent.change(screen.getByLabelText('Entity'), { target: { value: 'sensor.Outside' } });
+        pickEntity('Entity', 'sensor.Outside');
         fireEvent.change(screen.getByLabelText('Lowest'), { target: { value: '-10' } });
         fireEvent.change(screen.getByLabelText('Highest'), { target: { value: '35' } });
         fireEvent.click(screen.getByRole('button', { name: 'Add' }));

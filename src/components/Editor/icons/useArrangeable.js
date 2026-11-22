@@ -110,26 +110,58 @@ export function useArrangeable({ rootRef, lists, selection, onSelect, onRemove }
             current.ghost = ghost;
             current.offsetX = current.x - rect.left;
             current.offsetY = current.y - rect.top;
+            current.slots = slotsOf(current.list);
             setDragging({ list: current.list, index: current.index });
         };
 
-        /** Places the copy at the pointer and reorders towards the nearest item. */
+        /**
+         * Where each place of a list is, relative to the element holding them. Taken when a drag
+         * starts: the places stay put while items move between them, and reading them later
+         * would catch items halfway through their move animation, so the order would flip back
+         * and forth under the pointer.
+         * @param {string} list - The list.
+         * @returns {Array<{index: number, left: number, top: number, right: number, bottom: number}>} The places.
+         */
+        const slotsOf = (list) => {
+            const root = rootRef.current;
+            if (!root) return [];
+            const box = root.getBoundingClientRect();
+            return [...root.querySelectorAll(`[data-arrange-list="${list}"]`)].map((/** @type {HTMLElement} */ el) => {
+                const r = el.getBoundingClientRect();
+                return {
+                    index: Number(el.dataset.arrangeIndex),
+                    left: r.left - box.left,
+                    top: r.top - box.top,
+                    right: r.right - box.left,
+                    bottom: r.bottom - box.top,
+                };
+            });
+        };
+
+        /** Places the copy at the pointer and reorders to the place under it, or the nearest. */
         const follow = (x, y) => {
             const current = press.current;
             const area = (current.element.closest('dialog') || document.body).getBoundingClientRect();
             current.ghost.style.left = `${x - area.left - current.offsetX}px`;
             current.ghost.style.top = `${y - area.top - current.offsetY}px`;
 
+            const box = rootRef.current?.getBoundingClientRect();
+            if (!box) return;
+            const px = x - box.left;
+            const py = y - box.top;
             let nearest = -1;
             let distance = Infinity;
-            rootRef.current?.querySelectorAll(`[data-arrange-list="${current.list}"]`).forEach((/** @type {HTMLElement} */ el) => {
-                const r = el.getBoundingClientRect();
-                const d = Math.hypot(x - (r.left + r.width / 2), y - (r.top + r.height / 2));
+            for (const slot of current.slots) {
+                if (px >= slot.left && px <= slot.right && py >= slot.top && py <= slot.bottom) {
+                    nearest = slot.index;
+                    break;
+                }
+                const d = Math.hypot(px - (slot.left + slot.right) / 2, py - (slot.top + slot.bottom) / 2);
                 if (d < distance) {
                     distance = d;
-                    nearest = Number(el.dataset.arrangeIndex);
+                    nearest = slot.index;
                 }
-            });
+            }
             if (nearest < 0 || nearest === current.index) return;
             latest.current.lists[current.list].move(current.index, nearest);
             current.index = nearest;

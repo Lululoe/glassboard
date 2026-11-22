@@ -298,7 +298,8 @@ export function widgetForm(widget, id) {
 export function widgetFromForm(form) {
     const widget = { id: form.id, type: form.type, entity_id: form.entity_id.trim() };
     if (form.type === 'rectangle' && form.entity_id2.trim()) widget.entity_id2 = form.entity_id2.trim();
-    if (form.type === 'rectangle' && form.name.trim()) widget.name = form.name.trim();
+    // A rectangle shows its name under the value only without a second entity; circles under the circle
+    if (form.name.trim() && !(form.type === 'rectangle' && widget.entity_id2)) widget.name = form.name.trim();
     if (form.icon) widget.icon = form.icon;
     widget.color = form.color;
     if (form.type === 'gauge') widget.min = form.min;
@@ -309,4 +310,33 @@ export function widgetFromForm(form) {
         widget.condition = { operator: form.operator, value: numeric ? number : form.value.trim() };
     }
     return widget;
+}
+
+/**
+ * Both header settings with one widget moved to another place in the list the page shows: its
+ * own, or that of all pages.
+ * @param {Object} settings
+ * @param {*} settings.pageHeader - The setting of all pages.
+ * @param {*} settings.pageOwn - The current page's own setting.
+ * @param {boolean} settings.hasPage - Whether the current page can have settings of its own.
+ * @param {number} from - The widget's position, as shown.
+ * @param {number} to - Its new position, as shown.
+ * @param {string} [id] - The widget's id, which finds it in the list when invalid widgets are left out of what is shown.
+ * @returns {{pageHeader: *, pageOwn: *}|null} The settings, or null when nothing moves.
+ */
+export function moveWidget({ pageHeader, pageOwn, hasPage }, from, to, id) {
+    const source = hasPage ? widgetsSource(pageOwn) : 'all';
+    const list = widgetsOf(source === 'page' ? pageOwn : pageHeader);
+    const at = (index, widgetId) => {
+        const found = widgetId ? list.findIndex(w => w?.id === widgetId) : -1;
+        return found >= 0 ? found : index;
+    };
+    const start = at(from, id);
+    const end = Math.max(0, Math.min(list.length - 1, to));
+    if (start === end || !list[start]) return null;
+    const next = [...list];
+    next.splice(end, 0, next.splice(start, 1)[0]);
+    return source === 'page'
+        ? { pageHeader, pageOwn: withPageWidgets(pageOwn, next, isOn(pageHeader)) }
+        : { pageHeader: withWidgets(pageHeader, next), pageOwn };
 }

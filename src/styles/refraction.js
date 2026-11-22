@@ -85,9 +85,23 @@ function displacementMap(w, h, r, bezel) {
     return canvas.toDataURL();
 }
 
+/** How long an element's size must hold still before its filter is redrawn, in ms. */
+const SETTLE_MS = 120;
+
+/**
+ * Glass inside these is left frosted: previews in editor windows are scaled with `zoom` and sit on
+ * a window that blurs the page itself, where bent rims only cost redraws and flicker.
+ */
+const SKIPPED_INSIDE = 'dialog, [inert]';
+
 /**
  * Starts refracting every element matching a selector, now and as elements come and go or
  * change size. Elements of the same size and corner radius share one filter.
+ *
+ * A filter's displacement map is an image the browser decodes on its own time, and until it has,
+ * the filter draws nothing. So an element keeps the filter it has until the one for its new size
+ * is decoded, and sizes are only followed once they have held still for a moment: an element being
+ * resized or animated never switches filters frame by frame, which shows as flicker.
  * @param {string} selector - Elements to refract.
  * @param {Partial<typeof REFRACTION_OPTIONS>} [options] - How the glass bends and frosts.
  * @returns {() => void} Stops refracting and removes the filters.
@@ -102,20 +116,25 @@ export function startRefraction(selector, options = {}) {
     host.style.pointerEvents = 'none';
     document.body.appendChild(host);
 
-    /** @type {Map<string, {id: string, users: number}>} Filters by size and radius. */
+    /** @type {Map<string, {id: string, users: number, ready: Promise<void>}>} Filters by size and radius. */
     const filters = new Map();
-    /** @type {Map<HTMLElement, string>} The filter key each element uses. */
+    /** @type {Map<HTMLElement, {key: string|null, wanted: string|null, timer: number}>} Each element's filter. */
     const elements = new Map();
     let count = 0;
+    let stopped = false;
 
     const release = (key) => {
-        const filter = filters.get(key);
+        const filter = key && filters.get(key);
         if (!filter || --filter.users > 0) return;
         host.querySelector(`#${filter.id}`)?.remove();
         filters.delete(key);
     };
 
-    const filterFor = (w, h, r) => {
+    /**
+     * Takes a use of the filter for a size and radius, making it if needed.
+     * @returns {string|null} Its key, or null when the browser can't draw one.
+     */
+    const acquire = (w, h, r) => {
         const key = `${w}x${h}x${r}`;
         const existing = filters.get(key);
         if (existing) {
@@ -138,38 +157,83 @@ export function startRefraction(selector, options = {}) {
             + `<feDisplacementMap in="frost" in2="map" scale="${o.scale}" xChannelSelector="R" yChannelSelector="G" result="bent"/>`
             + `<feColorMatrix in="bent" type="saturate" values="${o.saturate}"/>`;
         host.appendChild(filter);
-        filters.set(key, { id, users: 1 });
+        // Decoded once here, the map is in the browser's image cache before any element uses it
+        const image = typeof Image === 'undefined' ? null : new Image();
+        let ready = Promise.resolve();
+        if (image?.decode) {
+            image.src = map;
+            ready = image.decode().catch(() => {});
+        }
+        filters.set(key, { id, users: 1, ready });
         return key;
     };
 
-    const update = (el) => {
+    /** Gives an element the filter it waits for, once that filter's map is decoded. */
+    const apply = (el) => {
+        const entry = elements.get(el);
+        if (!entry || entry.wanted === entry.key) return;
+        const wanted = entry.wanted;
+        if (!wanted) {
+            release(entry.key);
+            entry.key = null;
+            el.style.removeProperty('--refraction');
+            return;
+        }
+        filters.get(wanted).ready.then(() => {
+            if (stopped || elements.get(el) !== entry || entry.wanted !== wanted) return;
+            const previous = entry.key;
+            entry.key = wanted;
+            el.style.setProperty('--refraction', `url(#${filters.get(wanted).id})`);
+            // The old filter goes a frame later, after the element has been drawn with the new one
+            requestAnimationFrame(() => release(previous));
+        });
+    };
+
+    const measure = (el) => {
+        const entry = elements.get(el);
+        if (!entry) return;
         const w = Math.round(el.offsetWidth);
         const h = Math.round(el.offsetHeight);
         const r = Math.round(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0);
-        const key = w > 0 && h > 0 ? `${w}x${h}x${r}` : null;
-        const previous = elements.get(el);
-        if (key === previous) return;
-        if (previous) release(previous);
-        const next = key ? filterFor(w, h, r) : null;
-        elements.set(el, next);
-        if (next) el.style.setProperty('--refraction', `url(#${filters.get(next).id})`);
-        else el.style.removeProperty('--refraction');
+        const size = w > 0 && h > 0 ? `${w}x${h}x${r}` : null;
+        if (size === entry.wanted) return;
+        // A size that was waited for but never shown is let go
+        if (entry.wanted !== entry.key) release(entry.wanted);
+        entry.wanted = size ? acquire(w, h, r) : null;
+        apply(el);
     };
 
-    const resize = new ResizeObserver(entries => entries.forEach(entry => update(entry.target)));
+    /** Follows a size once it holds still; the first size is taken at once. */
+    const schedule = (el) => {
+        const entry = elements.get(el);
+        if (!entry) return;
+        clearTimeout(entry.timer);
+        if (!entry.key && !entry.wanted) measure(el);
+        else entry.timer = window.setTimeout(() => measure(el), SETTLE_MS);
+    };
+
+    const resize = new ResizeObserver(entries => entries.forEach(entry => schedule(/** @type {HTMLElement} */ (entry.target))));
+
+    const forget = (el) => {
+        const entry = elements.get(el);
+        if (!entry) return;
+        clearTimeout(entry.timer);
+        resize.unobserve(el);
+        release(entry.key);
+        if (entry.wanted !== entry.key) release(entry.wanted);
+        el.style.removeProperty('--refraction');
+        elements.delete(el);
+    };
 
     const scan = () => {
-        const found = new Set(/** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(selector)));
-        elements.forEach((key, el) => {
-            if (found.has(el)) return;
-            resize.unobserve(el);
-            if (key) release(key);
-            el.style.removeProperty('--refraction');
-            elements.delete(el);
+        const found = new Set([.../** @type {NodeListOf<HTMLElement>} */ (document.querySelectorAll(selector))]
+            .filter(el => !el.closest(SKIPPED_INSIDE)));
+        elements.forEach((_entry, el) => {
+            if (!found.has(el)) forget(el);
         });
         found.forEach(el => {
             if (elements.has(el)) return;
-            elements.set(el, null);
+            elements.set(el, { key: null, wanted: null, timer: 0 });
             resize.observe(el);
         });
     };
@@ -183,10 +247,14 @@ export function startRefraction(selector, options = {}) {
     scan();
 
     return () => {
+        stopped = true;
         cancelAnimationFrame(frame);
         mutations.disconnect();
         resize.disconnect();
-        elements.forEach((key, el) => el.style.removeProperty('--refraction'));
+        elements.forEach((entry, el) => {
+            clearTimeout(entry.timer);
+            el.style.removeProperty('--refraction');
+        });
         host.remove();
     };
 }

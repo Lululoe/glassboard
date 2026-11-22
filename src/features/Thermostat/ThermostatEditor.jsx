@@ -1,4 +1,5 @@
 import { Group, ListField, NumberField, SegmentedField, TextField } from '../../components/Editor/EditorFields';
+import { EntityPicker } from '../../components/Editor/EntityPicker';
 import { setIn } from '../../components/Editor/setIn';
 
 /**
@@ -15,7 +16,7 @@ const ThermostatEditor = ({ config, onChange }) => {
     return (
         <>
             <Group title="Thermostat">
-                <TextField label="Climate entity" value={config.entity_id} onChange={set('entity_id')} placeholder="climate.living_room" />
+                <EntityPicker label="Climate entity" value={config.entity_id} onChange={set('entity_id')} domains={['climate']} placeholder="climate.living_room" clearable={false} />
                 <TextField label="Name" value={config.name} onChange={set('name')} placeholder="From Home Assistant" />
                 <SegmentedField
                     label="Turn on as"

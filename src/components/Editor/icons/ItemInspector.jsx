@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { TextField } from '../EditorFields';
+import { TextField, ToggleField } from '../EditorFields';
 import BackgroundField from './BackgroundField';
 import IconColorField from './IconColorField';
 import IconPicker from './IconPicker';
@@ -50,6 +50,33 @@ const ItemInspector = ({ kind, item, onChange, onRemove, onDone }) => {
             <IconPicker value={ref} onChange={(next) => setIcon(next, color)} />
             <code className="icon-code">{ref}</code>
             <IconColorField iconRef={ref} value={color} onChange={(next) => setIcon(ref, next)} />
+            {kind === 'App' && (
+                <>
+                    <ToggleField
+                        label="Check if online"
+                        checked={item.statusCheck !== false}
+                        onChange={(on) => {
+                            const { statusCheck: _statusCheck, ...rest } = item;
+                            onChange(on ? rest : { ...rest, statusCheck: false });
+                        }}
+                        hint={item.statusCheck === false
+                            ? 'This app never gets the offline badge.'
+                            : 'Shows a badge on the app when it doesn\'t answer. The card\'s own setting can turn this off for every app.'}
+                    />
+                    {item.statusCheck !== false && (
+                        <TextField
+                            label="Check address (optional)"
+                            value={item.statusUrl}
+                            placeholder={item.url || 'https://'}
+                            hint="Checked instead of the URL, e.g. a health endpoint."
+                            onChange={(value) => {
+                                const { statusUrl: _statusUrl, ...rest } = item;
+                                onChange(value ? { ...rest, statusUrl: value } : rest);
+                            }}
+                        />
+                    )}
+                </>
+            )}
             {kind === 'App' && (
                 <BackgroundField
                     value={item.bgColor}

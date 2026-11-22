@@ -68,11 +68,12 @@ export function kioskCall(params, brightnessState = null) {
  * Lists the entities of the domains the kiosk options pick from, with the name and the details
  * the options filter by. Only ids, names, device classes and units: no states.
  * @param {Array<Object>} states - All states, as Home Assistant's `/api/states` returns them.
+ * @param {string[]|null} [domains] - The domains listed; null lists every entity, for the entity pickers of cards.
  * @returns {Array<{entity_id: string, name: string, device_class?: string, unit?: string}>} The entities, by id.
  */
-export function listedEntities(states) {
+export function listedEntities(states, domains = LISTED_DOMAINS) {
     return (Array.isArray(states) ? states : [])
-        .filter(s => typeof s?.entity_id === 'string' && LISTED_DOMAINS.includes(s.entity_id.split('.')[0]))
+        .filter(s => typeof s?.entity_id === 'string' && (!domains || domains.includes(s.entity_id.split('.')[0])))
         .map(s => {
             const attributes = s.attributes || {};
             return {
