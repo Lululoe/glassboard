@@ -24,6 +24,8 @@ import TransmissionCard from './Transmission/TransmissionCard';
 import VacuumCard from './Vacuum/VacuumCard';
 import VacuumsCard from './Vacuum/VacuumsCard';
 import { VacuumEditor, VacuumsEditor } from './Vacuum/VacuumEditor';
+import LitterboxCard from './Litterbox/LitterboxCard';
+import LitterboxEditor from './Litterbox/LitterboxEditor';
 import WeatherCard from './Weather/WeatherCard';
 import WeatherEditor from './Weather/WeatherEditor';
 
@@ -49,6 +51,7 @@ export const cardRegistry = {
     transmission: TransmissionCard,
     vacuum: VacuumCard,
     vacuums: VacuumsCard,
+    litterbox: LitterboxCard,
     weather: WeatherCard,
 };
 
@@ -134,6 +137,15 @@ export const cardInfo = {
         icon: 'mdi:robot-vacuum-variant',
         defaults: { robots: [] },
         Editor: VacuumsEditor,
+    },
+    litterbox: {
+        headerIcon: true,
+        name: 'Litter box',
+        description: 'Waste drawer, litter level, visits and weight of each cat',
+        icon: 'mdi:cat',
+        sizes: ['quarter', 'half', '1'],
+        defaults: { entity_id: '' },
+        Editor: LitterboxEditor,
     },
     printer: {
         headerIcon: true,

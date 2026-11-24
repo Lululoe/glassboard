@@ -137,6 +137,20 @@ the climate actions below.
   `403` otherwise); 1–50 entities. `action` is `turn_on` or `turn_off`. Lights are called with `light.turn_on` /
   `light.turn_off` and, for `turn_on`, optional `brightness_pct` (1–100), `color_temp_kelvin` (1000–12000) or
   `hs_color` (`[hue 0–360, saturation 0–100]`); other entities with `homeassistant.turn_on` / `turn_off`.
+  Media players on an `hacontrol` card also take `action` `select_source` (with `source`, one of the player's
+  `source_list`), `volume_set` (with `volume_level`, 0–1), `volume_up`, `volume_down` and `volume_mute` (with
+  `is_volume_muted`, `true` or `false`), called as the `media_player` service of the same name.
+- **Load a litter box card**: `{ "service": "homeassistant", "endpoint": "litterbox", "card_id": "litter_box" }` returns
+  `{ "entity_id", "name", "state", "status", "waste", "litter", "last_seen", "hopper", "resettable", "clean_delay": { "value", "options" }, "globe_light": { "value", "options" }, "panel_lock", "sleep": { "start", "end" }, "firmware": { "update", "installed", "latest" }, "cats": [{ "index", "name", "color", "weight", "weight_unit", "weighed_at", "visits" }] }`.
+  Entities the card doesn't set are `null`; `403` for other cards.
+- **Load a litter box's history**: `{ "service": "homeassistant", "endpoint": "litterbox_history", "card_id": "litter_box", "range": "today" }`.
+  `range` is `today` (`{ "cats": [{ "index", "visits": [ms] }] }`, the times a cat's visits sensor went up),
+  `week` (`{ "start", "cats": [{ "index", "days": [7 counts] }] }`, oldest day first) or `weight`
+  (`{ "cats": [{ "index", "points": [{ "t", "v" }] }] }`, the last 30 days). Cached for 30 seconds, 5 and 10 minutes.
+- **Control a litter box**: `{ "service": "homeassistant", "endpoint": "litterbox_action", "card_id": "litter_box", "action": "clean" }`.
+  `action` is `clean` (`vacuum.start`), `reset` (presses the `reset` button), `set_clean_delay` or `set_globe_light`
+  (with `value`, one of the select's options) or `set_panel_lock` (with `value`, `true` or `false`). `403` when the
+  card has no such entity, `400` for other values.
 - **Kiosk control center**: `{ "service": "homeassistant", "endpoint": "kiosk", "action": "brightness", "value": 60 }`.
   `action` is one of:
   - `brightness` with `value` 0–100, the share of the `brightness_entity`'s range (its `min` to `max`), set with

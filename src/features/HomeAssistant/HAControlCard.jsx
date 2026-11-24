@@ -3,13 +3,16 @@ import { haControlNotices } from '../cardNotices';
 import { useState } from 'react';
 import { isControllable, useHomeAssistant } from './useHomeAssistant';
 import ControlDialog from './controls/ControlDialog';
+import MediaDialog from './controls/MediaDialog';
+import { isMediaPlayer, mediaIsOn, mediaTileText } from './controls/mediaModel';
 import './HAControlCard.css';
 import Icon from '../../components/Shared/Icon';
 
 /**
  * A Home Assistant entity as a quarter tile, like a tile in Apple Home: the tile is the card,
- * without a card around it. Tapping a light, group, switch or fan opens its control dialog and
- * tapping its icon switches it; other entities switch with their configured actions. The card
+ * without a card around it. Tapping a light, group, switch, fan or media player opens its control
+ * dialog and tapping its icon switches it; a media player's tile shows its current input, and its
+ * dialog picks the input and sets the volume; other entities switch with their configured actions. The card
  * shows the first entity of `data.entities`; cards with more are split into one card per
  * entity when the dashboard loads (see `splitControlCards`).
  * @param {Object} props
@@ -34,6 +37,7 @@ const HAControlCard = ({ config }) => {
             if (domain === 'light' || domain === 'group') return 'lu-Lightbulb';
             if (domain === 'fan') return 'lu-Fan';
             if (domain === 'switch' || domain === 'input_boolean') return 'lu-Power';
+            if (domain === 'media_player') return 'lu-Tv';
             return 'lu-HelpCircle';
         }
 
@@ -67,6 +71,8 @@ const HAControlCard = ({ config }) => {
 
     // Get display state based on configured attributes
     const getDisplayState = (entity, liveState) => {
+        // A media player shows its input (or what's playing) unless the card picks attributes
+        if (isMediaPlayer(entity.entity_id) && !entity.attributes) return mediaTileText(liveState, entity.sources);
         const attributes = entity.attributes || ['state'];
 
         const values = attributes
@@ -98,7 +104,8 @@ const HAControlCard = ({ config }) => {
 
                 // Determine if "on"
                 let isOn = false;
-                if (entity.on_state) isOn = currentState === entity.on_state;
+                if (isMediaPlayer(entity.entity_id) && !entity.on_state && !entity.off_state) isOn = mediaIsOn(currentState);
+                else if (entity.on_state) isOn = currentState === entity.on_state;
                 else if (entity.off_state) isOn = currentState !== entity.off_state;
                 else isOn = currentState !== 'off' && currentState !== 'unavailable' && currentState !== 'unknown';
 
@@ -116,6 +123,8 @@ const HAControlCard = ({ config }) => {
                 if (isOn && entity.color) {
                     circleStyle.backgroundColor = entity.color;
                     tileStyle['--tile-color'] = entity.color;
+                } else if (isOn && isMediaPlayer(entity.entity_id)) {
+                    circleStyle.backgroundColor = 'var(--system-blue)';
                 }
 
                 // Get display state from configured attributes
@@ -173,7 +182,15 @@ const HAControlCard = ({ config }) => {
                     </Tile>
                 );
             })}
-            {openEntity && (
+            {openEntity && isMediaPlayer(openEntity.entity_id) && (
+                <MediaDialog
+                    entity={openEntity}
+                    icon={getIcon(openEntity.icon || entityStates[openEntity.entity_id]?.icon, openEntity.entity_id)}
+                    onChange={refresh}
+                    onClose={() => { setOpenId(null); refresh(); }}
+                />
+            )}
+            {openEntity && !isMediaPlayer(openEntity.entity_id) && (
                 <ControlDialog
                     entity={openEntity}
                     icon={getIcon(openEntity.icon || entityStates[openEntity.entity_id]?.icon, openEntity.entity_id)}

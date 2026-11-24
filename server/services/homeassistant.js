@@ -7,6 +7,7 @@ import { createHaSocket } from './haSocket.js';
 import { getGraphEntityIds, graphData } from './haGraph.js';
 import { getVacuumEntityIds, vacuumAction, vacuumData, vacuumMap } from './haVacuum.js';
 import { getPrinterEntityIds, printerAction, printerData } from './haPrinter.js';
+import { getLitterEntityIds, litterAction, litterData, litterHistory } from './haLitter.js';
 import { currentKiosk, findPerson, kioskCall, listedEntities, personIdOf } from './haKiosk.js';
 import { kioskEntityIds, kioskMediaIds, loggedInName } from '../../shared/kiosk.js';
 
@@ -439,7 +440,7 @@ export function resetPeopleCache() {
 }
 
 /**
- * Collects every entity id referenced by hacontrol, thermostat, media player, graph, vacuum and printer cards,
+ * Collects every entity id referenced by hacontrol, thermostat, media player, graph, vacuum, printer and litter box cards,
  * page header widgets and kiosk mode.
  * Only these entities may be read through the API.
  * @returns {Set<string>} Allowed entity ids.
@@ -456,6 +457,7 @@ export function getValidEntityIds() {
     getGraphEntityIds().forEach(id => entityIds.add(id));
     getVacuumEntityIds().forEach(id => entityIds.add(id));
     getPrinterEntityIds().forEach(id => entityIds.add(id));
+    getLitterEntityIds().forEach(id => entityIds.add(id));
     // Page header widgets only read their entities' states
     headerWidgetEntityIds(getConfig()).forEach(id => entityIds.add(id));
     kioskEntityIds(getConfig().kiosk).forEach(id => entityIds.add(id));
@@ -603,6 +605,48 @@ export function controlCalls(params, allowed) {
     return calls;
 }
 
+/** Media player actions of the control dialog, besides switching on and off. */
+export const MEDIA_CONTROL_ACTIONS = ['select_source', 'volume_set', 'volume_up', 'volume_down', 'volume_mute'];
+
+/**
+ * Validates a media player action of the control dialog (an Entity tile showing a media player)
+ * and returns the media_player service and body for it. The source must be one the player
+ * lists in `source_list`.
+ * @param {Object} params - `entity_id`, `action` (see MEDIA_CONTROL_ACTIONS) and its value:
+ *   `source`, `volume_level` (0-1) or `is_volume_muted` (boolean).
+ * @param {Set<string>} allowed - Entities that may be controlled.
+ * @param {(id: string) => Promise<Object|null>} readState - Reads the player's state.
+ * @returns {Promise<{service: string, body: Object}>} The media_player service and its body.
+ * @throws {HttpError} 403 for entities that are not allowed, 400 for invalid values.
+ */
+export async function mediaControlCall(params, allowed, readState) {
+    const entityId = params.entity_id;
+    if (typeof entityId !== 'string' || !entityId.startsWith('media_player.')) throw new HttpError(400, 'entity_id must be a media player');
+    if (!allowed.has(entityId)) throw new HttpError(403, `Entity not authorized: ${entityId}`);
+    const body = { entity_id: entityId };
+    switch (params.action) {
+        case 'select_source': {
+            const state = await readState(entityId);
+            const sources = Array.isArray(state?.attributes?.source_list) ? state.attributes.source_list.map(String) : [];
+            if (typeof params.source !== 'string' || !sources.includes(params.source)) throw new HttpError(400, `Unknown source: ${params.source}`);
+            return { service: 'select_source', body: { ...body, source: params.source } };
+        }
+        case 'volume_set': {
+            const level = Number(params.volume_level);
+            if (!Number.isFinite(level) || level < 0 || level > 1) throw new HttpError(400, 'volume_level must be between 0 and 1');
+            return { service: 'volume_set', body: { ...body, volume_level: level } };
+        }
+        case 'volume_up':
+        case 'volume_down':
+            return { service: params.action, body };
+        case 'volume_mute':
+            if (typeof params.is_volume_muted !== 'boolean') throw new HttpError(400, 'is_volume_muted must be true or false');
+            return { service: 'volume_mute', body: { ...body, is_volume_muted: params.is_volume_muted } };
+        default:
+            throw new HttpError(400, `Unknown media player action: ${params.action}`);
+    }
+}
+
 /**
  * Loads what a control dialog shows: the entity's state, for groups its members' states (each
  * with its `icon`), and the favorite colors of the lights among them that have some set.
@@ -721,14 +765,17 @@ export function resetTemplateCache() {
  * - `endpoint: 'media'` with `entity_id`, `action` and its value controls a media player
  *   of a media player card (see mediaCall).
  * - `endpoint: 'details'` with `entity_id` returns an hacontrol entity and its group members.
- * - `endpoint: 'control'` switches, dims or colors hacontrol entities and group members
- *   (see controlCalls).
+ * - `endpoint: 'control'` switches, dims or colors hacontrol entities and group members, and
+ *   (see controlCalls), and changes the input and volume of media players on them (see mediaControlCall).
  * - `endpoint: 'graph'` with `card_id` and `range` returns a graph card's data (see graphData).
  * - `endpoint: 'vacuum'` with `card_id` returns a vacuum card's robots (see vacuumData),
  *   `vacuum_action` controls them (see vacuumCall), and `vacuum_map` with `card_id` and
  *   `entity_id` returns a robot's map (see vacuumMap).
  * - `endpoint: 'printer'` with `card_id` returns a printer card's printer (see printerData), and
  *   `printer_action` controls it (see printerAction).
+ * - `endpoint: 'litterbox'` with `card_id` returns a litter box card's robot and cats (see litterData),
+ *   `litterbox_history` with `card_id` and `range` their history (see litterHistory), and
+ *   `litterbox_action` controls the robot (see litterCall).
  * - `endpoint: 'template'` with `page` and `line` renders that page header line's template
  *   (see renderHeaderTemplate).
  * - `endpoint: 'kiosk'` with `action` sets the kiosk's brightness, switches its screen or one of
@@ -783,6 +830,11 @@ export async function handleHaRequest(params) {
 
     if (endpoint === 'details') return entityDetails(String(params.entity_id || ''));
 
+    if (endpoint === 'control' && MEDIA_CONTROL_ACTIONS.includes(params.action)) {
+        const { service, body } = await mediaControlCall(params, await allowedControlIds(), getState);
+        return haFetch(`/services/media_player/${service}`, { method: 'POST', body: JSON.stringify(body) });
+    }
+
     if (endpoint === 'control') {
         const calls = controlCalls(params, await allowedControlIds());
         const results = [];
@@ -799,6 +851,9 @@ export async function handleHaRequest(params) {
     if (endpoint === 'vacuum_map') return vacuumMap(params);
     if (endpoint === 'printer') return printerData(params);
     if (endpoint === 'printer_action') return printerAction(params);
+    if (endpoint === 'litterbox') return litterData(params);
+    if (endpoint === 'litterbox_history') return litterHistory(params);
+    if (endpoint === 'litterbox_action') return litterAction(params);
 
     if (endpoint === 'kiosk') {
         const brightness = getConfig().kiosk?.brightness_entity;

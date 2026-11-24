@@ -220,3 +220,49 @@ describe('Home Assistant control dialog', () => {
         });
     });
 });
+
+describe('Home Assistant media player tile', () => {
+    const TV = {
+        entity_id: 'media_player.tv',
+        state: 'on',
+        attributes: { friendly_name: 'TV', source: 'PC', source_list: ['Apple TV', 'Nintendo Switch', 'PC'], supported_features: 24505 },
+    };
+
+    beforeEach(() => {
+        vi.stubGlobal('fetch', vi.fn(async (_url, init) => {
+            const body = JSON.parse(init.body);
+            if (body.endpoint === 'states') return jsonResponse({ 'media_player.tv': TV });
+            if (body.endpoint === 'details') return jsonResponse({ entity: TV, members: {}, favorites: {} });
+            return jsonResponse([]);
+        }));
+        HTMLDialogElement.prototype.showModal = function showModal() { this.open = true; };
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        delete HTMLDialogElement.prototype.showModal;
+    });
+
+    it('shows the input and switches it from the pop-up', async () => {
+        render(<HAControlCard config={{ id: 'tv', data: { entities: [{ entity_id: 'media_player.tv', name: 'TV', sources: [{ source: 'PC', name: 'Computer' }, { source: 'Apple TV' }] }] } }} />);
+        expect(await screen.findByText('Computer')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: /Show controls/ }));
+        const dialog = await screen.findByRole('dialog', { name: 'TV' });
+        const inputs = await within(dialog).findAllByRole('radio');
+        expect(inputs.map(i => i.textContent)).toEqual(['Computer', 'Apple TV']);
+        expect(within(dialog).getByRole('radio', { name: 'Computer' })).toHaveAttribute('aria-checked', 'true');
+        // This TV can only step its volume
+        expect(within(dialog).getByRole('button', { name: 'Volume up' })).toBeInTheDocument();
+        expect(within(dialog).queryByRole('slider')).not.toBeInTheDocument();
+
+        fireEvent.click(within(dialog).getByRole('radio', { name: 'Apple TV' }));
+        await waitFor(() => expect(requestBodies()).toContainEqual(expect.objectContaining({
+            endpoint: 'control', entity_id: 'media_player.tv', action: 'select_source', source: 'Apple TV',
+        })));
+        expect(within(dialog).getByRole('radio', { name: 'Apple TV' })).toHaveAttribute('aria-checked', 'true');
+
+        fireEvent.click(within(dialog).getByRole('button', { name: 'Volume up' }));
+        await waitFor(() => expect(requestBodies()).toContainEqual(expect.objectContaining({ action: 'volume_up' })));
+    });
+});

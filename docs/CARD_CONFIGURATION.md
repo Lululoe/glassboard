@@ -416,6 +416,7 @@ the card, without a card around it: white while the entity is on, with the mater
 | `on_action` | object | `{ service: 'domain.service' }` to call when turning on. |
 | `off_action` | object | `{ service: 'domain.service' }` to call when turning off. |
 | `dialog` | boolean | Set to `false` to switch the entity from its tile instead of opening the control dialog. |
+| `sources` | array | Media players only: the inputs the dialog offers, in this order, as `{ source, name, icon }`. `source` is the input as Home Assistant names it, `name` and `icon` are optional. Without it, every input of the player is offered. |
 
 Only the entities listed here can be read through the API, and only their `on_action`/`off_action` can be called. For other entities the tile is clickable when both actions are set.
 
@@ -435,6 +436,12 @@ The presets are the light's **favorite colors** from Home Assistant (open the li
 colors under its controls), so they stay the same in both places. Lights without favorites of their own show
 Glassboard's defaults: Warm, Neutral, Daylight, Sunset, Rose, Lavender, Ocean and Forest, as do all lights when the
 token can't read Home Assistant's entity settings.
+
+- **Media players** (e.g. a TV): the tile shows the current input, or Off, and its icon turns blue while the player
+  is on. The dialog lists the inputs to switch to (choosing one turns the player on first if it is off), with the
+  volume, mute and power at the bottom. Players that can only step their volume, like many TVs, get − and + buttons
+  instead of a slider. Each input gets an icon guessed from its name (Apple TV, a console, a PC, HDMI, …) unless
+  `sources` sets one.
 
 On phones the dialog is a sheet at the bottom of the screen, with the main controls at its bottom edge.
 
@@ -460,6 +467,73 @@ cards in `layout.yaml`.
     entities:
       - entity_id: group.living_room_lights
         name: "Living Room"
+- id: living_room_tv
+  type: hacontrol
+  data:
+    entities:
+      - entity_id: media_player.living_room_lg_tv
+        name: "TV"
+        sources:
+          - source: Apple TV
+          - source: Nintendo Switch
+            name: Switch
+          - source: PC
+            icon: mdi:desktop-tower-monitor
+```
+
+---
+
+## Litter Box (`litterbox`)
+A self-cleaning litter box such as a Litter-Robot (through Home Assistant's Litter-Robot integration), with the
+visits and weight of each cat. Every entity besides `entity_id` is optional; what has no entity is left out.
+
+- **Quarter**: the waste drawer as a ring, which starts a clean cycle when tapped; the rest of the tile opens the details.
+- **Half**: visits today, the weight of the cat weighed last and the last visit, with the waste drawer and litter levels.
+- **Full** (a whole tile): the same, plus one timeline of today's visits for each cat with a visits sensor.
+
+The button in the header starts a clean cycle, and tapping the title opens the details: charts of today's visits, the
+visits of the last 7 days and each cat's weight over 30 days, beside the levels, the cats, the settings (clean delay,
+globe light, panel lock, sleep times), firmware and the **Clean now** and **Reset** buttons (Reset asks for a second
+tap). Visits and weights come from the history of the cats' sensors.
+
+### Configuration
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `entity_id` | string | required | The litter box's `vacuum` entity. Clean now calls `vacuum.start` on it. |
+| `name` | string | from Home Assistant | Display name. |
+| `status` | string | | Status code sensor (`rdy`, `ccp`, `dfs`, …), shown as text. Without it, the vacuum's state is shown. |
+| `waste` | string | | Waste drawer sensor, in %. |
+| `litter` | string | | Litter level sensor, in %. |
+| `last_seen` | string | | Last seen timestamp sensor. |
+| `hopper` | string | | Litter hopper status sensor. |
+| `reset` | string | | `button` that resets the drawer level after emptying it. |
+| `clean_delay` | string | | `select` of the clean cycle wait time, in minutes. |
+| `globe_light` | string | | `select` of the globe light. |
+| `panel_lock` | string | | `switch` of the panel lockout. |
+| `sleep_start`, `sleep_end` | string | | Sleep mode start and end time sensors. |
+| `firmware` | string | | `update` entity of the firmware. |
+| `cats` | array | `[]` | Up to 6 cats as `{ name, weight, visits, color }`: a weight sensor, a sensor of today's visits, and an optional color. |
+
+In the card settings, choosing a Litter-Robot's vacuum entity (`vacuum.<name>_litter_box`) fills in the other
+entities of the integration. Only entities on the card can be read or changed through the API.
+
+### Example
+```yaml
+- id: litter_box
+  type: litterbox
+  entity_id: vacuum.litter_robot_4_litter_box
+  status: sensor.litter_robot_4_status_code
+  waste: sensor.litter_robot_4_waste_drawer
+  litter: sensor.litter_robot_4_litter_level
+  reset: button.litter_robot_4_reset
+  clean_delay: select.litter_robot_4_clean_cycle_wait_time_minutes
+  cats:
+    - name: Pepper
+      weight: sensor.pepper_weight
+      visits: sensor.pepper_visits_today
+    - name: Teddy
+      weight: sensor.teddy_weight
+      visits: sensor.teddy_visits_today
 ```
 
 ---
