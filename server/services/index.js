@@ -4,6 +4,7 @@ import { handleHaRequest } from './homeassistant.js';
 import { handleMediaRequest } from './media.js';
 import { handleProxmoxRequest } from './proxmox.js';
 import { handleServerStatsRequest } from './serverstats.js';
+import { handleStorageRequest } from './storage.js';
 import { handleTransmissionRequest } from './transmission.js';
 import { handleWeatherRequest } from './weather.js';
 
@@ -20,6 +21,7 @@ export const serviceHandlers = {
     media: handleMediaRequest,
     proxmox: handleProxmoxRequest,
     serverstats: handleServerStatsRequest,
+    storage: handleStorageRequest,
     transmission: handleTransmissionRequest,
     weather: handleWeatherRequest,
 };

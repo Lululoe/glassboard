@@ -1,0 +1,387 @@
+/* Storage card: what takes the space on a volume, as a matrix of dots or as solid blocks */
+
+/* ===== Dots, shared by every design =====
+   Each area of dots is tinted in its color, outlined with a soft glow, and has dim dots with
+   brighter, partly twinkling ones. The styles below change how much it glows. */
+.dot-matrix {
+    position: relative;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+.dot-matrix svg,
+.storage-columns-plot svg {
+    display: block;
+    overflow: visible;
+}
+
+.dot-area {
+    --dot-tint: 0.13;
+    --dot-base: 0.32;
+    --dot-lit: 0.95;
+    --dot-edge: 0.85;
+    --dot-glow: drop-shadow(0 0 3px currentColor);
+    --dot-lit-glow: drop-shadow(0 0 1.5px currentColor);
+}
+
+.dot-area-fill {
+    fill: currentColor;
+    opacity: var(--dot-tint);
+}
+
+.dot-area-base {
+    fill: currentColor;
+    opacity: var(--dot-base);
+}
+
+.dot-area-lit,
+.dot-area-twinkle {
+    fill: currentColor;
+    opacity: var(--dot-lit);
+    filter: var(--dot-lit-glow);
+}
+
+.dot-area-twinkle {
+    animation: storage-twinkle 3s ease-in-out infinite;
+}
+
+.dot-area-edge {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1;
+    opacity: var(--dot-edge);
+    filter: var(--dot-glow);
+}
+
+/* Free space: faint dots in the text color, no glow */
+.dot-area.is-free {
+    --dot-tint: 0.035;
+    --dot-base: 0.16;
+    --dot-edge: 0.1;
+    --dot-glow: none;
+}
+
+@keyframes storage-twinkle {
+    0%, 100% { opacity: var(--dot-lit); }
+    50% { opacity: calc(var(--dot-base) * 0.8); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dot-area-twinkle {
+        animation: none;
+    }
+}
+
+/* Light: deeper tint, crisp edges, no glow, which would only muddy the white */
+:root[data-theme="light"] .dot-area {
+    --dot-tint: 0.16;
+    --dot-base: 0.42;
+    --dot-lit: 1;
+    --dot-edge: 0.9;
+    --dot-glow: none;
+    --dot-lit-glow: none;
+}
+
+:root[data-theme="light"] .dot-area.is-free {
+    --dot-tint: 0.035;
+    --dot-base: 0.18;
+    --dot-edge: 0.12;
+}
+
+/* Neon: everything that is lit glows more */
+:root[data-style="neon"][data-theme="dark"] .dot-area:not(.is-free) {
+    --dot-tint: 0.16;
+    --dot-glow: drop-shadow(0 0 5px currentColor);
+    --dot-lit-glow: drop-shadow(0 0 2.5px currentColor);
+}
+
+/* Material: flat, tonal blocks without a glow */
+:root[data-style="material"] .dot-area:not(.is-free) {
+    --dot-tint: 0.22;
+    --dot-edge: 0;
+    --dot-glow: none;
+    --dot-lit-glow: none;
+}
+
+/* Terminal: square dots (drawn by the card), outlines without a glow and a phosphor shimmer */
+:root[data-style="terminal"] .dot-area {
+    --dot-tint: 0.08;
+    --dot-glow: none;
+}
+
+:root[data-style="terminal"][data-theme="light"] .dot-area {
+    --dot-lit-glow: none;
+}
+
+.storage-card {
+    /* The graph card's yellow, darker on white */
+    --graph-yellow: var(--system-yellow);
+    font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme="light"] .storage-card {
+    --graph-yellow: #c99700;
+}
+
+/* A category's color, readable as text on both light and dark cards */
+.storage-list li {
+    --cat-text: color-mix(in srgb, var(--cat) 78%, var(--text-primary));
+}
+
+/* ===== The card ===== */
+.storage-twotone .two-tone-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 18px 20px;
+    overflow: hidden;
+}
+
+.storage-twotone.size-half .two-tone-content {
+    gap: 10px;
+    padding: 12px 20px;
+    justify-content: center;
+}
+
+.storage-percent {
+    font-size: var(--fs-28);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.storage-percent small {
+    margin-left: 1px;
+    font-size: var(--fs-15);
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.storage-caption {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0;
+    font-size: var(--fs-13);
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.storage-list {
+    display: grid;
+    grid-template-columns: repeat(var(--list-cols), minmax(0, 1fr));
+    column-gap: 28px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.storage-list li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--color-separator);
+    font-size: var(--fs-14);
+    line-height: 1.25rem;
+}
+
+.storage-list-dot {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: var(--radius-round);
+    background: var(--cat);
+}
+
+:root[data-style="terminal"] .storage-list-dot {
+    border-radius: 0;
+}
+
+.storage-list-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-primary);
+}
+
+.storage-list-share {
+    font-size: var(--fs-12);
+    color: var(--text-tertiary);
+}
+
+.storage-list-size {
+    min-width: 4.5em;
+    text-align: right;
+    color: var(--text-secondary);
+}
+
+
+/* ===== Solid blocks =====
+   Flat blocks like the graph card's bars: one color each, small rounded corners and a 2px gap,
+   with the free space on the same fill as the graph card's tracks. Text on a block is white in
+   dark mode and a dark shade of its color in light mode. */
+.solid-bar {
+    display: flex;
+    gap: 2px;
+    width: 100%;
+    flex-shrink: 0;
+}
+
+.solid-bar > span {
+    flex-basis: 0;
+    min-width: 4px;
+    border-radius: var(--radius-4);
+}
+
+.solid-bar-segment {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1px;
+    padding: 0 10px;
+    overflow: hidden;
+    background: var(--cat);
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+    white-space: nowrap;
+}
+
+:root[data-theme="light"] .solid-bar-segment {
+    color: color-mix(in srgb, var(--cat) 22%, #000);
+    text-shadow: none;
+}
+
+.solid-bar-segment b,
+.solid-bar-segment small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.solid-bar-segment b {
+    font-size: var(--fs-12);
+    font-weight: 600;
+    line-height: 0.9375rem;
+}
+
+.solid-bar-segment small {
+    font-size: var(--fs-11);
+    line-height: 0.8125rem;
+    opacity: 0.75;
+}
+
+.solid-bar-free {
+    background: var(--bg-fill);
+}
+
+/* Solid bars are slimmer than the dots, so the list moves up a little */
+.storage-solid .two-tone-content {
+    gap: 14px;
+}
+
+.storage-solid.size-half .two-tone-content {
+    gap: 12px;
+}
+
+/* ===== Pointing at a category =====
+   Like Headroom: the category's blocks light up (more lit dots, a brighter edge), the others and
+   the free space fade, its list row is highlighted and the header names it. */
+.dot-area,
+.solid-bar > span,
+.storage-list li {
+    transition: opacity var(--duration-standard) var(--ease-standard), background var(--duration-standard) var(--ease-standard);
+}
+
+.dot-area.is-dim {
+    opacity: 0.3;
+}
+
+.dot-area.is-free.is-dim {
+    opacity: 0.6;
+}
+
+.dot-area.is-active {
+    --dot-tint: 0.24;
+    --dot-base: 0.45;
+    --dot-edge: 1;
+}
+
+:root[data-theme="dark"]:not([data-style="material"]) .dot-area.is-active {
+    --dot-glow: drop-shadow(0 0 5px currentColor);
+    --dot-lit-glow: drop-shadow(0 0 2px currentColor);
+}
+
+.solid-bar > .is-dim {
+    opacity: 0.35;
+}
+
+.storage-list li {
+    margin: 0 -8px;
+    padding-left: 8px;
+    padding-right: 8px;
+    border-radius: var(--radius-7);
+    outline: none;
+}
+
+.storage-list li.is-active {
+    background: var(--bg-fill);
+    border-bottom-color: transparent;
+}
+
+.storage-list li:focus-visible {
+    box-shadow: var(--focus-ring);
+}
+
+.storage-card.has-active .storage-list li:not(.is-active) {
+    opacity: 0.55;
+}
+
+.storage-hover-sub {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.storage-hover-sub i {
+    width: 8px;
+    height: 8px;
+    flex-shrink: 0;
+    border-radius: var(--radius-round);
+    background: var(--cat);
+}
+
+.storage-hover-sub b {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.storage-hover-note {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dot-area,
+    .solid-bar > span,
+    .storage-list li {
+        transition: none;
+    }
+}
+
+/* ===== Stale data: the header says when it was last updated ===== */
+.stale-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    font-weight: 500;
+    color: var(--system-orange-text);
+}

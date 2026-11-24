@@ -16,6 +16,8 @@ import PrinterEditor from './Printer/PrinterEditor';
 import ProxmoxCard from './Proxmox/ProxmoxCard';
 import ServerStatsCard from './ServerStats/ServerStatsCard';
 import SpacerCard from './Spacer/SpacerCard';
+import StorageCard from './Storage/StorageCard';
+import StorageEditor from './Storage/StorageEditor';
 import MultiThermostatCard from './Thermostat/MultiThermostatCard';
 import MultiThermostatEditor from './Thermostat/MultiThermostatEditor';
 import ThermostatCard from './Thermostat/ThermostatCard';
@@ -44,6 +46,7 @@ export const cardRegistry = {
     proxmox: ProxmoxCard,
     serverstats: ServerStatsCard,
     spacer: SpacerCard,
+    storage: StorageCard,
     thermostat: ThermostatCard,
     thermostats: MultiThermostatCard,
     transmission: TransmissionCard,
@@ -179,6 +182,15 @@ export const cardInfo = {
         description: 'CPU, memory, storage, network and temperature',
         icon: 'lu-Gauge',
         defaults: { colSpan: 2, data: { sensors: ['cpu', 'ram', 'storage', 'network', 'temp'] } },
+    },
+    storage: {
+        headerIcon: true,
+        name: 'Storage',
+        description: 'How full a volume is and what takes the space',
+        icon: 'lu-HardDrive',
+        sizes: ['half', '1', '2', '3'],
+        defaults: { colSpan: 2 },
+        Editor: StorageEditor,
     },
     proxmox: {
         headerIcon: true,

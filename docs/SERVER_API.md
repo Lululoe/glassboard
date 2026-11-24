@@ -195,6 +195,24 @@ the climate actions below.
   }
   ```
 
+### `storage`
+- **Parameters**:
+  - `card_id` (string): Id of a `storage` card with a `source`. What to read (Prometheus queries or Home Assistant
+    entities) comes from that card's config, never from the request.
+- **Response** (sizes in GB, `updated` in Unix seconds when the source reports it):
+  ```json
+  {
+    "total": 4000,
+    "categories": [
+      { "name": "Media", "size": 1480 },
+      { "name": "Snapshots & other", "size": 140, "color": "gray" }
+    ],
+    "updated": 1763890000
+  }
+  ```
+- **Errors**: `403` for a card that isn't a storage card, `400` for one without a source, `503` when Prometheus has
+  no URL, `502` when Prometheus or Home Assistant fails or has no size.
+
 ### `appstatus`
 - **Parameters**:
   - `cardId` (string): Id of an `appgrid` card. The app URLs (`statusUrl` or `url`) are read from that

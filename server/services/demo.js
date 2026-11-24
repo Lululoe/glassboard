@@ -1082,6 +1082,40 @@ function weather({ cardId, type = 'daily' }) {
     return { forecast, units: 'metric' };
 }
 
+/** Volumes of the demo's storage cards, in GB: a ZFS pool and a guest's root disk. */
+const DEMO_POOL = {
+    total: 3720,
+    categories: [
+        { name: 'Media', size: 1480 }, { name: 'Photos', size: 410 }, { name: 'VM disks & dumps', size: 380 },
+        { name: 'Backups', size: 290 }, { name: 'Data share', size: 120 }, { name: 'Paperless', size: 12 },
+        { name: 'Snapshots & other', size: 140, color: 'gray' },
+    ],
+};
+const DEMO_DISK = {
+    total: 64,
+    categories: [
+        { name: 'Docker images', size: 11.4 }, { name: 'Docker volumes', size: 6.2 }, { name: 'System', size: 4.1 },
+        { name: 'Apps', size: 3.6 }, { name: 'Build cache', size: 2.3 }, { name: 'Logs', size: 0.9 }, { name: 'Journal', size: 0.5 },
+    ],
+};
+
+/**
+ * Simulates a storage card's source: a pool or a disk from Prometheus, or made-up sizes for the
+ * categories of a Home Assistant one.
+ */
+function storage(params) {
+    const card = findCard(params.card_id);
+    if (card?.type !== 'storage') throw new HttpError(403, `Not a storage card: ${params.card_id}`);
+    const updated = Math.floor(Date.now() / 1000) - 5 * 3600;
+    if (card.source === 'homeassistant' && Array.isArray(card.categories) && card.categories.length) {
+        const categories = card.categories.map((c, i) => ({
+            name: c?.name || `Category ${i + 1}`, size: Math.round(900 / (i + 1.5)), color: c?.color, description: c?.description,
+        }));
+        return { total: Number(card.total) || 2000, categories };
+    }
+    return { ...(card.pool || card.source !== 'prometheus' ? DEMO_POOL : DEMO_DISK), updated };
+}
+
 /**
  * Simulated handlers, keyed like `serviceHandlers`.
  * @type {Object<string, (params: Object) => Promise<*>>}
@@ -1093,6 +1127,7 @@ export const demoHandlers = Object.fromEntries(Object.entries({
     media,
     proxmox,
     serverstats,
+    storage,
     transmission,
     weather,
 }).map(([name, handler]) => [name, async params => /** @type {(params: Object) => *} */ (handler)(params)]));

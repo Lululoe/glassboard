@@ -104,8 +104,8 @@ While editing, hidden cards stay visible but dimmed, labelled "Hidden on phone" 
 still be moved and edited.
 
 ### Editing icons
-Cards with a header (Weather, Media, Graph, Vacuum, Printer, Proxmox, Server Stats, Transmission, Pull Requests and
-Multiroom Thermostat) have an edit button on their header icon in edit mode. It opens the icon editor: the real card's
+Cards with a header (Weather, Media, Graph, Vacuum, Printer, Proxmox, Server Stats, Storage, Transmission,
+Pull Requests and Multiroom Thermostat) have an edit button on their header icon in edit mode. It opens the icon editor: the real card's
 header with the settings of its icon top left: which icon, its color and its background. The icons in a card's top
 right corner belong to the card and aren't configurable.
 
@@ -498,6 +498,79 @@ Displays status of Proxmox VMs and LXC containers.
 ```
 
 ---
+
+## Storage (`storage`)
+How full a volume is and what takes the space. The header shows the volume and the percentage used; below are a bar
+with a block per category, as wide as its share, followed by the free space, and a list of the categories with their
+share. Half height keeps the bar and a line about the free space. Supports half height and one, two and three columns.
+On a narrow screen the list drops to fewer columns, and the categories that no longer fit join "Other".
+
+The sizes come from `source`: `prometheus` reads the storage scanner's metrics (see
+[STORAGE_DATA_SOURCE.md](STORAGE_DATA_SOURCE.md)) or your own queries, and `homeassistant` adds up entities per
+category. Until a source is set the card shows sample data as a preview. A card with a source says when it can't load
+its data instead of showing sample data. It polls once a minute.
+
+`bar: dots` (default) draws the bar as a matrix of dots: each category is a tinted block with a soft glow and lit,
+partly twinkling dots, which glow most in Neon, are flat in Material and square in Terminal. `bar: solid` draws flat
+blocks like the Graph card's bars, which name the categories that have room for it at two and three columns.
+Categories take the Graph card's colors, in the same order. Text on solid blocks is white in dark mode.
+
+Pointing at a block or a list row highlights the category in both: its block lights up (more lit dots in `dots`), the
+other blocks fade, its row is highlighted and the header shows its name, size and description (or share of the disk).
+Rows can also be reached with the keyboard.
+
+### Configuration
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `bar` | string | `dots` | `dots` or `solid`. |
+| `title` | string | `Storage` | Name of the volume. |
+| `staleAfter` | number | `1560` (26 h) | Minutes after which the data counts as stale; the header then says when it was last updated. `0` turns this off. |
+| `source` | string | | `prometheus` or `homeassistant`. |
+| `rest` | string | `Other` | Name of the category for the used space the categories leave out (`Snapshots & other` for a pool). |
+
+**Prometheus** (`source: prometheus`). The URL is `services.prometheus.url` or the `PROMETHEUS_URL` environment variable.
+Values are bytes, shown in GB.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `pool` | string | | A ZFS pool: its size, allocated space, the `zfs_*` content categories and the content scan time. |
+| `target` | string | | Or a guest's filesystem (`docker-node-01`): its size, used space and content categories. |
+| `mount` | string | `/` | The filesystem's mount point, with `target`. |
+| `queries` | object | | Your own PromQL, overriding the above: `total`, `categories` (one series per category), `used` (optional), `updated` (optional, Unix seconds) and `label`, the label that names a category (`category`). |
+| `names` | object | | Names of category labels, such as `zfs_media: Films`. The scanner's labels have names already. |
+
+**Home Assistant** (`source: homeassistant`). Sizes convert from the entity's unit (B, kB, MB, GB, TB, KiB, MiB, GiB,
+TiB…) to GB; entities without a unit count as GB. Unavailable entities are left out.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `total` | string/number | sum of the categories | An entity with the volume's size (or several, comma separated, added up) or a size in GB. |
+| `used` | string | | Optional entity with the used space; what the categories leave out of it shows as `rest`. |
+| `unit` | string | | A unit for every entity, overriding theirs. |
+| `categories` | array | | `name`, `entities` (a list, or ids separated by commas, added up; `entity` for one), and optionally `color`, `description` and `unit`. `color` is a name as in the Graph card (`blue`, `orange`, `green`, `purple`, `teal`, `pink`, `yellow`, `red`, `indigo`, plus `cyan` and `gray`) or any CSS color; `description` shows while the category is pointed at. |
+
+### Example
+```yaml
+- id: tank
+  type: storage
+  title: tank
+  source: prometheus
+  pool: tank
+
+- id: nas
+  type: storage
+  title: NAS
+  bar: solid
+  source: homeassistant
+  total: sensor.nas_volume_1_size
+  used: sensor.nas_volume_1_used
+  categories:
+    - name: Media
+      entities: [sensor.movies_size, sensor.shows_size]
+    - name: Backups
+      entity: sensor.backups_size
+      color: green
+```
 
 ## Server Stats (`serverstats`)
 Displays server resource usage (CPU, RAM, Disk, etc.).
