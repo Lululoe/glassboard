@@ -26,7 +26,7 @@ This project was born out of a desire for a dashboard that didn't just function 
 -   **Media Player**: Cover art, playback controls, seeking, and per-speaker volume and grouping for Home Assistant players.
 -   **Vacuum**: Start, stop and dock, fan speed, mop wetness, room selection, consumables, a Valetudo map and camera, for one robot or several.
 -   **Graph**: History of up to eight sensors as lines, (stacked) bars, or this week against last week.
--   **More cards as plugins**: The 3D printer, storage and litter box cards come as the Glassboard Cards plugin (see [Plugins](https://github.com/Lululoe/glassboard/wiki/PLUGINS)).
+-   **More cards as plugins**: The 3D printer, storage and litter box cards come as the [Glassboard Cards](https://github.com/Lululoe/glassboard-cards) plugin: install `Lululoe/glassboard-cards` in Settings → Plugins (see [Plugins](https://github.com/Lululoe/glassboard/wiki/PLUGINS)).
 
 ### 🎬 Media Center
 -   **Unified Media Card**: A powerful, consolidated view for **Sonarr** and **Radarr**.
