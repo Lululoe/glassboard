@@ -5,12 +5,12 @@ import { rememberColor } from './controls/lastColors';
 
 const CONFIRM_DELAY = 500;
 // Domains the control endpoint can switch when the card configures no actions
-const CONTROL_DOMAINS = ['light', 'group', 'switch', 'input_boolean', 'fan'];
+const CONTROL_DOMAINS = ['light', 'group', 'switch', 'input_boolean', 'fan', 'media_player'];
 
 /**
  * Whether an entity can be switched and opened in a control dialog.
  * @param {Object} entity - Entity config.
- * @returns {boolean} True for lights, groups, switches, input booleans and fans.
+ * @returns {boolean} True for lights, groups, switches, input booleans, fans and media players.
  */
 export const isControllable = (entity) => CONTROL_DOMAINS.includes(String(entity.entity_id).split('.')[0]);
 

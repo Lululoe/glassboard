@@ -434,6 +434,7 @@ the card, without a card around it: white while the entity is on, with the mater
 | `on_action` | object | `{ service: 'domain.service' }` to call when turning on. |
 | `off_action` | object | `{ service: 'domain.service' }` to call when turning off. |
 | `dialog` | boolean | Set to `false` to switch the entity from its tile instead of opening the control dialog. |
+| `sources` | array | Media players only: the inputs the dialog offers, in this order, as `{ source, name, icon }`. `source` is the input as Home Assistant names it, `name` and `icon` are optional. Without it, every input of the player is offered. |
 
 Only the entities listed here can be read through the API, and only their `on_action`/`off_action` can be called. For other entities the tile is clickable when both actions are set.
 
@@ -453,6 +454,12 @@ The presets are the light's **favorite colors** from Home Assistant (open the li
 colors under its controls), so they stay the same in both places. Lights without favorites of their own show
 Glassboard's defaults: Warm, Neutral, Daylight, Sunset, Rose, Lavender, Ocean and Forest, as do all lights when the
 token can't read Home Assistant's entity settings.
+
+- **Media players** (e.g. a TV): the tile shows the current input, or Off, and its icon turns blue while the player
+  is on. The dialog lists the inputs to switch to (choosing one turns the player on first if it is off), with the
+  volume, mute and power at the bottom. Players that can only step their volume, like many TVs, get − and + buttons
+  instead of a slider. Each input gets an icon guessed from its name (Apple TV, a console, a PC, HDMI, …) unless
+  `sources` sets one.
 
 On phones the dialog is a sheet at the bottom of the screen, with the main controls at its bottom edge.
 
@@ -478,6 +485,18 @@ cards in `layout.yaml`.
     entities:
       - entity_id: group.living_room_lights
         name: "Living Room"
+- id: living_room_tv
+  type: hacontrol
+  data:
+    entities:
+      - entity_id: media_player.living_room_lg_tv
+        name: "TV"
+        sources:
+          - source: Apple TV
+          - source: Nintendo Switch
+            name: Switch
+          - source: PC
+            icon: mdi:desktop-tower-monitor
 ```
 
 ---

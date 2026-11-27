@@ -133,6 +133,9 @@ the climate actions below.
   `403` otherwise); 1–50 entities. `action` is `turn_on` or `turn_off`. Lights are called with `light.turn_on` /
   `light.turn_off` and, for `turn_on`, optional `brightness_pct` (1–100), `color_temp_kelvin` (1000–12000) or
   `hs_color` (`[hue 0–360, saturation 0–100]`); other entities with `homeassistant.turn_on` / `turn_off`.
+  Media players on an `hacontrol` card also take `action` `select_source` (with `source`, one of the player's
+  `source_list`), `volume_set` (with `volume_level`, 0–1), `volume_up`, `volume_down` and `volume_mute` (with
+  `is_volume_muted`, `true` or `false`), called as the `media_player` service of the same name.
 - **Kiosk control center**: `{ "service": "homeassistant", "endpoint": "kiosk", "action": "brightness", "value": 60 }`.
   `action` is one of:
   - `brightness` with `value` 0–100, the share of the `brightness_entity`'s range (its `min` to `max`), set with

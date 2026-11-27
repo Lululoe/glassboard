@@ -8,6 +8,7 @@ import { normalizeKiosk } from '../../shared/kiosk.js';
 import { kioskCall } from './haKiosk.js';
 import {
     climateCall, controlCalls, fallbackIcon, getClimateConfigs, getControlEntityIds, getMediaEntityIds, mediaCall,
+    MEDIA_CONTROL_ACTIONS, mediaControlCall,
 } from './homeassistant.js';
 
 /**
@@ -242,6 +243,9 @@ function appstatus({ cardId }) {
 
 // Home Assistant entity states, kept in memory so toggles stick for the session
 const haStates = new Map();
+
+/** Demo TVs on Entity tiles: whether each is on, its input, volume (0-1) and mute. */
+const tvStore = new Map();
 
 function findEntity(entityId) {
     for (const card of getAllCards()) {
@@ -705,12 +709,56 @@ function details({ entity_id: entityId }) {
     return { entity, members: Object.fromEntries(members.map(id => [id, withDemoIcon(id, lightState(id))])), favorites };
 }
 
+/**
+ * A TV on an Entity tile in demo mode, with inputs and a volume that can be stepped.
+ * @param {string} entityId - The media player.
+ * @returns {Object} Its state.
+ */
+function tvState(entityId) {
+    if (!tvStore.has(entityId)) tvStore.set(entityId, { on: true, source: 'Apple TV', volume: 0.18, muted: false });
+    const tv = tvStore.get(entityId);
+    return {
+        entity_id: entityId,
+        state: tv.on ? 'on' : 'off',
+        attributes: {
+            friendly_name: titleOf(entityId),
+            device_class: 'tv',
+            source_list: ['Apple TV', 'Nintendo Switch', 'PC', 'Live TV'],
+            supported_features: 24505,
+            ...(tv.on ? { source: tv.source, volume_level: tv.volume, is_volume_muted: tv.muted } : {}),
+        },
+    };
+}
+
+/**
+ * Changes the input or volume of a demo TV.
+ * @param {Object} params - The action (see mediaControlCall).
+ * @param {Set<string>} allowed - Entities that may be controlled.
+ * @returns {Promise<Array>} An empty list, like Home Assistant's service calls.
+ */
+async function tvControl(params, allowed) {
+    const { service, body } = await mediaControlCall(params, allowed, async (id) => tvState(id));
+    const tv = tvStore.get(body.entity_id);
+    if (service === 'select_source') tv.source = body.source;
+    else if (service === 'volume_set') tv.volume = body.volume_level;
+    else if (service === 'volume_up') tv.volume = Math.min(1, Math.round((tv.volume + 0.01) * 100) / 100);
+    else if (service === 'volume_down') tv.volume = Math.max(0, Math.round((tv.volume - 0.01) * 100) / 100);
+    else if (service === 'volume_mute') tv.muted = body.is_volume_muted;
+    return [];
+}
+
 function control(params) {
     const allowed = new Set(getControlEntityIds());
     [...allowed].filter(id => id.startsWith('group.')).forEach(id => ensureGroup(id).forEach(m => allowed.add(m)));
+    if (MEDIA_CONTROL_ACTIONS.includes(params.action)) return tvControl(params, allowed);
     controlCalls(params, allowed).forEach(({ domain, service, body }) => {
         body.entity_id.forEach(id => {
             const on = service === 'turn_on';
+            if (id.startsWith('media_player.') && !getMediaEntityIds().has(id)) {
+                tvState(id);
+                tvStore.get(id).on = on;
+                return;
+            }
             if (domain !== 'light' || !lightStore.has(id)) {
                 setDemoOn(id, on);
                 return;
@@ -891,6 +939,7 @@ function entityState(entityId, index) {
     }
     if (thermostatCards().some(card => card.entity_id === entityId)) return climateState(entityId);
     if (getMediaEntityIds().has(entityId)) return mediaState(entityId);
+    if (entityId.startsWith('media_player.') && findEntity(entityId)) return tvState(entityId);
     const kioskOwn = kioskState(entityId);
     if (kioskOwn) return kioskOwn;
     if (entityId.startsWith('group.')) return groupState(entityId);
@@ -1043,6 +1092,7 @@ export const demoServices = {
  */
 export function resetDemoState() {
     robotStore.clear();
+    tvStore.clear();
     haStates.clear();
     kioskStore.brightness = 60;
     kioskStore.screen = true;

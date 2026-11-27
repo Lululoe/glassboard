@@ -1,7 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { ChevronRight, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ChevronRight } from 'lucide-react';
 import Icon from '../../../components/Shared/Icon';
+import DialogShell from './DialogShell';
 import HSlider from './HSlider';
 import LightDetail from './LightDetail';
 import { useEntityControls } from './useEntityControls';
@@ -9,18 +9,6 @@ import { iconCss, isDimmable, stateText } from './lightModel';
 import './ControlDialog.css';
 
 const PHONE_QUERY = '(max-width: 760px)';
-
-/** Stops events from reaching the dashboard behind the dialog (page swipes, card gestures). */
-const stop = (e) => e.stopPropagation();
-const STOPPED = {
-    onClick: stop,
-    onPointerDown: stop,
-    onPointerUp: stop,
-    onTouchStart: stop,
-    onTouchMove: stop,
-    onTouchEnd: stop,
-    onContextMenu: stop,
-};
 
 /**
  * Pop-up with the controls of an hacontrol entity: a light or switch gets its own controls,
@@ -34,29 +22,10 @@ const STOPPED = {
  * @returns {JSX.Element} The dialog, rendered into `document.body`.
  */
 const ControlDialog = ({ entity, icon, onClose, onChange }) => {
-    const dialogRef = useRef(/** @type {HTMLDialogElement|null} */ (null));
-    const closeRef = useRef(/** @type {HTMLButtonElement|null} */ (null));
     const backRef = useRef(/** @type {HTMLButtonElement|null} */ (null));
-    const pressedBackdrop = useRef(false);
     const { loading, error, isGroup, main, members, actions } = useEntityControls(entity, true, onChange);
     const [selectedId, setSelectedId] = useState(/** @type {string|null} */ (null));
     const [showDetail, setShowDetail] = useState(false);
-
-    useLayoutEffect(() => {
-        const dialog = dialogRef.current;
-        if (!dialog) return undefined;
-        const opener = /** @type {HTMLElement|null} */ (document.activeElement);
-        if (!dialog.open) {
-            if (dialog.showModal) dialog.showModal();
-            else dialog.setAttribute('open', '');
-        }
-        closeRef.current?.focus();
-        return () => {
-            // The page stays inert until the modal closes, so close it before moving focus back
-            if (dialog.open) dialog.close?.();
-            opener?.focus?.();
-        };
-    }, []);
 
     useEffect(() => {
         if (showDetail) backRef.current?.focus();
@@ -80,7 +49,7 @@ const ControlDialog = ({ entity, icon, onClose, onChange }) => {
         const id = selected?.id;
         setShowDetail(false);
         requestAnimationFrame(() => {
-            const item = /** @type {HTMLElement|null|undefined} */ (dialogRef.current?.querySelector(`[data-entity="${CSS.escape(id || '')}"]`));
+            const item = /** @type {HTMLElement|null|undefined} */ (document.querySelector(`.ctl-overlay [data-entity="${CSS.escape(id || '')}"]`));
             item?.focus();
         });
     };
@@ -166,42 +135,18 @@ const ControlDialog = ({ entity, icon, onClose, onChange }) => {
         );
     }
 
-    return createPortal(
-        <dialog
-            ref={dialogRef}
-            className="ctl-overlay"
-            aria-labelledby="ctl-dialog-title"
-            onCancel={(e) => { e.preventDefault(); onClose(); }}
-            onKeyDown={stop}
-            {...STOPPED}
-            onPointerDown={(e) => {
-                e.stopPropagation();
-                pressedBackdrop.current = e.target === e.currentTarget;
-            }}
-            onClick={(e) => {
-                e.stopPropagation();
-                if (e.target === e.currentTarget && pressedBackdrop.current) onClose();
-                pressedBackdrop.current = false;
-            }}
+    return (
+        <DialogShell
+            title={main.name}
+            subtitle={subtitle}
+            icon={icon}
+            iconOn={main.on}
+            iconStyle={headColor ? { background: headColor } : undefined}
+            wide={isGroup}
+            onClose={onClose}
         >
-            <div className={`ctl-panel${isGroup ? '' : ' single'}`}>
-                <div className="ctl-grabber" aria-hidden="true" />
-                <header className="ctl-head">
-                    <span className={`ctl-icon${main.on ? ' on' : ''}`} style={headColor ? { background: headColor } : undefined} aria-hidden="true">
-                        <Icon icon={icon} size={20} />
-                    </span>
-                    <div className="ctl-titles">
-                        <h2 id="ctl-dialog-title" className="ctl-title">{main.name}</h2>
-                        <div className="ctl-sub">{subtitle}</div>
-                    </div>
-                    <button type="button" ref={closeRef} className="button-reset ctl-close" onClick={onClose} aria-label="Close">
-                        <X size={20} aria-hidden="true" />
-                    </button>
-                </header>
-                {body}
-            </div>
-        </dialog>,
-        document.body,
+            {body}
+        </DialogShell>
     );
 };
 

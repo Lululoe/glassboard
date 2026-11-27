@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setConfig } from '../config.js';
-import { controlCalls, fetchArtwork, handleHaRequest, resetControlCache } from './homeassistant.js';
+import { controlCalls, fetchArtwork, handleHaRequest, mediaControlCall, resetControlCache } from './homeassistant.js';
 
 const okResponse = (body) => ({ ok: true, status: 200, json: async () => body, text: async () => '' });
 
@@ -256,3 +256,26 @@ describe('Home Assistant control dialogs', () => {
     });
 });
 
+
+describe('Home Assistant media player controls', () => {
+    const allowed = new Set(['media_player.tv', 'light.a']);
+    const readState = async () => ({ state: 'on', attributes: { source_list: ['Apple TV', 'PC'] } });
+
+    it('turns input and volume actions into media_player calls', async () => {
+        expect(await mediaControlCall({ entity_id: 'media_player.tv', action: 'select_source', source: 'PC' }, allowed, readState))
+            .toEqual({ service: 'select_source', body: { entity_id: 'media_player.tv', source: 'PC' } });
+        expect(await mediaControlCall({ entity_id: 'media_player.tv', action: 'volume_set', volume_level: 0.4 }, allowed, readState))
+            .toEqual({ service: 'volume_set', body: { entity_id: 'media_player.tv', volume_level: 0.4 } });
+        expect((await mediaControlCall({ entity_id: 'media_player.tv', action: 'volume_up' }, allowed, readState)).service).toBe('volume_up');
+        expect((await mediaControlCall({ entity_id: 'media_player.tv', action: 'volume_mute', is_volume_muted: true }, allowed, readState)).body.is_volume_muted).toBe(true);
+    });
+
+    it('refuses other entities, unknown inputs and invalid values', async () => {
+        const call = (params) => mediaControlCall({ entity_id: 'media_player.tv', ...params }, allowed, readState);
+        await expect(mediaControlCall({ entity_id: 'media_player.other', action: 'volume_up' }, allowed, readState)).rejects.toMatchObject({ status: 403 });
+        await expect(mediaControlCall({ entity_id: 'light.a', action: 'volume_up' }, allowed, readState)).rejects.toMatchObject({ status: 400 });
+        await expect(call({ action: 'select_source', source: 'HDMI 4' })).rejects.toMatchObject({ status: 400 });
+        await expect(call({ action: 'volume_set', volume_level: 2 })).rejects.toMatchObject({ status: 400 });
+        await expect(call({ action: 'volume_mute', is_volume_muted: 'yes' })).rejects.toMatchObject({ status: 400 });
+    });
+});
