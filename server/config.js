@@ -6,9 +6,15 @@ import { validateConfig } from './configSchema.js';
 import { applyLayout, getLayoutPath, readLayout } from './layout.js';
 import { flattenCards } from '../shared/containerCards.js';
 
-const configPath = path.resolve(process.cwd(), 'config.yaml');
-const servicesPath = path.resolve(process.cwd(), 'services.yaml');
-const themePath = path.resolve(process.cwd(), 'theme.yaml');
+/**
+ * The folder config.yaml, services.yaml, theme.yaml and custom.css are read from: `CONFIG_DIR`,
+ * else the working directory. In Docker, mounting a folder (instead of single files) there lets
+ * Glassboard see files that are replaced, as by `git pull`.
+ * @returns {string} Absolute path.
+ */
+export const getConfigDir = () => path.resolve(process.cwd(), process.env.CONFIG_DIR || '.');
+const configFile = name => path.join(getConfigDir(), name);
+// The bundled default themes, used without a theme.yaml
 const defaultThemePath = path.resolve(process.cwd(), 'theme.example.yaml');
 
 const SECRET_KEY = /^(api_?key|token|secret|token_?secret|token_?id|password|username)$/i;
@@ -107,12 +113,14 @@ function mergeThemes(defaults = [], overrides = []) {
  * change listeners.
  */
 export function loadConfig() {
+    const configPath = configFile('config.yaml');
+    const themePath = configFile('theme.yaml');
     if (!fs.existsSync(configPath)) {
         logger.warn(`config.yaml not found at ${configPath}`);
     }
 
     const mainConfig = readYamlSafe(configPath);
-    const servicesConfig = readYamlSafe(servicesPath);
+    const servicesConfig = readYamlSafe(configFile('services.yaml'));
     const themeConfig = readYamlSafe(fs.existsSync(themePath) ? themePath : defaultThemePath);
 
     let merged = deepMerge(mainConfig, servicesConfig);
@@ -145,7 +153,7 @@ export function watchConfig() {
         clearTimeout(reloadTimeout);
         reloadTimeout = setTimeout(loadConfig, 100);
     };
-    [configPath, servicesPath, themePath, getLayoutPath()].forEach(p => fs.watchFile(p, { interval: 1000 }, onChange));
+    [configFile('config.yaml'), configFile('services.yaml'), configFile('theme.yaml'), getLayoutPath()].forEach(p => fs.watchFile(p, { interval: 1000 }, onChange));
     logger.info('Watching config files for changes');
 }
 

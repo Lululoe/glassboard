@@ -2,7 +2,7 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 
-import { getConfig } from './config.js';
+import { getConfig, getConfigDir } from './config.js';
 import { withInitialHead } from './initialHead.js';
 import logger from './logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -21,7 +21,7 @@ const BLOCKED_PATH = /\.ya?ml$|(^|\/)\.env/i;
  * @returns {import('express').RequestHandler} Route handler.
  */
 function customCssHandler(staticDir) {
-    const candidates = [path.resolve(process.cwd(), 'custom.css'), path.join(staticDir, 'custom.css')];
+    const candidates = [path.join(getConfigDir(), 'custom.css'), path.join(staticDir, 'custom.css')];
     return (req, res) => {
         const file = candidates.find(p => fs.existsSync(p));
         if (file) return res.sendFile(file);

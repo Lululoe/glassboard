@@ -244,7 +244,7 @@ search. `GET /api/icons/mdi/<name>.svg` returns a Material Design Icon (the icon
 
 ```json
 {
-  "version": "2.0.0",
+  "version": "2.0.1",
   "plugins": [{ "id": "hello", "services": ["hello"], "routes": false, "builtIn": false,
                 "name": "Hello", "version": "1.0.0", "external": true, "hasServer": true,
                 "client": "/_plugins/hello/client.js?v=1.0.0-…", "style": null,

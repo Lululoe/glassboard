@@ -191,6 +191,7 @@ You can override any service configuration using environment variables. This is 
 | `EDIT_PASSWORD` | The password edit mode asks for, at least 8 characters. Without it, editing stays off |
 | `ALLOWED_HOSTS` | Host names Glassboard answers to besides IP addresses and local names, such as the domain of your reverse proxy: `dash.example.com,*.example.org` |
 | `PLUGINS_DIR` | Folder plugins are loaded from and installed to (default: `plugins`) |
+| `CONFIG_DIR` | Folder `config.yaml`, `services.yaml`, `theme.yaml` and `custom.css` are read from (default: the working directory). In Docker, mount a folder there, e.g. a git checkout, so replaced files are picked up |
 | `LAYOUT_FILE` | The layout overlay edit mode saves to (default: `layout.yaml`; `/app/data/layout.yaml` in `docker-compose.yml`). Its backup and uploaded backgrounds go next to it |
 | `SERVICES__HOMEASSISTANT__TOKEN` | Override HA Token |
 | `SERVICES__SONARR__APIKEY` | Override Sonarr API Key |

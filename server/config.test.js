@@ -1,4 +1,7 @@
 // @vitest-environment node
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { deepMerge, getConfig, getSanitizedConfig, getServiceConfig, loadConfig, setConfig, findCard } from './config.js';
 
@@ -27,6 +30,24 @@ describe('loadConfig', () => {
 
         expect(getConfig().services.testservice.url).toBe('http://test.local');
         expect(getConfig().services.nested.deep.value).toBe('success');
+    });
+
+    it('reads config.yaml, services.yaml and theme.yaml from CONFIG_DIR', () => {
+        const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'glassboard-config-'));
+        try {
+            fs.writeFileSync(path.join(dir, 'config.yaml'), 'pages:\n  - id: from-config-dir\n    cards: []\n');
+            fs.writeFileSync(path.join(dir, 'services.yaml'), 'services:\n  sonarr:\n    url: http://sonarr.test\n');
+            fs.writeFileSync(path.join(dir, 'theme.yaml'), 'themes:\n  - id: dir-theme\n    name: Dir\n');
+            process.env.CONFIG_DIR = dir;
+            loadConfig();
+            expect(getConfig().pages.map(p => p.id)).toEqual(['from-config-dir']);
+            expect(getConfig().services.sonarr.url).toBe('http://sonarr.test');
+            expect(getConfig().themes.map(t => t.id)).toEqual(['dir-theme']);
+        } finally {
+            delete process.env.CONFIG_DIR;
+            fs.rmSync(dir, { recursive: true, force: true });
+            loadConfig();
+        }
     });
 });
 
