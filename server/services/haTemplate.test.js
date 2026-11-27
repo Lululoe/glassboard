@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setConfig } from '../config.js';
-import { demoHandlers } from './demo.js';
+import { demoHandlers } from './index.js';
 import { handleHaRequest, resetTemplateCache } from './homeassistant.js';
 
 const TEMPLATE = "{{ states('sensor.outside') }} °C";

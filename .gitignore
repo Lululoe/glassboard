@@ -19,6 +19,8 @@ theme.yaml
 layout.yaml
 layout.yaml.bak
 backgrounds/
+# Layout and backgrounds kept by docker-compose.yml
+/data/
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -32,3 +34,8 @@ backgrounds/
 
 # Planning notes and mockups, kept locally
 docs/plans/
+
+# Plugins installed from the settings window
+/plugins/
+# Example plugins ship their built files
+!examples/*/dist

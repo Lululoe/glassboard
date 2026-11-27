@@ -1,6 +1,7 @@
 # Creating New Cards
 
-This guide walks you through adding a new card type to the dashboard.
+This guide walks you through adding a new card type to the dashboard itself. To ship a card separately, as a
+plugin people install from its own repository, see [Plugins](PLUGINS); the card is written the same way.
 
 ## 1. Create a Feature Directory
 Create a new directory in `src/features/[FeatureName]`, e.g. `src/features/MyCard`.
@@ -33,41 +34,51 @@ export default MyCard;
 ```
 
 ## 3. Register the Card
-Add the component to `src/features/registry.js`. The key is the `type` used in `config.yaml` (lowercase):
+Every card, built in or not, comes from a plugin. Add a `plugin.js` to the feature folder that registers the card under
+the `type` used in `config.yaml` (lowercase), together with how edit mode's **Add Card** list shows it:
 
 ```js
-import MyCard from './MyCard/MyCard';
+// src/features/MyCard/plugin.js
+import MyCard from './MyCard';
+import MyCardEditor from './MyCardEditor';
 
-export const cardRegistry = {
-    // ...
-    mycard: MyCard,
+/** @type {import('../../plugins/registry').GlassboardPlugin} */
+const plugin = {
+    id: 'mycard',
+    name: 'My Card',
+    register(api) {
+        api.registerCard('mycard', {
+            Component: MyCard,
+            name: 'My Card',
+            description: 'One line about what it shows',
+            icon: 'lu-Star',
+            sizes: ['quarter', 'half', '1', '2'], // optional, defaults to 1–3 columns
+            defaults: { colSpan: 1, title: 'Hello' }, // optional, properties of a new card
+            Editor: MyCardEditor,                    // optional settings form
+            headerIcon: true,                        // optional, see below
+            rows: true,                              // optional, the card can be 1–3 rows tall (`rowSpan`)
+        });
+    },
 };
+
+export default plugin;
 ```
+
+Then list the plugin in `builtinPlugins` in `src/features/registry.js`. A plugin can register several card types (the
+Vacuum plugin has `vacuum` and `vacuums`); plugin ids and card types must be unique, and a plugin that registers a type
+that is already taken adds none of its cards. Look card types up with `getCardComponent`, `getCardInfo` and
+`useCardTypes` from `src/features/registry.js`; a component that lists card types uses `useCardTypes`, which updates
+when a plugin adds some.
+
+A plugin that fails to load (its `register` or `setup` throws, it takes a card type, service or id that is already
+taken, or it returns something invalid) is skipped and logged, and the dashboard starts without it. It adds none of
+its cards or services, and edit mode's **Settings → Plugins** lists it with the reason, in the browser or on the
+server.
 
 Each card is wrapped in an error boundary, so a crash shows an error in that card instead of breaking the dashboard.
 Cards can also be placed inside a container card, where they are drawn a little smaller in a cell of the container's
 own grid; base the layout on the size the card is given, not on the window. Services that look cards up with
 `findCard` or `getAllCards` find the cards inside containers too.
-
-To make the card available in edit mode's **Add Card** list, describe it in `cardInfo` in the same file:
-
-```js
-import MyCardEditor from './MyCard/MyCardEditor';
-
-export const cardInfo = {
-    // ...
-    mycard: {
-        name: 'My Card',
-        description: 'One line about what it shows',
-        icon: 'lu-Star',
-        sizes: ['quarter', 'half', '1', '2'], // optional, defaults to 1–3 columns
-        defaults: { colSpan: 1, title: 'Hello' }, // optional, properties of a new card
-        Editor: MyCardEditor,                    // optional settings form
-        headerIcon: true,                        // optional, see below
-        rows: true,                              // optional, the card can be 1–3 rows tall (`rowSpan`)
-    },
-};
-```
 
 Set `headerIcon` when the card's `TwoToneBase` header reads `config.icon`, `config.iconColor` and
 `config.iconBackground`. In edit mode the card's header icon then gets an edit button that opens the icon editor,
@@ -142,7 +153,12 @@ services.
 1. Create `server/services/myservice.js` exporting an async handler that receives the request parameters.
    Read credentials with `getServiceConfig` (environment variables, then `services.yaml`) and throw
    `HttpError` from `server/errors.js` for errors the client should see with a specific status.
-2. Register the handler in `server/services/index.js` under the name the frontend passes to `callService`.
+2. Add it to the card's server plugin in `server/plugins/builtin.js`, with the same id as its `plugin.js`, under the
+   name the frontend passes to `callService`. `setup(ctx)` returns the plugin's `services`, a `demo` version of each
+   for demo mode, and optionally `routes(router)` for what a JSON service can't answer, such as images, served under
+   `/api/plugins/<id>/`. `ctx` has the config, errors, a logger and Home Assistant (see `server/plugins/context.js`);
+   a card that reads Home Assistant entities adds them with `ctx.homeassistant.registerEntityIds`, so the API may read
+   them, and calls `ctx.homeassistant.prepare()` first in each request. Service names must be unique.
 3. Never trust targets sent by the browser (URLs, repositories, entity ids). Pass a `cardId` and read the
    card's configuration with `findCard` instead, or validate against the config.
 
@@ -164,6 +180,17 @@ export async function handleMyServiceRequest({ cardId }) {
     if (!response.ok) throw await upstreamError('MyService', response);
     return response.json();
 }
+```
+
+```js
+// server/plugins/builtin.js
+export const builtinServerPlugins = [
+    // ...
+    {
+        id: 'mycard',
+        setup: () => ({ services: { myservice: handleMyServiceRequest }, demo: { myservice: demoMyService } }),
+    },
+];
 ```
 
 ## 6. Add to Configuration
@@ -217,8 +244,8 @@ useCardNotice([
 ```
 
 Notices go away when the card passes nothing or unmounts, so there is no read or unread state to keep. Keep the
-rules in `src/features/cardNotices.js` as plain functions from the card's data to its notices, next to those of
-the other cards, so they can be tested without rendering the card. The card and page are known from where the card is rendered, so the card passes
+rules in the card's `notices.js` as plain functions from its data to its notices, so they can be tested without
+rendering the card. The card and page are known from where the card is rendered, so the card passes
 only the notice; previews in editors publish nothing. Users can turn a card's notices off with `notify` in its
 config, which `useCardNotice` handles. Remember `backgroundInterval` in `usePolling` (step 4), so the notice stays
 current while the card's page is not shown.

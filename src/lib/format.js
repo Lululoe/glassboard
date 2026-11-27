@@ -43,3 +43,12 @@ export function formatFullTime(iso) {
     if (Number.isNaN(date.getTime())) return undefined;
     return date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }
+
+/**
+ * Names a number of things.
+ * @param {number} n - How many.
+ * @param {string} one - The word for one.
+ * @param {string} [many] - The word for several; `one` with an `s` by default.
+ * @returns {string} Such as `1 app` or `3 apps`.
+ */
+export const plural = (n, one, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;

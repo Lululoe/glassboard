@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { EyeOff, Pencil } from 'lucide-react';
-import { getCardComponent, getCardInfo, getCardSizes } from '../../features/registry';
+import { getCardComponent, getCardInfo, getCardSizes, useCardTypes } from '../../features/registry';
+import MissingCard from './MissingCard';
 import { useGridColumns } from '../../hooks/useGridColumns';
 import CardErrorBoundary from './CardErrorBoundary';
 import { NoticeCard } from '../../context/NoticeScopes';
@@ -29,20 +30,6 @@ const INTERACTIVE = 'button, a, input, select, textarea, [role="slider"], [role=
  * @returns {number} Milliseconds since page load.
  */
 const now = () => performance.now();
-
-/**
- * Fallback rendered when a card's type is not registered.
- * @param {Object} props
- * @param {string} [props.type] - The configured card type.
- * @returns {JSX.Element} The fallback card UI.
- */
-const FallbackCard = ({ type }) => (
-    <div className="glass-card">
-        <div className="card-content">
-            {type ? `Unknown card type "${type}"` : 'Card is missing a type'}
-        </div>
-    </div>
-);
 
 /**
  * Returns a stable key for a card: its id, or its position for cards without one.
@@ -156,6 +143,8 @@ const BentoGrid = ({
     cards, globalConfig, editing = false, onLayoutChange, onRequestEdit, onExitEdit, onEditCard, onEditIcon,
     canMoveToPage, onMoveToPage, incomingDrag, onIncomingDragTaken,
 }) => {
+    // Draws again when a plugin adds card types, so their cards appear
+    useCardTypes();
     const gridRef = useRef(null);
     const columns = useGridColumns(gridRef);
     const cardsRef = useRef(cards);
@@ -859,7 +848,7 @@ const BentoGrid = ({
                         <NoticeCard card={card}>
                             {CardComponent
                                 ? <CardComponent config={shown} globalConfig={globalConfig} />
-                                : <FallbackCard type={card.type} />}
+                                : <MissingCard type={card.type} />}
                         </NoticeCard>
                     </CardErrorBoundary>
                 </div>

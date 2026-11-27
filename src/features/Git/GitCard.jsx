@@ -1,5 +1,5 @@
 import { useCardNotice } from '../../context/notices';
-import { gitNotices } from '../cardNotices';
+import { gitNotices } from './notices';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
 import StatusPill from '../../components/Shared/StatusPill';
 import { formatFullTime, formatRelativeTime } from '../../lib/format';

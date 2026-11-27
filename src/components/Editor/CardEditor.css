@@ -779,3 +779,9 @@ dialog.editor-dialog.page-dialog {
 .settings-columns > .settings-columns-main {
     scrollbar-gutter: stable;
 }
+
+.unlock-error {
+    margin: 8px 0 0;
+    font-size: var(--fs-13);
+    color: var(--system-red-text);
+}

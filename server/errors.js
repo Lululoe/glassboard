@@ -5,11 +5,13 @@ export class HttpError extends Error {
     /**
      * @param {number} status - HTTP status code (e.g. 400, 403, 502).
      * @param {string} message - Message returned to the client.
+     * @param {string} [code] - A word the client can act on, such as `edit_locked`.
      */
-    constructor(status, message) {
+    constructor(status, message, code) {
         super(message);
         this.name = 'HttpError';
         this.status = status;
+        if (code) this.code = code;
     }
 }
 

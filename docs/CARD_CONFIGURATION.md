@@ -42,7 +42,7 @@ layout rather than a squeezed wide one. On tablets later cards move up to fill g
 
 Not every card works at every size. In edit mode each card only offers the sizes its type supports; most cards
 support one to three wide, `container` also one to three rows tall, `spacer` also supports half and quarter, `hacontrol` is always a quarter tile, and `thermostat` and
-`mediaplayer` support quarter, half and one wide, `vacuum` half and one to three wide, and `printer` half and one wide. A size set in
+`mediaplayer` support quarter, half and one wide, and `vacuum` half and one to three wide. A size set in
 `config.yaml` is always used, even if edit mode would not offer it.
 
 ## Editing the Dashboard
@@ -104,7 +104,7 @@ While editing, hidden cards stay visible but dimmed, labelled "Hidden on phone" 
 still be moved and edited.
 
 ### Editing icons
-Cards with a header (Weather, Media, Graph, Vacuum, Printer, Proxmox, Server Stats, Storage, Transmission,
+Cards with a header (Weather, Media, Graph, Vacuum, Proxmox, Server Stats, Transmission,
 Pull Requests and Multiroom Thermostat) have an edit button on their header icon in edit mode. It opens the icon editor: the real card's
 header with the settings of its icon top left: which icon, its color and its background. The icons in a card's top
 right corner belong to the card and aren't configurable.
@@ -241,9 +241,27 @@ editable: true
 Without it, the pencil button is hidden and the server refuses every change from the browser (layout, theme,
 background pictures).
 
-With Docker, mount a `layout.yaml` so edits survive a container rebuild (see `docker-compose.yml`), and a
-`backgrounds` folder for uploaded background pictures. The paths can also be changed with the `LAYOUT_FILE` and
-`BACKGROUNDS_DIR` environment variables.
+Editing also needs an **edit password**, set with the `EDIT_PASSWORD` environment variable (at least 8
+characters, for example in `.env` with Docker). Without one, editing stays off even with `editable: true`, and the
+log says why. Edit mode asks for the password before the first change; the password itself is never logged.
+
+A browser stays unlocked until the password changes or it is locked again in **Settings → Lock Editing**, which is
+worth doing on wall tablets and other devices others use. After 10 wrong passwords, a device has to wait 15
+minutes. Behind a reverse proxy every device has the proxy's address, so they all wait together.
+
+With Docker, mount the `data` folder so edits and uploaded background pictures survive a container rebuild (see
+`docker-compose.yml`, which sets `LAYOUT_FILE` to `/app/data/layout.yaml`). The container runs as uid 1000, so the
+folder must be writable by it. The paths can also be changed with the `LAYOUT_FILE` and `BACKGROUNDS_DIR`
+environment variables.
+
+To also install plugins from GitHub in the settings window, set `plugins.install` (see [Plugins](PLUGINS)). Plugin
+code runs with access to every credential, so this needs its own setting:
+
+```yaml
+editable: true
+plugins:
+  install: true
+```
 
 ---
 
@@ -498,79 +516,6 @@ Displays status of Proxmox VMs and LXC containers.
 ```
 
 ---
-
-## Storage (`storage`)
-How full a volume is and what takes the space. The header shows the volume and the percentage used; below are a bar
-with a block per category, as wide as its share, followed by the free space, and a list of the categories with their
-share. Half height keeps the bar and a line about the free space. Supports half height and one, two and three columns.
-On a narrow screen the list drops to fewer columns, and the categories that no longer fit join "Other".
-
-The sizes come from `source`: `prometheus` reads the storage scanner's metrics (see
-[STORAGE_DATA_SOURCE.md](STORAGE_DATA_SOURCE.md)) or your own queries, and `homeassistant` adds up entities per
-category. Until a source is set the card shows sample data as a preview. A card with a source says when it can't load
-its data instead of showing sample data. It polls once a minute.
-
-`bar: dots` (default) draws the bar as a matrix of dots: each category is a tinted block with a soft glow and lit,
-partly twinkling dots, which glow most in Neon, are flat in Material and square in Terminal. `bar: solid` draws flat
-blocks like the Graph card's bars, which name the categories that have room for it at two and three columns.
-Categories take the Graph card's colors, in the same order. Text on solid blocks is white in dark mode.
-
-Pointing at a block or a list row highlights the category in both: its block lights up (more lit dots in `dots`), the
-other blocks fade, its row is highlighted and the header shows its name, size and description (or share of the disk).
-Rows can also be reached with the keyboard.
-
-### Configuration
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `bar` | string | `dots` | `dots` or `solid`. |
-| `title` | string | `Storage` | Name of the volume. |
-| `staleAfter` | number | `1560` (26 h) | Minutes after which the data counts as stale; the header then says when it was last updated. `0` turns this off. |
-| `source` | string | | `prometheus` or `homeassistant`. |
-| `rest` | string | `Other` | Name of the category for the used space the categories leave out (`Snapshots & other` for a pool). |
-
-**Prometheus** (`source: prometheus`). The URL is `services.prometheus.url` or the `PROMETHEUS_URL` environment variable.
-Values are bytes, shown in GB.
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `pool` | string | | A ZFS pool: its size, allocated space, the `zfs_*` content categories and the content scan time. |
-| `target` | string | | Or a guest's filesystem (`docker-node-01`): its size, used space and content categories. |
-| `mount` | string | `/` | The filesystem's mount point, with `target`. |
-| `queries` | object | | Your own PromQL, overriding the above: `total`, `categories` (one series per category), `used` (optional), `updated` (optional, Unix seconds) and `label`, the label that names a category (`category`). |
-| `names` | object | | Names of category labels, such as `zfs_media: Films`. The scanner's labels have names already. |
-
-**Home Assistant** (`source: homeassistant`). Sizes convert from the entity's unit (B, kB, MB, GB, TB, KiB, MiB, GiB,
-TiB…) to GB; entities without a unit count as GB. Unavailable entities are left out.
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `total` | string/number | sum of the categories | An entity with the volume's size (or several, comma separated, added up) or a size in GB. |
-| `used` | string | | Optional entity with the used space; what the categories leave out of it shows as `rest`. |
-| `unit` | string | | A unit for every entity, overriding theirs. |
-| `categories` | array | | `name`, `entities` (a list, or ids separated by commas, added up; `entity` for one), and optionally `color`, `description` and `unit`. `color` is a name as in the Graph card (`blue`, `orange`, `green`, `purple`, `teal`, `pink`, `yellow`, `red`, `indigo`, plus `cyan` and `gray`) or any CSS color; `description` shows while the category is pointed at. |
-
-### Example
-```yaml
-- id: tank
-  type: storage
-  title: tank
-  source: prometheus
-  pool: tank
-
-- id: nas
-  type: storage
-  title: NAS
-  bar: solid
-  source: homeassistant
-  total: sensor.nas_volume_1_size
-  used: sensor.nas_volume_1_used
-  categories:
-    - name: Media
-      entities: [sensor.movies_size, sensor.shows_size]
-    - name: Backups
-      entity: sensor.backups_size
-      color: green
-```
 
 ## Server Stats (`serverstats`)
 Displays server resource usage (CPU, RAM, Disk, etc.).
@@ -835,35 +780,6 @@ Tapping a robot opens its details, whose controls act on that robot only. One to
         - { area: kitchen, name: Kitchen }
         - { area: office, name: Office }
     - vacuum.s5_max
-```
-
----
-
-## 3D Printer (`printer`)
-A printer from the [Bambu Lab integration](https://github.com/greghesp/ha-bambulab): progress, time left, nozzle, bed and
-chamber temperatures and the loaded spools by colour, with the one in use ringed. Half height or one wide.
-
-The progress bar stays in place while nothing is printing, empty and grey.
-
-### Configuration
-| Option | Type | Description |
-|--------|------|-------------|
-| `printer` | string | Required. The start of the printer's entity ids: `p2s` for `sensor.p2s_print_status`. |
-| `name` | string | Name to show. Defaults to the printer's name in Home Assistant. |
-| `ams` | string | The start of the AMS's entity ids. Defaults to `ams`, for `sensor.ams_tray_1`. |
-| `trays` | array | Spool entities to show instead, for example with several AMS units. |
-
-Without `trays`, the card shows the AMS's four trays, and the external spool while something is loaded on it.
-
-**Buttons**: pause or resume (`button.<printer>_pause`, `_resume`) and stop (`_stop`) show during a print, and stopping asks
-for a second tap. The chamber light (`light.<printer>_chamber_light`) always shows. A button whose entity is missing or
-unavailable in Home Assistant stays hidden.
-
-### Example
-```yaml
-- id: printer
-  type: printer
-  printer: p2s
 ```
 
 ---

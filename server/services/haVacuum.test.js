@@ -2,8 +2,12 @@
 import zlib from 'zlib';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { setConfig } from '../config.js';
-import { handleHaRequest, getValidEntityIds } from './homeassistant.js';
-import { readValetudoMap, resetMapCache, robotSettings, robotsOf, simplifyValetudoMap, vacuumCall } from './haVacuum.js';
+import { getValidEntityIds } from './homeassistant.js';
+import {
+    handleVacuumRequest, readValetudoMap, resetMapCache, robotSettings, robotsOf, simplifyValetudoMap, vacuumCall,
+} from './haVacuum.js';
+// Sets the built-in plugins up, which adds the vacuum cards' entities to those the API may read
+import './index.js';
 
 const okResponse = (body) => ({ ok: true, status: 200, json: async () => body, text: async () => '' });
 
@@ -93,7 +97,7 @@ describe('Home Assistant vacuum endpoints', () => {
     const posts = () => fetch.mock.calls.filter(([, init]) => init?.method === 'POST').map(([url, init]) => [String(url).split('/api')[1], JSON.parse(init.body)]);
 
     it('reports a robot with its stats, rooms and consumables', async () => {
-        const { robots: [robot] } = await handleHaRequest({ endpoint: 'vacuum', card_id: 'robo' });
+        const { robots: [robot] } = await handleVacuumRequest({ endpoint: 'robots', card_id: 'robo' });
         expect(robot).toMatchObject({
             entity_id: 'vacuum.robo', name: 'Robo', state: 'cleaning', battery: 78, progress: 42,
             fan: { value: 'max', options: ['low', 'max'] },
@@ -116,7 +120,7 @@ describe('Home Assistant vacuum endpoints', () => {
     });
 
     it('only runs what the card allows', async () => {
-        const act = (params) => handleHaRequest({ endpoint: 'vacuum_action', card_id: 'robo', entity_id: 'vacuum.robo', ...params });
+        const act = (params) => handleVacuumRequest({ endpoint: 'action', card_id: 'robo', entity_id: 'vacuum.robo', ...params });
         await act({ action: 'start' });
         await act({ action: 'clean_rooms', areas: ['kitchen', 'office'] });
         await act({ action: 'set_fan', value: 'low' });
@@ -148,7 +152,7 @@ describe('Home Assistant vacuum endpoints', () => {
     });
 
     it('turns Valetudo map data into a minimal map, and leaves other cameras as images', async () => {
-        const map = await handleHaRequest({ endpoint: 'vacuum_map', card_id: 'robo', entity_id: 'camera.map' });
+        const map = await handleVacuumRequest({ endpoint: 'map', card_id: 'robo', entity_id: 'camera.map' });
         expect(map).toMatchObject({
             kind: 'valetudo',
             viewBox: [4, 14, 15, 14],
@@ -158,14 +162,14 @@ describe('Home Assistant vacuum endpoints', () => {
             segments: [{ id: '1', name: 'Kitchen', d: 'M10 20h3v1h-3zM10 21h2v1h-2z', x: 11, y: 20 }],
             walls: 'M8 18h7v1h-7z',
         });
-        expect(await handleHaRequest({ endpoint: 'vacuum_map', card_id: 'robo', entity_id: 'camera.front' })).toEqual({ kind: 'image' });
+        expect(await handleVacuumRequest({ endpoint: 'map', card_id: 'robo', entity_id: 'camera.front' })).toEqual({ kind: 'image' });
         // A plain camera isn't loaded again just to find out that it's no map
         const calls = fetch.mock.calls.length;
-        await handleHaRequest({ endpoint: 'vacuum_map', card_id: 'robo', entity_id: 'camera.front' });
+        await handleVacuumRequest({ endpoint: 'map', card_id: 'robo', entity_id: 'camera.front' });
         expect(fetch.mock.calls.length).toBe(calls);
 
-        await expect(handleHaRequest({ endpoint: 'vacuum_map', card_id: 'robo', entity_id: 'camera.garden' })).rejects.toMatchObject({ status: 403 });
-        await expect(handleHaRequest({ endpoint: 'vacuum', card_id: 'lights' })).rejects.toMatchObject({ status: 403 });
+        await expect(handleVacuumRequest({ endpoint: 'map', card_id: 'robo', entity_id: 'camera.garden' })).rejects.toMatchObject({ status: 403 });
+        await expect(handleVacuumRequest({ endpoint: 'robots', card_id: 'lights' })).rejects.toMatchObject({ status: 403 });
     });
 
     it('reads only Valetudo map data from images', () => {

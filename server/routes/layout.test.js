@@ -3,12 +3,12 @@ import fs from 'fs';
 import http from 'http';
 import os from 'os';
 import path from 'path';
-import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, it, expect, vi } from 'vitest';
 import { setConfig } from '../config.js';
+import { allowPrivateAddressesForTests } from '../publicFetch.js';
 import { readLayout } from '../layout.js';
 import { createApp } from '../app.js';
-import { listenOnLoopback } from '../testServer.js';
+import { asEditor, listenOnLoopback } from '../testServer.js';
 
 // Saving reloads the config from disk; keep the test config in memory instead. Editing is off
 // unless config.yaml turns it on, so the test configs turn it on unless they say otherwise.
@@ -29,7 +29,7 @@ const config = () => ({
     ],
 });
 
-const put = (server, body) => request(server).put('/api/config/layout').send(body);
+const put = (server, body) => asEditor(server).put('/api/config/layout').send(body);
 
 describe('layout API', () => {
     let server;
@@ -101,23 +101,23 @@ describe('layout API', () => {
     it('refuses to save or reset when editing is disabled', async () => {
         setConfig({ ...config(), editable: false });
         expect((await put(server, { pages: { home: [], admin: [] } })).status).toBe(403);
-        expect((await request(server).delete('/api/config/layout')).status).toBe(403);
+        expect((await asEditor(server).delete('/api/config/layout')).status).toBe(403);
     });
 
     it('refuses every change when config.yaml does not turn editing on', async () => {
         setConfig({ ...config(), editable: undefined });
         const card = { id: 'evil', type: 'hacontrol', data: { entities: [{ entity_id: 'lock.front_door', on_action: { service: 'lock.unlock' } }] } };
         expect((await put(server, { pages: { home: [card], admin: [] } })).status).toBe(403);
-        expect((await request(server).delete('/api/config/layout')).status).toBe(403);
-        expect((await request(server).post('/api/config/layout/restore')).status).toBe(403);
-        expect((await request(server).post('/api/config/background/download').send({ url: 'http://192.168.1.1/' })).status).toBe(403);
-        expect((await request(server).put('/api/config/appearance').send({ style: 'liquid' })).status).toBe(403);
+        expect((await asEditor(server).delete('/api/config/layout')).status).toBe(403);
+        expect((await asEditor(server).post('/api/config/layout/restore')).status).toBe(403);
+        expect((await asEditor(server).post('/api/config/background/download').send({ url: 'http://192.168.1.1/' })).status).toBe(403);
+        expect((await asEditor(server).put('/api/config/appearance').send({ style: 'liquid' })).status).toBe(403);
         expect(readLayout().pages).toEqual({});
     });
 
     it('resets the layout', async () => {
         await put(server, { pages: { home: [], admin: [{ id: 'c', type: 'x' }] } });
-        const res = await request(server).delete('/api/config/layout');
+        const res = await asEditor(server).delete('/api/config/layout');
 
         expect(res.status).toBe(200);
         expect(readLayout()).toEqual({ pages: {}, removed: [] });
@@ -147,19 +147,19 @@ describe('layout API', () => {
     });
 
     it('lists the Material icon names', async () => {
-        const res = await request(server).get('/api/icons/mdi').expect(200);
+        const res = await asEditor(server).get('/api/icons/mdi').expect(200);
         expect(res.body.names).toContain('lightbulb-off');
     });
 
     it('undoes a reset', async () => {
         await put(server, { pages: { home: [{ id: 'a', type: 'x', colSpan: 2 }], admin: [] } }).expect(200);
         const saved = readLayout();
-        await request(server).delete('/api/config/layout').expect(200);
+        await asEditor(server).delete('/api/config/layout').expect(200);
         expect(readLayout().pages).toEqual({});
 
-        await request(server).post('/api/config/layout/restore').expect(200);
+        await asEditor(server).post('/api/config/layout/restore').expect(200);
         expect(readLayout()).toEqual(saved);
-        await request(server).post('/api/config/layout/restore').expect(404);
+        await asEditor(server).post('/api/config/layout/restore').expect(404);
     });
 
     describe('page background', () => {
@@ -167,18 +167,18 @@ describe('layout API', () => {
         const png = Buffer.from('89504e470d0a1a0a0000000d49484452', 'hex');
 
         it('stores an uploaded picture and serves it', async () => {
-            const upload = await request(server).post('/api/config/background').set('Content-Type', 'image/png').send(png);
+            const upload = await asEditor(server).post('/api/config/background').set('Content-Type', 'image/png').send(png);
             expect(upload.status).toBe(200);
             expect(upload.body.url).toMatch(/^\/api\/config\/background\/[a-f0-9]{32}\.png$/);
 
-            const served = await request(server).get(upload.body.url);
+            const served = await asEditor(server).get(upload.body.url);
             expect(served.status).toBe(200);
             expect(served.headers['content-type']).toBe('image/png');
         });
 
         it('refuses other files and names', async () => {
-            expect((await request(server).post('/api/config/background').set('Content-Type', 'text/plain').send('hi')).status).toBe(400);
-            expect((await request(server).get('/api/config/background/notes.txt')).status).toBe(404);
+            expect((await asEditor(server).post('/api/config/background').set('Content-Type', 'text/plain').send('hi')).status).toBe(400);
+            expect((await asEditor(server).get('/api/config/background/notes.txt')).status).toBe(404);
         });
 
         it('saves a color or a picture, and null goes back to config.yaml', async () => {
@@ -216,15 +216,22 @@ describe('layout API', () => {
             }));
             const base = `http://127.0.0.1:${site.address().port}`;
             try {
-                const ok = await request(server).post('/api/config/background/download').send({ url: `${base}/wall.webp` });
+                // The server is on this machine, which downloads may not reach
+                const local = await asEditor(server).post('/api/config/background/download').send({ url: `${base}/wall.webp` });
+                expect(local.status).toBe(400);
+                expect(local.body.error).toContain('private network');
+
+                allowPrivateAddressesForTests(true);
+                const ok = await asEditor(server).post('/api/config/background/download').send({ url: `${base}/wall.webp` });
                 expect(ok.status).toBe(200);
                 expect(ok.body.url).toMatch(/^\/api\/config\/background\/[a-f0-9]{32}\.webp$/);
-                expect((await request(server).get(ok.body.url)).headers['content-type']).toBe('image/webp');
+                expect((await asEditor(server).get(ok.body.url)).headers['content-type']).toBe('image/webp');
 
-                expect((await request(server).post('/api/config/background/download').send({ url: `${base}/page` })).status).toBe(400);
-                expect((await request(server).post('/api/config/background/download').send({ url: `${base}/missing.jpg` })).status).toBe(502);
-                expect((await request(server).post('/api/config/background/download').send({ url: 'file:///etc/passwd' })).status).toBe(400);
+                expect((await asEditor(server).post('/api/config/background/download').send({ url: `${base}/page` })).status).toBe(400);
+                expect((await asEditor(server).post('/api/config/background/download').send({ url: `${base}/missing.jpg` })).status).toBe(502);
+                expect((await asEditor(server).post('/api/config/background/download').send({ url: 'file:///etc/passwd' })).status).toBe(400);
             } finally {
+                allowPrivateAddressesForTests(false);
                 site.close();
             }
         });
@@ -252,12 +259,12 @@ describe('layout API', () => {
         });
 
         it('removes pictures no saved background uses', async () => {
-            const first = (await request(server).post('/api/config/background').set('Content-Type', 'image/png').send(png)).body.url;
-            const second = (await request(server).post('/api/config/background').set('Content-Type', 'image/png').send(Buffer.concat([png, Buffer.from([1])]))).body.url;
+            const first = (await asEditor(server).post('/api/config/background').set('Content-Type', 'image/png').send(png)).body.url;
+            const second = (await asEditor(server).post('/api/config/background').set('Content-Type', 'image/png').send(Buffer.concat([png, Buffer.from([1])]))).body.url;
 
             await put(server, { pages, background: { image: second, dim: 0.3 } });
-            expect((await request(server).get(first)).status).toBe(404);
-            expect((await request(server).get(second)).status).toBe(200);
+            expect((await asEditor(server).get(first)).status).toBe(404);
+            expect((await asEditor(server).get(second)).status).toBe(200);
         });
     });
 

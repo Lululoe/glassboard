@@ -3,10 +3,9 @@ import {
     MIN_TEMPLATE_REFRESH, cleanTemplateOutput, findHeaderTemplate, headerWidgetEntityIds,
 } from '../../shared/pageHeader.js';
 import { HttpError, upstreamError } from '../errors.js';
+import logger from '../logger.js';
 import { createHaSocket } from './haSocket.js';
 import { getGraphEntityIds, graphData } from './haGraph.js';
-import { getVacuumEntityIds, vacuumAction, vacuumData, vacuumMap } from './haVacuum.js';
-import { getPrinterEntityIds, printerAction, printerData } from './haPrinter.js';
 import { currentKiosk, findPerson, kioskCall, listedEntities, personIdOf } from './haKiosk.js';
 import { kioskEntityIds, kioskMediaIds, loggedInName } from '../../shared/kiosk.js';
 
@@ -438,9 +437,23 @@ export function resetPeopleCache() {
     peopleCache = { at: 0, states: [] };
 }
 
+/** @type {Set<() => Iterable<string>>} */
+const entitySources = new Set();
+
 /**
- * Collects every entity id referenced by hacontrol, thermostat, media player, graph, vacuum and printer cards,
- * page header widgets and kiosk mode.
+ * Adds the entities a plugin's cards read to those the API may read and the live connection
+ * watches.
+ * @param {() => Iterable<string>} source - Returns the plugin's entity ids from the current config.
+ * @returns {() => void} Removes the source.
+ */
+export function registerEntityIds(source) {
+    entitySources.add(source);
+    return () => entitySources.delete(source);
+}
+
+/**
+ * Collects every entity id referenced by hacontrol, thermostat, media player and graph cards,
+ * the cards of plugins (see registerEntityIds), page header widgets and kiosk mode.
  * Only these entities may be read through the API.
  * @returns {Set<string>} Allowed entity ids.
  */
@@ -454,8 +467,14 @@ export function getValidEntityIds() {
     getClimateConfigs().forEach(c => entityIds.add(c.entity_id));
     getMediaEntityIds().forEach(id => entityIds.add(id));
     getGraphEntityIds().forEach(id => entityIds.add(id));
-    getVacuumEntityIds().forEach(id => entityIds.add(id));
-    getPrinterEntityIds().forEach(id => entityIds.add(id));
+    entitySources.forEach(source => {
+        // A plugin's source that fails leaves its entities out, not every other card's
+        try {
+            for (const id of source()) entityIds.add(id);
+        } catch (err) {
+            logger.warn(`A plugin's Home Assistant entities could not be read: ${err instanceof Error ? err.message : err}`);
+        }
+    });
     // Page header widgets only read their entities' states
     headerWidgetEntityIds(getConfig()).forEach(id => entityIds.add(id));
     kioskEntityIds(getConfig().kiosk).forEach(id => entityIds.add(id));
@@ -711,6 +730,17 @@ export function resetTemplateCache() {
 }
 
 /**
+ * Checks that Home Assistant is configured and updates the entities the live connection
+ * watches, since config changes can add entities. Every request that reads Home Assistant
+ * calls this first, including those of plugins.
+ * @throws {HttpError} 503 when Home Assistant is not configured.
+ */
+export function prepareHaRequest() {
+    getHaConfig();
+    live?.watch(getValidEntityIds());
+}
+
+/**
  * Handles Home Assistant requests.
  * - `endpoint: 'states'` with `entity_ids: string[]` returns `{ [entity_id]: state | null }`;
  *   with `icons: true` each state also has the `icon` Home Assistant shows for it.
@@ -724,11 +754,6 @@ export function resetTemplateCache() {
  * - `endpoint: 'control'` switches, dims or colors hacontrol entities and group members
  *   (see controlCalls).
  * - `endpoint: 'graph'` with `card_id` and `range` returns a graph card's data (see graphData).
- * - `endpoint: 'vacuum'` with `card_id` returns a vacuum card's robots (see vacuumData),
- *   `vacuum_action` controls them (see vacuumCall), and `vacuum_map` with `card_id` and
- *   `entity_id` returns a robot's map (see vacuumMap).
- * - `endpoint: 'printer'` with `card_id` returns a printer card's printer (see printerData), and
- *   `printer_action` controls it (see printerAction).
  * - `endpoint: 'template'` with `page` and `line` renders that page header line's template
  *   (see renderHeaderTemplate).
  * - `endpoint: 'kiosk'` with `action` sets the kiosk's brightness, switches its screen or one of
@@ -739,9 +764,7 @@ export function resetTemplateCache() {
 export async function handleHaRequest(params) {
     const { endpoint } = params;
     if (!endpoint) throw new HttpError(400, 'Home Assistant service requires endpoint parameter');
-    getHaConfig();
-    // Config changes can add entities, so the live connection's list is updated with each request
-    live?.watch(getValidEntityIds());
+    prepareHaRequest();
 
     if (endpoint === 'states') {
         const ids = Array.isArray(params.entity_ids) ? params.entity_ids : [];
@@ -794,11 +817,6 @@ export async function handleHaRequest(params) {
 
     if (endpoint === 'template') return renderHeaderTemplate(params);
     if (endpoint === 'graph') return graphData(params);
-    if (endpoint === 'vacuum') return vacuumData(params);
-    if (endpoint === 'vacuum_action') return vacuumAction(params);
-    if (endpoint === 'vacuum_map') return vacuumMap(params);
-    if (endpoint === 'printer') return printerData(params);
-    if (endpoint === 'printer_action') return printerAction(params);
 
     if (endpoint === 'kiosk') {
         const brightness = getConfig().kiosk?.brightness_entity;

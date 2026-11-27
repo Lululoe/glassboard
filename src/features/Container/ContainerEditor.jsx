@@ -6,7 +6,7 @@ import AddCardDialog from '../../components/Editor/AddCardDialog';
 import CardEditor from '../../components/Editor/CardEditor';
 import { fitToColumns, moveItem, sizeOf } from '../../components/Grid/gridLayout';
 import Icon from '../../components/Shared/Icon';
-import { getCardInfo } from '../registry';
+import { getCardInfo } from '../../plugins/registry';
 import { CONTAINER_TYPE, flattenCards } from '../../../shared/containerCards';
 import { DEFAULT_SCALE, columnsOf, newChildId, scaleOf } from './containerModel';
 import './ContainerEditor.css';

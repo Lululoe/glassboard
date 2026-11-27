@@ -64,7 +64,7 @@ const ValetudoMap = ({ map, robot, selected, onToggle }) => {
 const VacuumView = ({ cardId, entityId, robot, selected, onToggle }) => {
     // Polling stays cheap for plain cameras: the server remembers that they aren't maps
     const { data, error } = usePolling(
-        () => callService('homeassistant', { endpoint: 'vacuum_map', card_id: cardId, entity_id: entityId }),
+        () => callService('vacuum', { endpoint: 'map', card_id: cardId, entity_id: entityId }),
         { interval: MAP_INTERVAL, key: `${cardId}|${entityId}` },
     );
     const [tick, setTick] = useState(0);

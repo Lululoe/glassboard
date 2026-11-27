@@ -1,3 +1,4 @@
+import { HttpError } from '../errors.js';
 import logger from '../logger.js';
 
 /**
@@ -17,6 +18,7 @@ export const errorHandler = (err, req, res, next) => {
     if (err.stack) logger.debug(err.stack);
 
     const body = { error: err.message };
+    if (err instanceof HttpError && err.code) body.code = err.code;
     if (process.env.NODE_ENV !== 'production') body.stack = err.stack;
     res.status(status).json(body);
 };

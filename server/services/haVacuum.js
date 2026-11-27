@@ -1,7 +1,7 @@
 import zlib from 'zlib';
 import { findCard, getAllCards } from '../config.js';
 import { HttpError, upstreamError } from '../errors.js';
-import { getEntityState, haFetchRaw, haRequest } from './homeassistant.js';
+import { getEntityState, haFetchRaw, haRequest, prepareHaRequest } from './homeassistant.js';
 
 /** Robots a multi-robot card shows; further ones are ignored. */
 export const MAX_ROBOTS = 6;
@@ -340,4 +340,20 @@ export async function vacuumMap(params) {
     mapCache.set(key, entry);
     promise.catch(() => mapCache.delete(key));
     return promise;
+}
+
+/**
+ * Handles requests of the vacuum cards, through Home Assistant.
+ * - `endpoint: 'robots'` with `card_id` returns the card's robots (see vacuumData).
+ * - `endpoint: 'action'` controls one of them (see vacuumCall).
+ * - `endpoint: 'map'` with `card_id` and `entity_id` returns a robot's map (see vacuumMap).
+ * @param {Object} params - Request parameters.
+ * @returns {Promise<Object>} The response data.
+ */
+export async function handleVacuumRequest(params) {
+    prepareHaRequest();
+    if (params.endpoint === 'robots') return vacuumData(params);
+    if (params.endpoint === 'action') return vacuumAction(params);
+    if (params.endpoint === 'map') return vacuumMap(params);
+    throw new HttpError(400, `Unknown vacuum endpoint: ${params.endpoint}`);
 }

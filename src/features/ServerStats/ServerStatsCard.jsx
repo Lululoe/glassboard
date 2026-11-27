@@ -1,5 +1,5 @@
 import { useCardNotice } from '../../context/notices';
-import { serverStatsNotices } from '../cardNotices';
+import { serverStatsNotices } from './notices';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
 import Icon from '../../components/Shared/Icon';
 import UsageBar from '../../components/Shared/UsageBar';

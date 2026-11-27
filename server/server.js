@@ -1,5 +1,6 @@
 import logger from './logger.js';
-import { loadConfig, watchConfig } from './config.js';
+import { getBaseConfig, loadConfig, onConfigChange, watchConfig } from './config.js';
+import { announceEditing } from './editAccess.js';
 import { createApp } from './app.js';
 import { startLiveStates } from './services/homeassistant.js';
 import { isDemoMode } from './services/demo.js';
@@ -19,6 +20,15 @@ async function start() {
     const app = await createApp();
     app.listen(PORT, HOST, () => {
         logger.info(`App listening on http://${HOST}:${PORT} (env=${process.env.NODE_ENV || 'development'})`);
+        announceEditing();
+    });
+
+    // Say how to unlock editing again when config.yaml turns it on while running
+    let editable = getBaseConfig().editable === true;
+    onConfigChange(() => {
+        const now = getBaseConfig().editable === true;
+        if (now && !editable) announceEditing();
+        editable = now;
     });
 }
 

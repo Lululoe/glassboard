@@ -2,7 +2,8 @@
 import request from 'supertest';
 import { afterAll, describe, it, expect, vi, beforeAll } from 'vitest';
 import { createApp } from './app.js';
-import { listenOnLoopback } from './testServer.js';
+import { getBaseConfig, getConfig, setConfig } from './config.js';
+import { asEditor, listenOnLoopback } from './testServer.js';
 
 vi.mock('./services/index.js', async () => {
     const { HttpError } = await import('./errors.js');
@@ -12,6 +13,8 @@ vi.mock('./services/index.js', async () => {
             forbidden: vi.fn(async () => { throw new HttpError(403, 'Entity not authorized'); }),
             broken: vi.fn(async () => { throw new Error('boom'); }),
         },
+        demoHandlers: {},
+        plugins: { plugins: [], failed: [], routers: [], find: () => undefined },
     };
 });
 
@@ -107,5 +110,48 @@ describe('API app', () => {
         expect((await request(server).get('/api/icons/mdi/not-an-icon-at-all.svg')).status).toBe(404);
         expect((await request(server).get('/api/icons/mdi/Light_bulb.svg')).status).toBe(404);
     });
-});
 
+    describe('installing plugins', () => {
+        const saved = { config: getConfig(), base: getBaseConfig() };
+        const allow = (base) => setConfig({ ...saved.config, ...base }, { ...saved.base, ...base });
+
+        afterAll(() => setConfig(saved.config, saved.base));
+
+        it('is off unless editing and plugins.install are on', async () => {
+            allow({ editable: true, plugins: {} });
+            const list = await request(server).get('/api/plugins');
+            expect(list.body.install).toMatchObject({ allowed: false, reason: expect.stringContaining('plugins.install: true') });
+
+            for (const [route, body] of [['preview', { source: 'someone/hello' }], ['preview', { id: 'hello' }], ['install', { preview: 'x' }], ['remove', { id: 'hello' }]]) {
+                const res = await asEditor(server).post(`/api/plugins/${route}`).send(body);
+                expect(res.status).toBe(403);
+            }
+            allow({ editable: false, plugins: { install: true } });
+            expect((await asEditor(server).post('/api/plugins/preview').send({ source: 'someone/hello' })).status).toBe(403);
+        });
+
+        it('needs the edit password', async () => {
+            allow({ editable: true, plugins: { install: true } });
+            const res = await request(server).post('/api/plugins/preview').send({ source: 'someone/hello' });
+            expect(res.status).toBe(401);
+            expect(res.body.code).toBe('edit_locked');
+            // The server's folder is only shown to those who can edit
+            expect((await request(server).get('/api/plugins')).body.install.folder).toBeNull();
+            expect((await asEditor(server).get('/api/plugins')).body.install.folder).toEqual(expect.any(String));
+        });
+
+        it('takes only JSON, so other sites can’t send it', async () => {
+            allow({ editable: true, plugins: { install: true } });
+            const res = await asEditor(server).post('/api/plugins/preview').type('form').send('source=someone/hello');
+            expect(res.status).toBe(415);
+        });
+
+        it('passes the request on once it is on', async () => {
+            allow({ editable: true, plugins: { install: true } });
+            expect((await request(server).get('/api/plugins')).body.install).toMatchObject({ allowed: true, reason: null });
+            const res = await asEditor(server).post('/api/plugins/preview').send({ source: 'not a repository' });
+            expect(res.status).toBe(400);
+            expect(res.body.error).toContain('Enter a GitHub repository');
+        });
+    });
+});

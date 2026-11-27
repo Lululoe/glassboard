@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import ContainerCard from './ContainerCard';
+// Registers the cards a container shows
+import '../registry';
 import { columnsOf, newChildId, scaleOf } from './containerModel';
 
 const spacer = (id, extra = {}) => ({ id, type: 'spacer', ...extra });
@@ -32,7 +34,7 @@ describe('ContainerCard', () => {
         expect(screen.getByText(/No cards yet/)).toBeInTheDocument();
         expect(container.querySelector('.container-card')).toHaveClass('plain');
         rerender(<ContainerCard config={{ id: 'box', type: 'container', cards: [{ id: 'z', type: 'nope' }] }} />);
-        expect(screen.getByText('Unknown card type "nope"')).toBeInTheDocument();
+        expect(screen.getByText('Unknown card type "nope". Is its plugin installed?')).toBeInTheDocument();
     });
 });
 

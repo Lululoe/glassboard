@@ -1,3 +1,5 @@
+import { editFetch } from './editAccess';
+
 /**
  * Error returned by the Glassboard API, carrying the HTTP status.
  */
@@ -55,7 +57,7 @@ export function callService(service, params = {}) {
  * @returns {Promise<*>} Parsed response data.
  */
 async function send(method, url, body) {
-    const res = await fetch(url, {
+    const res = await editFetch(url, {
         method,
         headers: body ? { 'Content-Type': 'application/json' } : undefined,
         body: body ? JSON.stringify(body) : undefined,
@@ -86,7 +88,7 @@ export function saveLayout(pages, shared = {}) {
  * @returns {Promise<string>} The URL the picture is served at.
  */
 export async function uploadBackground(file) {
-    const res = await fetch('/api/config/background', {
+    const res = await editFetch('/api/config/background', {
         method: 'POST',
         headers: { 'Content-Type': file.type },
         body: file,
@@ -148,4 +150,56 @@ export async function listKioskEntities() {
  */
 export async function listEntities() {
     return (await send('GET', '/api/config/entities?all=1')).entities;
+}
+
+/**
+ * Lists the plugins the server has set up, with the services each adds, those that failed, and
+ * whether plugins can be installed from the settings window.
+ * @returns {Promise<{version: string, plugins: Array<Object>, failed: Array<Object>, install: {allowed: boolean, reason: string|null, folder: string}}>}
+ *   The plugins, in order.
+ */
+export function listServerPlugins() {
+    return send('GET', '/api/plugins');
+}
+
+/**
+ * @typedef {Object} PluginPreview
+ * @property {string} preview - Pass it to installPlugin.
+ * @property {boolean} upToDate - The installed version is already this release.
+ * @property {{id: string, name: string, version: string, description?: string, glassboard: string, hasServer: boolean, hasClient: boolean}} plugin
+ *   - What the plugin says about itself.
+ * @property {{url: string, owner: string, description?: string, stars?: number, createdAt?: string, pushedAt?: string, archived?: boolean, isNew?: boolean}} repository
+ *   - What GitHub says about its repository.
+ * @property {{ref: string, kind: 'asset'|'tarball', commit: string|null, url?: string, publishedAt?: string, notes?: string}} release
+ *   - The release or branch it comes from.
+ * @property {string} sha256 - Hash of the download.
+ * @property {{version?: string, ref?: string, commit?: string|null, url?: string}|null} installed - The installed version, if any.
+ */
+
+/**
+ * Downloads and checks a plugin without installing it: from a GitHub repository, or the newest
+ * release of an installed plugin. Only works with `plugins.install: true`.
+ * @param {{source: string}|{id: string}} what - The repository, or the plugin to update.
+ * @returns {Promise<PluginPreview>} What would be installed.
+ */
+export function previewPlugin(what) {
+    return send('POST', '/api/plugins/preview', what);
+}
+
+/**
+ * Installs the plugin a preview showed.
+ * @param {string} preview - The preview's id.
+ * @returns {Promise<{plugin: Object, updated: boolean, restartRecommended: boolean}>} What was installed.
+ */
+export function installPlugin(preview) {
+    return send('POST', '/api/plugins/install', { preview });
+}
+
+/**
+ * Removes a plugin from the plugins folder.
+ * @param {string} id - The plugin.
+ * @returns {Promise<{restartRecommended: boolean}>} Whether Glassboard should restart.
+ */
+export function removePlugin(id) {
+    return send('POST', '/api/plugins/remove', { id });
 }

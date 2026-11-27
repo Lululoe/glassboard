@@ -100,7 +100,6 @@ only some levels with e.g. `notify: { activity: false }` (see [Card Configuratio
 | App Grid | Apps that fail their status check | | |
 | Pull Requests | | Open pull requests (not drafts) | |
 | Vacuum, Multiple Vacuums | A robot with an error | Parts that need replacing, as their bars show | A robot cleaning or returning to its dock |
-| 3D Printer | A failed print, or one the printer paused itself (e.g. filament ran out) | A print you paused | A print in progress |
 | Transmission | Torrents with an error, or Transmission can't be reached | Stalled torrents | Downloads in progress |
 | Server Stats | Temperature at 85 °C or more, storage 90 % full or more (only rows the card shows) | | |
 | Proxmox | The host can't be reached | | |

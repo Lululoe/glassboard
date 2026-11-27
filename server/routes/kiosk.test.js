@@ -2,12 +2,11 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, it, expect, vi } from 'vitest';
 import { setConfig } from '../config.js';
 import { readLayout } from '../layout.js';
 import { createApp } from '../app.js';
-import { listenOnLoopback } from '../testServer.js';
+import { asEditor, listenOnLoopback } from '../testServer.js';
 
 // Saving reloads the config from disk; keep the test config in memory instead
 vi.mock('../config.js', async (importOriginal) => {
@@ -19,7 +18,7 @@ vi.mock('../config.js', async (importOriginal) => {
     };
 });
 
-const put = (server, body) => request(server).put('/api/config/kiosk').send(body);
+const put = (server, body) => asEditor(server).put('/api/config/kiosk').send(body);
 
 describe('kiosk options API', () => {
     let server;
@@ -62,13 +61,13 @@ describe('kiosk options API', () => {
         expect(readLayout().kiosk).toBeUndefined();
 
         await put(server, { clock: 'stacked' });
-        expect((await request(server).delete('/api/config/kiosk')).status).toBe(200);
+        expect((await asEditor(server).delete('/api/config/kiosk')).status).toBe(200);
         expect(readLayout().kiosk).toBeUndefined();
     });
 
     it('keeps the kiosk options when the layout is saved', async () => {
         await put(server, { clock: 'stacked' });
-        expect((await request(server).put('/api/config/layout').send({ pages: { home: [{ id: 'a', type: 'x' }] } })).status).toBe(200);
+        expect((await asEditor(server).put('/api/config/layout').send({ pages: { home: [{ id: 'a', type: 'x' }] } })).status).toBe(200);
         expect(readLayout().kiosk).toEqual({ clock: 'stacked' });
     });
 
@@ -82,6 +81,6 @@ describe('kiosk options API', () => {
     it('needs editing to be on', async () => {
         setConfig({ editable: false, pages: [] }, { editable: false, pages: [] });
         expect((await put(server, { clock: 'analog' })).status).toBe(403);
-        expect((await request(server).get('/api/config/entities')).status).toBe(403);
+        expect((await asEditor(server).get('/api/config/entities')).status).toBe(403);
     });
 });

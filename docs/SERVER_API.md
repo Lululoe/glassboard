@@ -16,14 +16,25 @@ Errors are returned as JSON with a matching HTTP status:
 
 | Status | Meaning |
 |--------|---------|
-| `400` | Missing or invalid parameters. |
-| `403` | The request targets something not present in `config.yaml` (an entity, an action). |
+| `400` | Missing or invalid parameters, or a picture download from a private network address. |
+| `401` | A change needs the edit password (`"code": "edit_locked"`), or the password entered is wrong (`"code": "wrong_password"`). See [Edit password](#edit-password). |
+| `403` | The request targets something not present in `config.yaml` (an entity, an action), or editing is off. |
 | `404` | Unknown service, card or API path. |
+| `421` | The request was sent to a host name Glassboard doesn't answer to. See [Host names](#host-names). |
 | `502` | The upstream service (Home Assistant, Proxmox, ...) returned an error. |
 | `503` | The service is not configured in `services.yaml` / environment variables. |
 | `500` | Unexpected server error. |
 
 Outside production (`NODE_ENV !== 'production'`) the body also contains a `stack` field.
+
+---
+
+## Host names
+Glassboard only answers requests sent to IP addresses, `localhost`, names without a dot (such as `glassboard`), names
+that only work inside a home network (`.local`, `.lan`, `.home`, `.home.arpa`, `.internal`) and the names listed in
+`ALLOWED_HOSTS`, such as `ALLOWED_HOSTS=dash.example.com,*.home.example.com`. Others get `421`. This stops a website
+from pointing a name it owns at your network and using the dashboard through your browser (DNS rebinding).
+`/health` always answers. `ALLOWED_HOSTS=*` turns the check off.
 
 ---
 
@@ -39,10 +50,10 @@ change things, so they can't be reached through a link, an image or a form on an
 | `service` | string | Required. One of the services below. |
 | `...params` | mixed | Service-specific parameters. |
 
-Services are registered in `server/services/index.js`.
+Services are added by plugins, listed in `server/plugins/builtin.js` (see [Creating New Cards](CREATING_NEW_CARDS.md#5-add-a-backend-service-optional)).
 
 In demo mode (`demo: true` in `config.yaml`, or `GLASSBOARD_DEMO=true`) every service is answered by the
-simulated handlers in `server/services/demo.js` instead, with the same response shapes and validation errors
+simulated handlers each plugin gives (in `server/services/demo.js` for the built-in ones) instead, with the same response shapes and validation errors
 for missing parameters. Home Assistant actions change the simulated state in memory only.
 
 ### `transmission`
@@ -111,21 +122,6 @@ the climate actions below.
   `null` where there is no data. `range` must be one of the card's ranges (the week comparison ignores it and returns
   14 days). `kind` is `mean` (an average) or `change` (what a meter used). Values come from Home Assistant's long-term
   statistics where it keeps them and from the state history otherwise; answers are cached for 30 seconds.
-- **Load a vacuum card**: `{ "service": "homeassistant", "endpoint": "vacuum", "card_id": "robo" }` returns
-  `{ "robots": [{ "entity_id", "name", "state", "battery", "progress", "fan": { "value", "options" }, "wetness", "stats", "rooms", "consumables", "camera", "map" }] }`.
-- **Control a robot**: `{ "service": "homeassistant", "endpoint": "vacuum_action", "card_id": "robo", "entity_id": "vacuum.robo", "action": "start" }`.
-  The robot must be on the card (`403` otherwise). `action` is `start`, `pause`, `stop`, `return_to_base`, `locate`,
-  `clean_rooms` (with `areas`, rooms of the robot), `set_fan` and `set_wetness` (with `value`, one of the options Home
-  Assistant reports) or `reset_consumable` (with `index`, a consumable with a `reset` button).
-- **Load a robot's map**: `{ "service": "homeassistant", "endpoint": "vacuum_map", "card_id": "robo", "entity_id": "camera.robo_map_data" }`
-  returns `{ "kind": "image" }` for an ordinary camera, or for Valetudo's map data camera
-  `{ "kind": "valetudo", "viewBox", "segments": [{ "id", "name", "d", "x", "y" }], "floor", "walls", "path", "robot", "charger" }`,
-  with SVG paths in map pixels. The entity must be a `camera` or `map` of the card.
-- **Load a printer card**: `{ "service": "homeassistant", "endpoint": "printer", "card_id": "printer" }` returns
-  `{ "name", "status", "stage", "job", "progress", "layer", "totalLayers", "remaining", "endTime", "changedAt", "weight", "length", "error", "nozzle": { "value", "target" }, "bed": { "value", "target" }, "chamber", "humidity", "spools": [{ "entity_id", "slot", "name", "color", "active", "empty" }], "controls": { "pause", "resume", "stop" }, "light" }`.
-  `remaining` is in minutes, `controls` says which buttons exist, and `light` is `null` without a chamber light.
-- **Control a printer**: `{ "service": "homeassistant", "endpoint": "printer_action", "card_id": "printer", "action": "pause" }`.
-  `action` is `pause`, `resume`, `stop`, `light_on` or `light_off`; `403` for other cards, `409` if the printer has no such button.
 - **Load a control dialog**: `{ "service": "homeassistant", "endpoint": "details", "entity_id": "group.living_room" }`
   returns `{ "entity": { ...state }, "members": { "light.lamp": { ...state } }, "favorites": { "light.lamp": [{ "hs_color": [24, 85] }, { "color_temp_kelvin": 2700 }] } }`.
   The entity must be on an `hacontrol` card; `members` lists the states of a group's `entity_id` attribute (empty for
@@ -153,6 +149,19 @@ the climate actions below.
   never one sent with the request; `404` when the line has none. Each template is rendered at most once every 10
   seconds, and the result is cut to one line of plain text of at most 200 characters. In demo mode `{{ … }}` parts
   are replaced with a simulated number. See [Page Header](HEADER_CONFIGURATION#page-header).
+
+### `vacuum`
+The vacuum cards' robots, through Home Assistant (`503` if it isn't configured).
+- **Load a vacuum card**: `{ "service": "vacuum", "endpoint": "robots", "card_id": "robo" }` returns
+  `{ "robots": [{ "entity_id", "name", "state", "battery", "progress", "fan": { "value", "options" }, "wetness", "stats", "rooms", "consumables", "camera", "map" }] }`.
+- **Control a robot**: `{ "service": "vacuum", "endpoint": "action", "card_id": "robo", "entity_id": "vacuum.robo", "action": "start" }`.
+  The robot must be on the card (`403` otherwise). `action` is `start`, `pause`, `stop`, `return_to_base`, `locate`,
+  `clean_rooms` (with `areas`, rooms of the robot), `set_fan` and `set_wetness` (with `value`, one of the options Home
+  Assistant reports) or `reset_consumable` (with `index`, a consumable with a `reset` button).
+- **Load a robot's map**: `{ "service": "vacuum", "endpoint": "map", "card_id": "robo", "entity_id": "camera.robo_map_data" }`
+  returns `{ "kind": "image" }` for an ordinary camera, or for Valetudo's map data camera
+  `{ "kind": "valetudo", "viewBox", "segments": [{ "id", "name", "d", "x", "y" }], "floor", "walls", "path", "robot", "charger" }`,
+  with SVG paths in map pixels. The entity must be a `camera` or `map` of the card.
 
 ### `weather`
 - **Parameters**:
@@ -195,24 +204,6 @@ the climate actions below.
   }
   ```
 
-### `storage`
-- **Parameters**:
-  - `card_id` (string): Id of a `storage` card with a `source`. What to read (Prometheus queries or Home Assistant
-    entities) comes from that card's config, never from the request.
-- **Response** (sizes in GB, `updated` in Unix seconds when the source reports it):
-  ```json
-  {
-    "total": 4000,
-    "categories": [
-      { "name": "Media", "size": 1480 },
-      { "name": "Snapshots & other", "size": 140, "color": "gray" }
-    ],
-    "updated": 1763890000
-  }
-  ```
-- **Errors**: `403` for a card that isn't a storage card, `400` for one without a source, `503` when Prometheus has
-  no URL, `502` when Prometheus or Home Assistant fails or has no size.
-
 ### `appstatus`
 - **Parameters**:
   - `cardId` (string): Id of an `appgrid` card. The app URLs (`statusUrl` or `url`) are read from that
@@ -242,8 +233,41 @@ search. `GET /api/icons/mdi/<name>.svg` returns a Material Design Icon (the icon
 `/api/icons/mdi/lightbulb-off.svg`; `404` for unknown names. Responses may be cached for a week.
 
 ### Robot camera
-`GET /api/ha/camera?card_id=robo&entity_id=camera.robo` returns the picture of a robot's `camera` or `map` entity
+`GET /api/plugins/vacuum/camera?card_id=robo&entity_id=camera.robo` returns the picture of a robot's `camera` or `map` entity
 (`403` for others), so Home Assistant's token stays on the server.
+
+### Plugins
+`GET /api/plugins` returns:
+
+```json
+{
+  "version": "2.0.0",
+  "plugins": [{ "id": "hello", "services": ["hello"], "routes": false, "builtIn": false,
+                "name": "Hello", "version": "1.0.0", "external": true, "hasServer": true,
+                "client": "/_plugins/hello/client.js?v=1.0.0-…", "style": null,
+                "source": { "url": "https://github.com/you/glassboard-hello", "ref": "v1.0.0" } }],
+  "failed": [{ "id": "broken", "error": "plugin.json is not valid JSON", "builtIn": false }],
+  "install": { "allowed": false, "reason": "Installing plugins is off; …", "folder": "/app/plugins" }
+}
+```
+
+the plugins the server has set up, in order, with the services each adds and whether it adds routes under
+`/api/plugins/<id>/`; those that failed and were skipped; and whether plugins can be installed from the settings
+window. Plugins from the plugins folder also carry their manifest's details and the URLs of their browser files,
+which are served from `/_plugins/<id>/`. See [Plugins](PLUGINS).
+
+`install.folder` is only given to requests with the edit key.
+
+These change the plugins folder. They need `editable: true` and `plugins.install: true` in `config.yaml` (`403`
+otherwise) and the edit key (`401` otherwise), take JSON only (`415` otherwise), and installs run one at a time:
+
+| Endpoint | Body | |
+| --- | --- | --- |
+| `POST /api/plugins/preview` | `{ "source": "owner/repo" }` or `{ "id": "hello" }` | Downloads and checks a plugin without installing it: from a GitHub repository (also its URL, or `owner/repo@ref`), or the newest release of an installed plugin. Returns `{ "preview", "upToDate", "plugin", "repository", "release", "sha256", "installed" }`. `409` for the id of a built-in plugin, for an update that is another plugin, and when the installed release's tag now points at other code; `422` when the download isn't a plugin. |
+| `POST /api/plugins/install` | `{ "preview": "…" }` | Installs exactly what a preview downloaded, within 10 minutes and once (`410` otherwise), and loads it; the old version is kept if the new one fails to load (`422`). Returns `{ "plugin", "updated", "restartRecommended" }`. |
+| `POST /api/plugins/remove` | `{ "id": "hello" }` | Removes the plugin's folder and unloads it. Returns `{ "restartRecommended" }`. |
+
+`restartRecommended` is true when an old version's server part may keep running until Glassboard restarts.
 
 ### Media player artwork
 **Endpoint**: `GET /api/ha/artwork?entity_id=media_player.living_room`
@@ -281,8 +305,19 @@ A `config` event is sent whenever `config.yaml`, `services.yaml`, `theme.yaml` o
 dashboards reload their configuration when they receive it.
 
 ## 4. Layout API
-Used by edit mode to store the dashboard in `layout.yaml`. Both endpoints answer `403` unless `editable: true` is
-set, and the config reloads right away.
+Used by edit mode to store the dashboard in `layout.yaml`. Every endpoint that changes something, and
+`GET /api/config/entities`, answers `403` unless `editable: true` is set, and `401` without the edit key. The
+config reloads right away.
+
+### Edit password
+The dashboard has no login, so every change needs the edit password set in `EDIT_PASSWORD` (at least 8
+characters). Without it, editing is off: `GET /api/config` reports `"editable": false` and changes answer `403`.
+
+- `GET /api/config/edit` returns `{ "editable", "unlocked" }`: whether editing is on, and whether the request
+  carries a valid edit key.
+- `POST /api/config/edit/unlock` with `{ "password" }` (JSON only) returns `{ "key" }`. Send it in the
+  `X-Glassboard-Edit` header with each change. The key is derived from the password, so it works until the password
+  changes. `401` for a wrong password; after 10 wrong passwords an address must wait 15 minutes (`429`).
 
 ### `PUT /api/config/layout`
 Saves the whole dashboard. `pages` maps each grid page key (the page `id`, the page's index for pages without one,

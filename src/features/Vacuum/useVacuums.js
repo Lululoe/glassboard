@@ -16,7 +16,7 @@ const OVERRIDE_GRACE = 2500;
  */
 export function useVacuums(cardId, enabled) {
     const { data, loading, error, updatedAt, refresh } = usePolling(
-        () => callService('homeassistant', { endpoint: 'vacuum', card_id: cardId }),
+        () => callService('vacuum', { endpoint: 'robots', card_id: cardId }),
         { interval: POLL_INTERVAL, backgroundInterval: BACKGROUND_FAST, enabled: enabled && cardId !== undefined, key: String(cardId) },
     );
     const [overrides, setOverrides] = useState(/** @type {Object<string, Object>} */ ({}));
@@ -48,7 +48,7 @@ export function useVacuums(cardId, enabled) {
             setOverrides(prev => ({ ...prev, [robot.entity_id]: { ...prev[robot.entity_id], ...optimistic, until: Date.now() + OVERRIDE_GRACE } }));
         }
         try {
-            await callService('homeassistant', { endpoint: 'vacuum_action', card_id: cardId, entity_id: robot.entity_id, action, ...extra });
+            await callService('vacuum', { endpoint: 'action', card_id: cardId, entity_id: robot.entity_id, action, ...extra });
             clearTimeout(timer.current);
             timer.current = setTimeout(refresh, REFRESH_DELAY);
         } catch (err) {

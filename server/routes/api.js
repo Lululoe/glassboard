@@ -1,9 +1,14 @@
 import express from 'express';
 import { HttpError } from '../errors.js';
-import { demoCameraImage, demoHandlers, demoKioskAvatar, isDemoMode } from '../services/demo.js';
+import { demoKioskAvatar, isDemoMode } from '../services/demo.js';
 import { fetchArtwork, fetchKioskAvatar } from '../services/homeassistant.js';
-import { fetchRobotImage } from '../services/haVacuum.js';
-import { serviceHandlers } from '../services/index.js';
+import { getBaseConfig } from '../config.js';
+import { installPreview, previewPlugin, previewUpdate, removePlugin } from '../plugins/installer.js';
+import { pluginsDir } from '../plugins/loader.js';
+import { GLASSBOARD_VERSION } from '../plugins/version.js';
+import { demoHandlers, plugins, serviceHandlers } from '../services/index.js';
+import logger from '../logger.js';
+import { assertEditable, editingBlocked, hasEditKey } from '../editAccess.js';
 import { mdiNames, mdiSvg } from '../services/mdi.js';
 
 const router = express.Router();
@@ -39,19 +44,6 @@ router.get('/ha/kiosk-avatar', async (req, res, next) => {
             return;
         }
         res.set({ 'Content-Type': avatar.contentType, 'Cache-Control': 'private, max-age=300' }).send(avatar.body);
-    } catch (err) {
-        next(err);
-    }
-});
-
-/** The image of a robot's camera or map entity on a vacuum card; the token stays on the server. */
-router.get('/ha/camera', async (req, res, next) => {
-    try {
-        const cardId = String(req.query.card_id || '');
-        const entityId = String(req.query.entity_id || '');
-        if (!cardId || !entityId) throw new HttpError(400, 'card_id and entity_id are required');
-        const image = isDemoMode() ? demoCameraImage(cardId, entityId) : await fetchRobotImage(cardId, entityId);
-        res.set({ 'Content-Type': image.contentType, 'Cache-Control': 'no-store' }).send(image.body);
     } catch (err) {
         next(err);
     }
@@ -98,6 +90,96 @@ router.post('/', async (req, res, next) => {
     } catch (err) {
         next(err);
     }
+});
+
+/**
+ * Why plugins can't be installed from the settings window, or null when they can. Installing
+ * runs code from the internet on the server, with access to every credential, and the dashboard
+ * has no login, so it is off until config.yaml turns it on along with editing, and each change
+ * needs the edit password too.
+ * @returns {string|null} The reason.
+ */
+function installBlocked() {
+    const config = getBaseConfig();
+    const editing = editingBlocked();
+    if (editing) return editing;
+    if (config.plugins?.install !== true) return 'Installing plugins is off; set plugins.install: true in config.yaml.';
+    return null;
+}
+
+/**
+ * Throws unless plugins can be installed from the settings window and the request carries the
+ * edit key.
+ * @param {import('express').Request} req - The request.
+ */
+function assertInstallAllowed(req) {
+    assertEditable(req);
+    const reason = installBlocked();
+    if (reason) throw new HttpError(403, reason);
+}
+
+/**
+ * The plugins the server has set up, the services and routes each adds, those that failed and
+ * why, and whether plugins can be installed from the settings window. Credentials are never
+ * part of it.
+ */
+router.get('/plugins', (req, res) => {
+    const blocked = installBlocked();
+    res.set('Cache-Control', 'no-store').json({
+        version: GLASSBOARD_VERSION,
+        plugins: plugins.plugins,
+        failed: plugins.failed,
+        // Where the folder is on the server only goes to those who can edit
+        install: { allowed: !blocked, reason: blocked, folder: hasEditKey(req) ? pluginsDir() : null },
+    });
+});
+
+/**
+ * Runs a plugin change asked for from the settings window: JSON only, like the service
+ * endpoint, so another site can't send it.
+ * @param {(body: Object) => Promise<Object>} change - The change.
+ * @returns {import('express').RequestHandler} The route.
+ */
+const pluginChange = (change) => async (req, res, next) => {
+    try {
+        if (!req.is('application/json')) throw new HttpError(415, 'Send the request as JSON');
+        assertInstallAllowed(req);
+        res.json(await change(req.body || {}));
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * `POST /api/plugins/preview` with `{ source }` (a GitHub repository) or `{ id }` (an installed
+ * plugin, for its newest release): downloads and checks the plugin without installing it, and
+ * answers what it is, for the settings window to show before installing.
+ */
+router.post('/plugins/preview', pluginChange(async ({ source, id }) => (id !== undefined
+    ? previewUpdate(String(id), { host: plugins })
+    : previewPlugin(String(source || ''), { host: plugins }))));
+
+/** `POST /api/plugins/install` with `{ preview }`: installs the plugin a preview showed. */
+router.post('/plugins/install', pluginChange(async ({ preview }) => {
+    const result = await installPreview(String(preview || ''), { host: plugins });
+    const { id, version, source } = result.plugin;
+    logger.warn(`Plugin ${id} ${version} ${result.updated ? 'updated' : 'installed'} from ${source?.url} at ${source?.ref} (${source?.commit || 'unknown commit'}), sha256 ${source?.sha256}`);
+    return result;
+}));
+
+/** `POST /api/plugins/remove` with `{ id }`: removes a plugin from the plugins folder. */
+router.post('/plugins/remove', pluginChange(async ({ id }) => {
+    const result = await removePlugin(String(id || ''), { host: plugins });
+    logger.warn(`Plugin ${id} removed`);
+    return result;
+}));
+
+// Routes of plugins under /api/plugins/<id>/, for what a JSON service can't answer, such as
+// images. Looked up for each request, so installed and removed plugins take effect at once.
+router.use('/plugins/:id', (req, res, next) => {
+    const found = plugins.routers.find(r => r.id === req.params.id);
+    if (!found) return next();
+    return found.router(req, res, next);
 });
 
 router.use((req, res, next) => {

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { SURFACE_TOKENS, accentVariables, fadeSurface, normalizeAppearance, transparencyVariables } from '../../shared/appearance.js';
 import { refractionSupported } from '../styles/refraction.js';
+import { editFetch } from '../lib/editAccess';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const ThemeContext = createContext(/** @type {any} */ ({
@@ -156,7 +157,7 @@ export const ThemeProvider = ({ children, config }) => {
     const setAppearance = async (change) => {
         setPending(prev => ({ ...prev, ...change }));
         try {
-            const res = await fetch('/api/config/appearance', {
+            const res = await editFetch('/api/config/appearance', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(change),
