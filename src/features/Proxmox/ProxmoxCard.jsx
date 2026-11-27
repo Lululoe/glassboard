@@ -1,5 +1,5 @@
 import { useCardNotice } from '../../context/notices';
-import { proxmoxNotices } from '../cardNotices';
+import { proxmoxNotices } from './notices';
 import { useState, useMemo } from 'react';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
 import StatusPill from '../../components/Shared/StatusPill';

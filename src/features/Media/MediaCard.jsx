@@ -1,5 +1,5 @@
 import { useCardNotice } from '../../context/notices';
-import { mediaNotices } from '../cardNotices';
+import { mediaNotices } from './notices';
 import { useState } from 'react';
 import TwoToneBase from '../../components/Shared/TwoToneBase';
 import Icon from '../../components/Shared/Icon';

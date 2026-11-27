@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { getLayoutPath } from './layout.js';
 import logger from './logger.js';
+import { fetchPublic } from './publicFetch.js';
 
 /** Picture types a page background can be uploaded as, with the extension each is stored under. */
 export const IMAGE_TYPES = {
@@ -113,28 +114,19 @@ export async function downloadBackgroundImage(url) {
 
     let res;
     try {
-        res = await fetch(parsed, {
+        res = await fetchPublic(parsed, {
             headers: { 'User-Agent': 'Glassboard', Accept: Object.keys(IMAGE_TYPES).join(', ') },
-            signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
-            redirect: 'follow',
+            timeout: DOWNLOAD_TIMEOUT_MS,
+            maxBytes: MAX_IMAGE_BYTES,
         });
     } catch (e) {
-        throw fail(502, `Could not reach ${parsed.host} (${e.cause?.code || e.name})`);
+        if (e.status === 413) throw fail(413, 'The picture is larger than 20 MB');
+        // A private address, or one that can't be downloaded
+        if (e.status) throw fail(e.status, e.message);
+        throw fail(502, `Could not reach ${parsed.host} (${e.cause?.code || e.code || e.name})`);
     }
-    if (!res.ok || !res.body) throw fail(502, `${parsed.host} answered ${res.status}`);
-    if (Number(res.headers.get('content-length')) > MAX_IMAGE_BYTES) throw fail(413, 'The picture is larger than 20 MB');
-
-    // Read at most the limit, whatever the server claimed
-    const chunks = [];
-    let size = 0;
-    for await (const chunk of res.body) {
-        size += chunk.length;
-        if (size > MAX_IMAGE_BYTES) {
-            throw fail(413, 'The picture is larger than 20 MB');
-        }
-        chunks.push(chunk);
-    }
-    const data = Buffer.concat(chunks);
+    if (res.status < 200 || res.status >= 300) throw fail(502, `${parsed.host} answered ${res.status}`);
+    const data = res.body;
     const type = sniffImageType(data);
     if (!type) throw fail(400, 'The address is not a JPEG, PNG, WebP, GIF or AVIF picture');
     return saveBackgroundImage(data, type);

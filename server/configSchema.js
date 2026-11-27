@@ -130,6 +130,7 @@ export const configSchema = z.looseObject({
     headerAutoHide: z.enum(HEADER_AUTO_HIDE).optional(),
     demo: z.boolean().optional(),
     editable: z.boolean().optional(),
+    plugins: z.looseObject({ install: z.boolean().optional() }).optional(),
     pageHeader: pageHeader.optional(),
     themes: z.array(z.looseObject({ id: z.string() })).optional(),
     pages: z.array(page).optional(),

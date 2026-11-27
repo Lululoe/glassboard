@@ -25,8 +25,8 @@ This project was born out of a desire for a dashboard that didn't just function 
 -   **Multiroom Thermostat**: Up to six rooms in one card, as rows or columns, with per-room presets.
 -   **Media Player**: Cover art, playback controls, seeking, and per-speaker volume and grouping for Home Assistant players.
 -   **Vacuum**: Start, stop and dock, fan speed, mop wetness, room selection, consumables, a Valetudo map and camera, for one robot or several.
--   **3D Printer**: Progress, time left, temperatures and loaded spools of a Bambu Lab printer, with pause, stop and the chamber light.
 -   **Graph**: History of up to eight sensors as lines, (stacked) bars, or this week against last week.
+-   **More cards as plugins**: The 3D printer, storage and litter box cards come as the Glassboard Cards plugin (see [Plugins](https://github.com/Lululoe/glassboard/wiki/PLUGINS)).
 
 ### 🎬 Media Center
 -   **Unified Media Card**: A powerful, consolidated view for **Sonarr** and **Radarr**.
@@ -117,14 +117,17 @@ This project uses a **Backend-for-Frontend (BFF)** architecture.
 -   **Sanitized Config**: The frontend receives a stripped-down version of the configuration.
 -   **Proxying**: All requests to internal services (Sonarr, HA, etc.) are proxied and validated by the Node.js server. Only the entities, actions and repositories listed in `config.yaml` can be reached.
 -   **No authentication**: The dashboard itself has no login. Run it on a trusted network or behind a reverse proxy that handles authentication.
--   **Editing is opt-in**: Edit mode stays off until `editable: true` is set, since whoever can edit cards decides which Home Assistant entities and actions the dashboard may control.
--   **No cross-site calls**: The service endpoint only takes JSON `POST` requests, so another website can't make your browser switch lights through a link or image.
+-   **Editing is opt-in and needs a password**: Edit mode stays off until `editable: true` is set, since whoever can edit cards decides which Home Assistant entities and actions the dashboard may control. It also needs an edit password in `EDIT_PASSWORD`; without one editing stays off. Browsers keep it until they are locked in the settings.
+-   **No cross-site calls**: The service endpoint only takes JSON `POST` requests, so another website can't make your browser switch lights through a link or image. Glassboard only answers to IP addresses, local names and the names in `ALLOWED_HOSTS`, so a website can't reach it through your browser by pointing its own name at your network.
+-   **Downloads stay on the internet**: Pictures downloaded for backgrounds can't come from addresses in your network.
+-   **Plugins are trusted code**: A plugin's server part runs with access to every credential. Installing plugins from the settings window is off until both `editable: true` and `plugins.install: true` are set, needs the edit password, and shows where a plugin comes from before installing it. The exact commit and download are recorded, so an update refuses a release that was changed after it was installed.
 
 ## Documentation
 All documentation is hosted on the [Glassboard GitHub Wiki](https://github.com/Lululoe/glassboard/wiki).
 
 - **[Configuration Guide](https://github.com/Lululoe/glassboard/wiki/CARD_CONFIGURATION)**: Detailed reference for `config.yaml` options and card setups.
 - **[Server API](https://github.com/Lululoe/glassboard/wiki/SERVER_API)**: Documentation for the backend API endpoints and services.
+- **[Plugins](https://github.com/Lululoe/glassboard/wiki/PLUGINS)**: Installing plugins with more cards, and writing your own.
 - **[Creating New Cards](https://github.com/Lululoe/glassboard/wiki/CREATING_NEW_CARDS)**: Developer guide for extending the dashboard with new features.
 - **[Theming Guide](https://github.com/Lululoe/glassboard/wiki/THEMING)**: Customizing colors and aesthetics.
 - **[Shared Components](https://github.com/Lululoe/glassboard/wiki/SHARED_COMPONENTS)**: Components library reference (`BaseCard`, `TwoToneBase`, etc.) for developers.
@@ -142,7 +145,15 @@ All documentation is hosted on the [Glassboard GitHub Wiki](https://github.com/L
     ```bash
     cp .env.example .env
     ```
-    Ensure `config.yaml` and `services.yaml` exist. To keep layout changes made in the browser, or to override the default themes or add `custom.css`, uncomment the matching volumes in `docker-compose.yml`.
+    Ensure `config.yaml` and `services.yaml` exist. To keep layout changes made in the browser, keep installed plugins, or to override the default themes or add `custom.css`, uncomment the matching volumes in `docker-compose.yml`.
+
+    The container runs as the unprivileged `node` user (uid 1000), with no Linux capabilities. Folders it writes to, `data` for the layout and backgrounds and `plugins`, must be writable by uid 1000:
+    ```bash
+    mkdir -p data plugins && sudo chown 1000:1000 data plugins
+    ```
+    Or set `user:` in `docker-compose.yml` to the owner of those folders. With rootless Podman, run it with `--userns=keep-id` so files keep your own owner.
+
+    Upgrading from a version that ran as root: `chown` the folders and files you mount for writing (such as `layout.yaml`, `backgrounds`, `plugins`) to uid 1000, or Glassboard can't save changes. To move to the `data` folder, put `layout.yaml` and `backgrounds/` into `data/`.
 
 2.  **Run**:
     ```bash
@@ -177,6 +188,10 @@ You can override any service configuration using environment variables. This is 
 | :--- | :--- |
 | `PORT` | Server port (default: 3001) |
 | `GLASSBOARD_DEMO` | `true` fills every card with simulated data (overrides `demo` in `config.yaml`) |
+| `EDIT_PASSWORD` | The password edit mode asks for, at least 8 characters. Without it, editing stays off |
+| `ALLOWED_HOSTS` | Host names Glassboard answers to besides IP addresses and local names, such as the domain of your reverse proxy: `dash.example.com,*.example.org` |
+| `PLUGINS_DIR` | Folder plugins are loaded from and installed to (default: `plugins`) |
+| `LAYOUT_FILE` | The layout overlay edit mode saves to (default: `layout.yaml`; `/app/data/layout.yaml` in `docker-compose.yml`). Its backup and uploaded backgrounds go next to it |
 | `SERVICES__HOMEASSISTANT__TOKEN` | Override HA Token |
 | `SERVICES__SONARR__APIKEY` | Override Sonarr API Key |
 | `SERVICES__GIT__GITHUB__TOKEN` | Override GitHub Token |

@@ -1,0 +1,11 @@
+{
+  "id": "hello",
+  "name": "Hello",
+  "version": "1.0.0",
+  "description": "Greets you with the server's time. An example of a Glassboard plugin.",
+  "glassboard": "^2.0.0",
+  "assets": "dist",
+  "client": "client.js",
+  "style": "style.css",
+  "server": "server.js"
+}

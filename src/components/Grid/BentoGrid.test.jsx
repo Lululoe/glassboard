@@ -11,6 +11,7 @@ vi.mock('../../features/registry', () => ({
     })[type] || null,
     getCardSizes: (type) => (type === 'ok' ? ['quarter', 'half', '1', '2', '3'] : undefined),
     getCardInfo: (type) => (type === 'header' ? { headerIcon: true } : undefined),
+    useCardTypes: () => ({}),
 }));
 
 /**
@@ -38,7 +39,7 @@ describe('BentoGrid', () => {
 
     it('renders a fallback for unknown and missing card types', () => {
         render(<BentoGrid cards={[{ id: '1', type: 'Unrecognized' }, { id: '2' }]} />);
-        expect(screen.getByText('Unknown card type "Unrecognized"')).toBeInTheDocument();
+        expect(screen.getByText('Unknown card type "Unrecognized". Is its plugin installed?')).toBeInTheDocument();
         expect(screen.getByText('Card is missing a type')).toBeInTheDocument();
     });
 

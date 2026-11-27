@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, FilePen, LayoutGrid, Palette, PanelLeft, Plus, RotateCcw, TabletSmartphone, Wallpaper } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FilePen, LayoutGrid, Lock, Palette, PanelLeft, Plus, Puzzle, RotateCcw, TabletSmartphone, Wallpaper } from 'lucide-react';
 import { useConfig } from './hooks/useConfig';
 import { usePageNavigation } from './hooks/usePageNavigation';
 import { useSwipe } from './hooks/useSwipe';
@@ -42,7 +42,11 @@ import HeaderMenuSettings from './components/Settings/HeaderMenuSettings';
 import SidebarSettings from './components/Settings/SidebarSettings';
 import AppearanceSettings from './components/Settings/AppearanceSettings';
 import KioskSettings from './components/Settings/KioskSettings';
+import PluginSettings from './components/Settings/PluginSettings';
 import ResetSettings from './components/Settings/ResetSettings';
+import LockSettings from './components/Settings/LockSettings';
+import UnlockDialog from './components/Editor/UnlockDialog';
+import { ensureUnlocked, setEditKey } from './lib/editAccess';
 import { useKioskUser } from './features/Kiosk/useKioskUser';
 import { kioskFromUrl } from '../shared/kiosk.js';
 import './App.css';
@@ -67,6 +71,10 @@ function Dashboard({ config }) {
     }, [config]);
 
     const layout = useDashboardEditing(config, configPages);
+    // Edit mode needs the edit password, which this browser keeps until it is locked again
+    const startEditing = async () => {
+        if (await ensureUnlocked()) layout.start();
+    };
     // Pages hidden with the `hide` URL parameter, read once when the dashboard opens
     const urlHidden = useMemo(() => hiddenPagesFromUrl(window.location.search), []);
     // Kiosk mode is turned on per screen with the `kiosk` URL parameter, read once when the dashboard opens
@@ -208,6 +216,29 @@ function Dashboard({ config }) {
             render: () => <KioskSettings kiosk={config.kiosk} />,
         },
         {
+            id: 'plugins',
+            group: 'Dashboard',
+            title: 'Plugins',
+            icon: Puzzle,
+            color: '#64d2ff',
+            render: () => <PluginSettings />,
+        },
+        {
+            id: 'lock',
+            title: 'Lock Editing',
+            icon: Lock,
+            color: '#8e8e93',
+            render: () => (
+                <LockSettings
+                    onLock={async () => {
+                        setSettingsOpen(false);
+                        await layout.finish();
+                        setEditKey(null);
+                    }}
+                />
+            ),
+        },
+        {
             id: 'reset',
             title: 'Reset…',
             icon: RotateCcw,
@@ -268,7 +299,7 @@ function Dashboard({ config }) {
                         active: layout.editing,
                         saving: layout.saving,
                         status: layout.status,
-                        onStart: layout.start,
+                        onStart: startEditing,
                         onDone: layout.finish,
                         canUndoReset: layout.canUndoReset,
                         undoFailed: layout.undoFailed,
@@ -329,7 +360,7 @@ function Dashboard({ config }) {
                                                 globalConfig={liveConfig}
                                                 editing={layout.editing && idx === pageIndex}
                                                 onLayoutChange={(cards) => layout.change(pageKey(page, idx), cards)}
-                                                onRequestEdit={config.editable === true ? layout.start : undefined}
+                                                onRequestEdit={config.editable === true ? startEditing : undefined}
                                                 onExitEdit={layout.finish}
                                                 onEditCard={(index) => layout.openEditor(pageKey(page, idx), index)}
                                                 onEditIcon={(index) => layout.openIconEditor(pageKey(page, idx), index)}
@@ -364,6 +395,8 @@ function Dashboard({ config }) {
                         onCancel={() => setSettingsOpen(false)}
                     />
                 )}
+
+                <UnlockDialog />
 
                 {layout.pageDialog && (
                     <PageDialog

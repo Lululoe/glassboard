@@ -9,6 +9,7 @@
 - [Theming Guide](THEMING)
 
 ### Developer Documentation
+- [Plugins](PLUGINS)
 - [Creating New Cards](CREATING_NEW_CARDS)
 - [Server API](SERVER_API)
 - [Shared Components](SHARED_COMPONENTS)

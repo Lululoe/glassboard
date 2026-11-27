@@ -6,8 +6,10 @@ import { getConfig } from './config.js';
 import { withInitialHead } from './initialHead.js';
 import logger from './logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
+import { hostCheck } from './hostCheck.js';
 import apiRoutes from './routes/api.js';
 import configRoutes from './routes/config.js';
+import { pluginAssetRoutes } from './plugins/modules.js';
 
 const BLOCKED_PATH = /\.ya?ml$|(^|\/)\.env/i;
 
@@ -67,6 +69,8 @@ async function addFrontend(app) {
 export async function createApp({ frontend = true } = {}) {
     const app = express();
     app.disable('x-powered-by');
+    // First, so a website that points its own name at this server gets nothing (DNS rebinding)
+    app.use(hostCheck());
     app.use(express.json());
 
     app.use((req, res, next) => {
@@ -79,6 +83,8 @@ export async function createApp({ frontend = true } = {}) {
     });
 
     app.get('/health', (req, res) => res.json({ ok: true }));
+    // Plugins' browser files and the modules the page shares with them
+    app.use(pluginAssetRoutes());
     app.use('/api/config', configRoutes);
     app.use('/api', apiRoutes);
 

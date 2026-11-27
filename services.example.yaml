@@ -37,6 +37,10 @@ services:
   glances:
     url: "http://localhost:61208"
 
+  # Storage cards (Glassboard Cards plugin) with source: prometheus (or set PROMETHEUS_URL)
+  prometheus:
+    url: "http://prometheus.local:9090"
+
   git:
     github:
       token: "YOUR_GITHUB_TOKEN"

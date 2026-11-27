@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { configDefaults } from 'vitest/config'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -13,6 +14,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.js'],
+    // Local worktrees and drafts of other sessions
+    exclude: [...configDefaults.exclude, '.claude/**'],
     globals: true
   }
 })

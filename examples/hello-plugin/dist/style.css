@@ -1,0 +1,1 @@
+.hello-card{display:flex;flex-direction:column;justify-content:center;gap:6px;height:100%;padding:4px 0}.hello-card-greeting{margin:0;font-size:var(--fs-22, 1.375rem);font-weight:700;color:var(--text-primary)}.hello-card-time,.hello-card-error{margin:0;font-size:var(--fs-13, .8125rem);color:var(--text-secondary)}.hello-card-error{color:var(--system-red-text)}

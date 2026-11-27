@@ -1,5 +1,5 @@
 import { useCardNotice } from '../../context/notices';
-import { appGridNotices } from '../cardNotices';
+import { appGridNotices } from './notices';
 import React, { useRef } from 'react';
 import BaseCard from '../../components/Shared/BaseCard';
 import AppIcon from '../../components/Shared/AppIcon';

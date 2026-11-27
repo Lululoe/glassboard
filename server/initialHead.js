@@ -1,3 +1,4 @@
+import { importMapTag } from './plugins/modules.js';
 import { backgroundCss } from '../shared/pageBackground.js';
 import { normalizeAppearance, transparencyVariables } from '../shared/appearance.js';
 
@@ -81,12 +82,16 @@ export function initialHead(config = {}, path = '/') {
 }
 
 /**
- * Adds `initialHead` to an HTML page, just before </head>.
+ * Adds the import map plugins need at the start of an HTML page's head, and `initialHead`
+ * just before </head>.
  * @param {string} html - The page.
  * @param {Object} config - The dashboard config.
  * @param {string} [path] - The requested address.
  * @returns {string} The page with the head added.
  */
 export function withInitialHead(html, config = {}, path = '/') {
-    return html.replace('</head>', `${initialHead(config, path)}</head>`);
+    // The import map must come before any module script
+    return html
+        .replace(/<head>/i, match => `${match}\n  ${importMapTag()}`)
+        .replace('</head>', `${initialHead(config, path)}</head>`);
 }

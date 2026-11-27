@@ -1,5 +1,5 @@
 import { useCardNotice } from '../../context/notices';
-import { thermostatNotices } from '../cardNotices';
+import { thermostatNotices } from './notices';
 import { useEffect, useRef, useState } from 'react';
 import BaseCard from '../../components/Shared/BaseCard';
 import Icon from '../../components/Shared/Icon';

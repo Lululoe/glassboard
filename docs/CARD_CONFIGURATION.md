@@ -42,7 +42,7 @@ layout rather than a squeezed wide one. On tablets later cards move up to fill g
 
 Not every card works at every size. In edit mode each card only offers the sizes its type supports; most cards
 support one to three wide, `container` also one to three rows tall, `spacer` also supports half and quarter, `hacontrol` is always a quarter tile, and `thermostat` and
-`mediaplayer` support quarter, half and one wide, `vacuum` half and one to three wide, and `printer` half and one wide. A size set in
+`mediaplayer` support quarter, half and one wide, and `vacuum` half and one to three wide. A size set in
 `config.yaml` is always used, even if edit mode would not offer it.
 
 ## Editing the Dashboard
@@ -104,8 +104,8 @@ While editing, hidden cards stay visible but dimmed, labelled "Hidden on phone" 
 still be moved and edited.
 
 ### Editing icons
-Cards with a header (Weather, Media, Graph, Vacuum, Printer, Proxmox, Server Stats, Transmission, Pull Requests and
-Multiroom Thermostat) have an edit button on their header icon in edit mode. It opens the icon editor: the real card's
+Cards with a header (Weather, Media, Graph, Vacuum, Proxmox, Server Stats, Transmission,
+Pull Requests and Multiroom Thermostat) have an edit button on their header icon in edit mode. It opens the icon editor: the real card's
 header with the settings of its icon top left: which icon, its color and its background. The icons in a card's top
 right corner belong to the card and aren't configurable.
 
@@ -241,9 +241,27 @@ editable: true
 Without it, the pencil button is hidden and the server refuses every change from the browser (layout, theme,
 background pictures).
 
-With Docker, mount a `layout.yaml` so edits survive a container rebuild (see `docker-compose.yml`), and a
-`backgrounds` folder for uploaded background pictures. The paths can also be changed with the `LAYOUT_FILE` and
-`BACKGROUNDS_DIR` environment variables.
+Editing also needs an **edit password**, set with the `EDIT_PASSWORD` environment variable (at least 8
+characters, for example in `.env` with Docker). Without one, editing stays off even with `editable: true`, and the
+log says why. Edit mode asks for the password before the first change; the password itself is never logged.
+
+A browser stays unlocked until the password changes or it is locked again in **Settings → Lock Editing**, which is
+worth doing on wall tablets and other devices others use. After 10 wrong passwords, a device has to wait 15
+minutes. Behind a reverse proxy every device has the proxy's address, so they all wait together.
+
+With Docker, mount the `data` folder so edits and uploaded background pictures survive a container rebuild (see
+`docker-compose.yml`, which sets `LAYOUT_FILE` to `/app/data/layout.yaml`). The container runs as uid 1000, so the
+folder must be writable by it. The paths can also be changed with the `LAYOUT_FILE` and `BACKGROUNDS_DIR`
+environment variables.
+
+To also install plugins from GitHub in the settings window, set `plugins.install` (see [Plugins](PLUGINS)). Plugin
+code runs with access to every credential, so this needs its own setting:
+
+```yaml
+editable: true
+plugins:
+  install: true
+```
 
 ---
 
@@ -479,61 +497,6 @@ cards in `layout.yaml`.
             name: Switch
           - source: PC
             icon: mdi:desktop-tower-monitor
-```
-
----
-
-## Litter Box (`litterbox`)
-A self-cleaning litter box such as a Litter-Robot (through Home Assistant's Litter-Robot integration), with the
-visits and weight of each cat. Every entity besides `entity_id` is optional; what has no entity is left out.
-
-- **Quarter**: the waste drawer as a ring, which starts a clean cycle when tapped; the rest of the tile opens the details.
-- **Half**: visits today, the weight of the cat weighed last and the last visit, with the waste drawer and litter levels.
-- **Full** (a whole tile): the same, plus one timeline of today's visits for each cat with a visits sensor.
-
-The button in the header starts a clean cycle, and tapping the title opens the details: charts of today's visits, the
-visits of the last 7 days and each cat's weight over 30 days, beside the levels, the cats, the settings (clean delay,
-globe light, panel lock, sleep times), firmware and the **Clean now** and **Reset** buttons (Reset asks for a second
-tap). Visits and weights come from the history of the cats' sensors.
-
-### Configuration
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `entity_id` | string | required | The litter box's `vacuum` entity. Clean now calls `vacuum.start` on it. |
-| `name` | string | from Home Assistant | Display name. |
-| `status` | string | | Status code sensor (`rdy`, `ccp`, `dfs`, …), shown as text. Without it, the vacuum's state is shown. |
-| `waste` | string | | Waste drawer sensor, in %. |
-| `litter` | string | | Litter level sensor, in %. |
-| `last_seen` | string | | Last seen timestamp sensor. |
-| `hopper` | string | | Litter hopper status sensor. |
-| `reset` | string | | `button` that resets the drawer level after emptying it. |
-| `clean_delay` | string | | `select` of the clean cycle wait time, in minutes. |
-| `globe_light` | string | | `select` of the globe light. |
-| `panel_lock` | string | | `switch` of the panel lockout. |
-| `sleep_start`, `sleep_end` | string | | Sleep mode start and end time sensors. |
-| `firmware` | string | | `update` entity of the firmware. |
-| `cats` | array | `[]` | Up to 6 cats as `{ name, weight, visits, color }`: a weight sensor, a sensor of today's visits, and an optional color. |
-
-In the card settings, choosing a Litter-Robot's vacuum entity (`vacuum.<name>_litter_box`) fills in the other
-entities of the integration. Only entities on the card can be read or changed through the API.
-
-### Example
-```yaml
-- id: litter_box
-  type: litterbox
-  entity_id: vacuum.litter_robot_4_litter_box
-  status: sensor.litter_robot_4_status_code
-  waste: sensor.litter_robot_4_waste_drawer
-  litter: sensor.litter_robot_4_litter_level
-  reset: button.litter_robot_4_reset
-  clean_delay: select.litter_robot_4_clean_cycle_wait_time_minutes
-  cats:
-    - name: Pepper
-      weight: sensor.pepper_weight
-      visits: sensor.pepper_visits_today
-    - name: Teddy
-      weight: sensor.teddy_weight
-      visits: sensor.teddy_visits_today
 ```
 
 ---
@@ -836,35 +799,6 @@ Tapping a robot opens its details, whose controls act on that robot only. One to
         - { area: kitchen, name: Kitchen }
         - { area: office, name: Office }
     - vacuum.s5_max
-```
-
----
-
-## 3D Printer (`printer`)
-A printer from the [Bambu Lab integration](https://github.com/greghesp/ha-bambulab): progress, time left, nozzle, bed and
-chamber temperatures and the loaded spools by colour, with the one in use ringed. Half height or one wide.
-
-The progress bar stays in place while nothing is printing, empty and grey.
-
-### Configuration
-| Option | Type | Description |
-|--------|------|-------------|
-| `printer` | string | Required. The start of the printer's entity ids: `p2s` for `sensor.p2s_print_status`. |
-| `name` | string | Name to show. Defaults to the printer's name in Home Assistant. |
-| `ams` | string | The start of the AMS's entity ids. Defaults to `ams`, for `sensor.ams_tray_1`. |
-| `trays` | array | Spool entities to show instead, for example with several AMS units. |
-
-Without `trays`, the card shows the AMS's four trays, and the external spool while something is loaded on it.
-
-**Buttons**: pause or resume (`button.<printer>_pause`, `_resume`) and stop (`_stop`) show during a print, and stopping asks
-for a second tap. The chamber light (`light.<printer>_chamber_light`) always shows. A button whose entity is missing or
-unavailable in Home Assistant stays hidden.
-
-### Example
-```yaml
-- id: printer
-  type: printer
-  printer: p2s
 ```
 
 ---

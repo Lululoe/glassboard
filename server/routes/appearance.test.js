@@ -2,12 +2,11 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, it, expect, vi } from 'vitest';
 import { setConfig } from '../config.js';
 import { readLayout } from '../layout.js';
 import { createApp } from '../app.js';
-import { listenOnLoopback } from '../testServer.js';
+import { asEditor, listenOnLoopback } from '../testServer.js';
 
 // Saving reloads the config from disk; keep the test config in memory instead. Editing is off
 // unless config.yaml turns it on, so the test configs turn it on unless they say otherwise.
@@ -20,8 +19,8 @@ vi.mock('../config.js', async (importOriginal) => {
     };
 });
 
-const put = (server, body) => request(server).put('/api/config/appearance').send(body);
-const putLayout = (server, body) => request(server).put('/api/config/layout').send(body);
+const put = (server, body) => asEditor(server).put('/api/config/appearance').send(body);
+const putLayout = (server, body) => asEditor(server).put('/api/config/layout').send(body);
 
 describe('appearance API', () => {
     let server;

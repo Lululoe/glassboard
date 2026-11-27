@@ -1,5 +1,5 @@
 import { useCardNotice } from '../../context/notices';
-import { haControlNotices } from '../cardNotices';
+import { haControlNotices } from './notices';
 import { useState } from 'react';
 import { isControllable, useHomeAssistant } from './useHomeAssistant';
 import ControlDialog from './controls/ControlDialog';

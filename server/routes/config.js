@@ -3,6 +3,7 @@ import fs from 'fs';
 import { z } from 'zod';
 import { getBaseConfig, getConfig, getSanitizedConfig, loadConfig, onConfigChange, restoreSecrets } from '../config.js';
 import { HttpError } from '../errors.js';
+import { assertEditable, editingEnabled, getEditState, unlockEditing } from '../editAccess.js';
 import {
     IMAGE_TYPES, MAX_IMAGE_BYTES, backgroundImagePath, downloadBackgroundImage, pruneBackgroundImages,
     saveBackgroundImage, sniffImageType,
@@ -31,8 +32,9 @@ const KEEP_ALIVE_INTERVAL = 30 * 1000;
 const router = express.Router();
 
 router.get('/', (req, res) => {
-    // `demo` also reflects GLASSBOARD_DEMO, so the header can label simulated data
-    res.set('Cache-Control', 'no-store').json({ ...getSanitizedConfig(), demo: isDemoMode() });
+    // `demo` also reflects GLASSBOARD_DEMO, so the header can label simulated data. `editable`
+    // is only true when editing works, which also needs EDIT_PASSWORD.
+    res.set('Cache-Control', 'no-store').json({ ...getSanitizedConfig(), demo: isDemoMode(), editable: editingEnabled() });
 });
 
 /**
@@ -172,14 +174,6 @@ const layoutBody = z.object({
     sidebar: sidebar.nullable().optional(),
 });
 
-/**
- * Throws a 403 HttpError unless editing is turned on with `editable: true` in config.yaml. Editing is
- * off by default because the dashboard has no login: whoever can edit cards can choose which Home
- * Assistant entities and actions the dashboard may control, and which URLs the server connects to.
- */
-function assertEditable() {
-    if (getBaseConfig().editable !== true) throw new HttpError(403, 'Editing is off; set editable: true in config.yaml to turn it on');
-}
 
 /**
  * Saves the whole dashboard as edited in the browser: the cards of every grid page, in order,
@@ -191,7 +185,7 @@ function assertEditable() {
  */
 router.put('/layout', (req, res, next) => {
     try {
-        assertEditable();
+        assertEditable(req);
         const parsed = layoutBody.safeParse(req.body);
         if (!parsed.success) {
             const issue = parsed.error.issues[0];
@@ -304,7 +298,7 @@ router.post(
     express.raw({ type: Object.keys(IMAGE_TYPES), limit: MAX_IMAGE_BYTES }),
     (req, res, next) => {
         try {
-            assertEditable();
+            assertEditable(req);
             const type = Buffer.isBuffer(req.body) ? sniffImageType(req.body) : null;
             if (!type) throw new HttpError(400, 'Send a JPEG, PNG, WebP, GIF or AVIF picture');
             const url = saveBackgroundImage(req.body, type);
@@ -322,7 +316,7 @@ router.post(
  */
 router.post('/background/download', async (req, res, next) => {
     try {
-        assertEditable();
+        assertEditable(req);
         const url = typeof req.body?.url === 'string' ? req.body.url : '';
         try {
             res.json({ url: await downloadBackgroundImage(url) });
@@ -357,7 +351,7 @@ const appearanceBody = z.object({
  */
 router.put('/appearance', (req, res, next) => {
     try {
-        assertEditable();
+        assertEditable(req);
         if (getBaseConfig().appearance?.locked === true) throw new HttpError(403, 'The theme is locked in config.yaml');
         const parsed = appearanceBody.safeParse(req.body);
         if (!parsed.success) {
@@ -411,7 +405,7 @@ const kioskBody = z.object({
  */
 router.put('/kiosk', (req, res, next) => {
     try {
-        assertEditable();
+        assertEditable(req);
         const parsed = kioskBody.safeParse(req.body);
         if (!parsed.success) {
             const issue = parsed.error.issues[0];
@@ -430,7 +424,7 @@ router.put('/kiosk', (req, res, next) => {
 /** Removes the kiosk options saved in the browser, so those of config.yaml apply again. */
 router.delete('/kiosk', (req, res, next) => {
     try {
-        assertEditable();
+        assertEditable(req);
         writeLayout({ ...readLayout(), kiosk: undefined });
         logger.info('Removed kiosk options');
         loadConfig();
@@ -447,7 +441,7 @@ router.delete('/kiosk', (req, res, next) => {
  */
 router.get('/entities', async (req, res, next) => {
     try {
-        assertEditable();
+        assertEditable(req);
         const all = req.query.all === '1';
         const entities = isDemoMode() ? demoKioskEntities({ all }) : await listKioskEntities({ all });
         res.set('Cache-Control', 'no-store').json({ domains: all ? null : LISTED_DOMAINS, entities });
@@ -456,10 +450,30 @@ router.get('/entities', async (req, res, next) => {
     }
 });
 
+/**
+ * Whether editing is on, and whether this browser has unlocked it: `{ editable, unlocked }`.
+ */
+router.get('/edit', (req, res) => {
+    res.set('Cache-Control', 'no-store').json(getEditState(req));
+});
+
+/**
+ * Unlocks editing with `{ password }`, the one in EDIT_PASSWORD.
+ * Answers `{ key }`, which the browser sends with each change. JSON only, like every change.
+ */
+router.post('/edit/unlock', (req, res, next) => {
+    try {
+        if (!req.is('application/json')) throw new HttpError(415, 'Send the request as JSON');
+        res.set('Cache-Control', 'no-store').json({ key: unlockEditing(req, req.body?.password) });
+    } catch (err) {
+        next(err);
+    }
+});
+
 /** Removes everything saved from the browser, so the dashboard goes back to config.yaml. */
 router.delete('/layout', (req, res, next) => {
     try {
-        assertEditable();
+        assertEditable(req);
         if (resetLayout()) {
             logger.info('Reset dashboard layout');
             loadConfig();
@@ -473,7 +487,7 @@ router.delete('/layout', (req, res, next) => {
 /** Undoes the last reset, by putting back the layout it removed. */
 router.post('/layout/restore', (req, res, next) => {
     try {
-        assertEditable();
+        assertEditable(req);
         if (!restoreLayout()) throw new HttpError(404, 'There is no reset to undo');
         logger.info('Restored dashboard layout');
         loadConfig();

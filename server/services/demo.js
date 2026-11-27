@@ -3,7 +3,6 @@ import { HttpError } from '../errors.js';
 import { getGridApps } from './appstatus.js';
 import { graphSettings, hoursOf, makeBuckets, slotsFor } from './haGraph.js';
 import { robotsOf, simplifyValetudoMap } from './haVacuum.js';
-import { printerOf } from './haPrinter.js';
 import { cleanTemplateOutput, findHeaderTemplate, headerWidgetEntityIds } from '../../shared/pageHeader.js';
 import { normalizeKiosk } from '../../shared/kiosk.js';
 import { kioskCall } from './haKiosk.js';
@@ -11,7 +10,6 @@ import {
     climateCall, controlCalls, fallbackIcon, getClimateConfigs, getControlEntityIds, getMediaEntityIds, mediaCall,
     MEDIA_CONTROL_ACTIONS, mediaControlCall,
 } from './homeassistant.js';
-import { demoLitterAction, demoLitterbox, demoLitterHistory, demoLitterState } from './demoLitter.js';
 
 /**
  * Demo mode answers every `/api` service with simulated data instead of calling real backends,
@@ -605,74 +603,6 @@ function demoVacuumAction(params) {
 }
 
 /** A Valetudo map of the simulated home, in Valetudo's format so it takes the real path. */
-const DEMO_PRINT_MINUTES = 516;
-const DEMO_SPOOLS = [['#AF7933FF', 'Generic PLA'], ['#2850E0FF', 'Generic PLA Silk'], ['#FFFFFFFF', 'Generic PLA'], ['#161616FF', 'Generic PLA']];
-const printerStore = new Map();
-
-/** The simulated state of a printer: its print moves on as time passes. */
-function printerState(cardId) {
-    if (!printerStore.has(cardId)) {
-        printerStore.set(cardId, { status: 'running', light: 'on', startedAt: Date.now() - DEMO_PRINT_MINUTES * 0.51 * 60000 });
-    }
-    const p = printerStore.get(cardId);
-    if (p.status === 'running' && Date.now() - p.startedAt >= DEMO_PRINT_MINUTES * 60000) p.status = 'finish';
-    return p;
-}
-
-/** Simulates a printer card's printer. */
-function demoPrinter(params) {
-    const settings = printerOf(params.card_id);
-    const p = printerState(params.card_id);
-    const printing = p.status === 'running' || p.status === 'pause';
-    const progress = Math.min(100, (Date.now() - p.startedAt) / (DEMO_PRINT_MINUTES * 60000) * 100);
-    const left = DEMO_PRINT_MINUTES * (1 - progress / 100);
-    return {
-        name: settings.name || settings.printer.toUpperCase(),
-        status: p.status,
-        stage: p.status === 'running' ? 'printing' : 'idle',
-        job: 'Omega Headphone Holder - Wood Look',
-        progress: Math.round(progress),
-        layer: Math.round(progress / 100 * 451),
-        totalLayers: 451,
-        remaining: Math.round(left),
-        endTime: new Date(Date.now() + left * 60000).toISOString(),
-        changedAt: new Date().toISOString(),
-        weight: 186.42,
-        length: 62.5,
-        error: null,
-        nozzle: { value: printing ? 220 : 26, target: printing ? 220 : 0 },
-        bed: { value: printing ? 55 : 20, target: printing ? 55 : 0 },
-        chamber: printing ? 38 : 24,
-        humidity: 43,
-        spools: DEMO_SPOOLS.map(([color, name], i) => ({
-            entity_id: `sensor.${settings.ams || 'ams'}_tray_${i + 1}`,
-            slot: `AMS Tray ${i + 1}`,
-            name,
-            color,
-            active: printing && i === 0,
-            empty: false,
-        })),
-        controls: { pause: true, resume: true, stop: true },
-        light: p.light,
-    };
-}
-
-/** Simulates pausing, resuming and stopping a print, and the chamber light. */
-function demoPrinterAction(params) {
-    printerOf(params.card_id);
-    const p = printerState(params.card_id);
-    const changes = {
-        pause: { status: 'pause' },
-        resume: { status: 'running' },
-        stop: { status: 'idle' },
-        light_on: { light: 'on' },
-        light_off: { light: 'off' },
-    };
-    if (!Object.hasOwn(changes, String(params.action))) throw new HttpError(400, `Unknown printer action: ${params.action}`);
-    Object.assign(p, changes[params.action]);
-    return [];
-}
-
 function demoVacuumMap(params) {
     const robot = robotsOf(findCard(params.card_id)).find(r => r.map === params.entity_id || r.camera === params.entity_id);
     if (!robot) throw new HttpError(403, `Camera not on this card: ${params.entity_id}`);
@@ -1009,8 +939,6 @@ function entityState(entityId, index) {
     }
     if (thermostatCards().some(card => card.entity_id === entityId)) return climateState(entityId);
     if (getMediaEntityIds().has(entityId)) return mediaState(entityId);
-    const litter = demoLitterState(entityId);
-    if (litter) return litter;
     if (entityId.startsWith('media_player.') && findEntity(entityId)) return tvState(entityId);
     const kioskOwn = kioskState(entityId);
     if (kioskOwn) return kioskOwn;
@@ -1052,14 +980,6 @@ function homeassistant(params) {
     }
     if (endpoint === 'template') return demoTemplate(params);
     if (endpoint === 'graph') return demoGraph(params);
-    if (endpoint === 'vacuum') return demoVacuums(params);
-    if (endpoint === 'vacuum_action') return demoVacuumAction(params);
-    if (endpoint === 'vacuum_map') return demoVacuumMap(params);
-    if (endpoint === 'litterbox') return demoLitterbox(params);
-    if (endpoint === 'litterbox_history') return demoLitterHistory(params);
-    if (endpoint === 'litterbox_action') return demoLitterAction(params);
-    if (endpoint === 'printer') return demoPrinter(params);
-    if (endpoint === 'printer_action') return demoPrinterAction(params);
     if (endpoint === 'climate') return climate(params);
     if (endpoint === 'media') return mediaAction(params);
     if (endpoint === 'kiosk') return kioskAction(params);
@@ -1075,6 +995,18 @@ function homeassistant(params) {
         return [entityState(entityId, 0)];
     }
     throw new HttpError(400, `Unknown Home Assistant endpoint: ${endpoint}`);
+}
+
+/**
+ * The vacuum cards' requests in the demo, like handleVacuumRequest.
+ * @param {Object} params - Request parameters.
+ * @returns {Object} The simulated response.
+ */
+function vacuum(params) {
+    if (params.endpoint === 'robots') return demoVacuums(params);
+    if (params.endpoint === 'action') return demoVacuumAction(params);
+    if (params.endpoint === 'map') return demoVacuumMap(params);
+    throw new HttpError(400, `Unknown vacuum endpoint: ${params.endpoint}`);
 }
 
 const CONDITIONS = ['Clear', 'Partly cloudy', 'Overcast', 'Rain', 'Partly cloudy', 'Clear', 'Heavy rain'];
@@ -1138,10 +1070,12 @@ function weather({ cardId, type = 'daily' }) {
 }
 
 /**
- * Simulated handlers, keyed like `serviceHandlers`.
- * @type {Object<string, (params: Object) => Promise<*>>}
+ * Simulated services, keyed like the services of the built-in plugins. Each plugin's setup
+ * picks its own (see server/plugins/builtin), so in demo mode every service answers with
+ * simulated data instead of calling a backend.
+ * @type {Object<string, (params: Object) => *>}
  */
-export const demoHandlers = Object.fromEntries(Object.entries({
+export const demoServices = {
     appstatus,
     git,
     homeassistant,
@@ -1149,15 +1083,16 @@ export const demoHandlers = Object.fromEntries(Object.entries({
     proxmox,
     serverstats,
     transmission,
+    vacuum,
     weather,
-}).map(([name, handler]) => [name, async params => /** @type {(params: Object) => *} */ (handler)(params)]));
+};
 
 /**
  * Clears the simulated Home Assistant states. Intended for tests.
  */
 export function resetDemoState() {
     robotStore.clear();
-    printerStore.clear();
+    tvStore.clear();
     haStates.clear();
     kioskStore.brightness = 60;
     kioskStore.screen = true;

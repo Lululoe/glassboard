@@ -144,7 +144,7 @@ describe('AddCardDialog', () => {
         render(<AddCardDialog onPick={() => {}} onCancel={() => {}} />);
         const names = [...document.querySelectorAll('.add-card-name')].map(el => el.textContent);
         expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })));
-        expect(names[0]).toBe('3D Printer');
+        expect(names[0]).toBe('App Grid');
         expect(names.indexOf('App Grid')).toBeLessThan(names.indexOf('Weather'));
     });
 });

@@ -4,7 +4,8 @@ import { describe, it, expect, beforeEach, afterEach, onTestFinished } from 'vit
 import { createApp } from '../app.js';
 import { setConfig } from '../config.js';
 import { listenOnLoopback } from '../testServer.js';
-import { demoHandlers, isDemoMode, resetDemoState } from './demo.js';
+import { isDemoMode, resetDemoState } from './demo.js';
+import { demoHandlers, serviceHandlers } from './index.js';
 
 const iso = (date) => date.toISOString().slice(0, 10);
 
@@ -49,8 +50,7 @@ describe('demo mode', () => {
         expect(isDemoMode()).toBe(false);
     });
 
-    it('serves simulated data for every real service', async () => {
-        const { serviceHandlers } = await import('./index.js');
+    it('serves simulated data for every real service', () => {
         expect(Object.keys(demoHandlers).sort()).toEqual(Object.keys(serviceHandlers).sort());
     });
 
@@ -207,23 +207,6 @@ describe('demo mode', () => {
         await expect(demoHandlers.homeassistant({ endpoint: 'graph', card_id: 'g', range: '30d' })).rejects.toMatchObject({ status: 400 });
     });
 
-    it('simulates a printer for printer cards', async () => {
-        setConfig({ demo: true, pages: [{ cards: [{ id: 'p', type: 'printer', printer: 'p2s' }, { id: 'x', type: 'graph' }] }] });
-        const ha = demoHandlers.homeassistant;
-        const printer = await ha({ endpoint: 'printer', card_id: 'p' });
-        expect(printer).toMatchObject({ name: 'P2S', status: 'running', progress: 51, light: 'on', controls: { pause: true } });
-        expect(printer.spools).toHaveLength(4);
-
-        await ha({ endpoint: 'printer_action', card_id: 'p', action: 'pause' });
-        await ha({ endpoint: 'printer_action', card_id: 'p', action: 'light_off' });
-        expect(await ha({ endpoint: 'printer', card_id: 'p' })).toMatchObject({ status: 'pause', light: 'off' });
-        await ha({ endpoint: 'printer_action', card_id: 'p', action: 'stop' });
-        expect((await ha({ endpoint: 'printer', card_id: 'p' })).status).toBe('idle');
-
-        await expect(ha({ endpoint: 'printer', card_id: 'x' })).rejects.toMatchObject({ status: 403 });
-        await expect(ha({ endpoint: 'printer_action', card_id: 'p', action: 'explode' })).rejects.toMatchObject({ status: 400 });
-    });
-
     it('simulates robots for vacuum cards', async () => {
         setConfig({
             demo: true,
@@ -236,21 +219,20 @@ describe('demo mode', () => {
                 }],
             }],
         });
-        const ha = demoHandlers.homeassistant;
-        const { robots: [robot] } = await ha({ endpoint: 'vacuum', card_id: 'v' });
+        const { robots: [robot] } = await demoHandlers.vacuum({ endpoint: 'robots', card_id: 'v' });
         expect(robot).toMatchObject({ entity_id: 'vacuum.robo', state: 'cleaning', stats: [{ name: 'Area', unit: 'm²' }], rooms: [{ area: 'kitchen' }], wetness: null });
 
-        await ha({ endpoint: 'vacuum_action', card_id: 'v', entity_id: 'vacuum.robo', action: 'stop' });
-        await ha({ endpoint: 'vacuum_action', card_id: 'v', entity_id: 'vacuum.robo', action: 'set_fan', value: 'max' });
-        await ha({ endpoint: 'vacuum_action', card_id: 'v', entity_id: 'vacuum.robo', action: 'reset_consumable', index: 0 });
-        const after = (await ha({ endpoint: 'vacuum', card_id: 'v' })).robots[0];
+        await demoHandlers.vacuum({ endpoint: 'action', card_id: 'v', entity_id: 'vacuum.robo', action: 'stop' });
+        await demoHandlers.vacuum({ endpoint: 'action', card_id: 'v', entity_id: 'vacuum.robo', action: 'set_fan', value: 'max' });
+        await demoHandlers.vacuum({ endpoint: 'action', card_id: 'v', entity_id: 'vacuum.robo', action: 'reset_consumable', index: 0 });
+        const after = (await demoHandlers.vacuum({ endpoint: 'robots', card_id: 'v' })).robots[0];
         expect(after).toMatchObject({ state: 'idle', fan: { value: 'max' }, consumables: [{ percent: 100, resettable: true }] });
 
-        expect(await ha({ endpoint: 'vacuum_map', card_id: 'v', entity_id: 'camera.front' })).toEqual({ kind: 'image' });
-        const map = await ha({ endpoint: 'vacuum_map', card_id: 'v', entity_id: 'camera.map' });
+        expect(await demoHandlers.vacuum({ endpoint: 'map', card_id: 'v', entity_id: 'camera.front' })).toEqual({ kind: 'image' });
+        const map = await demoHandlers.vacuum({ endpoint: 'map', card_id: 'v', entity_id: 'camera.map' });
         expect(map.kind).toBe('valetudo');
         expect(map.segments.map(s => s.name)).toContain('Kitchen');
-        await expect(ha({ endpoint: 'vacuum', card_id: 'nope' })).rejects.toMatchObject({ status: 403 });
+        await expect(demoHandlers.vacuum({ endpoint: 'robots', card_id: 'nope' })).rejects.toMatchObject({ status: 403 });
     });
 });
 

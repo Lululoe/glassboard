@@ -2,17 +2,33 @@ services:
   glassboard:
     build: .
     env_file: .env
+    environment:
+      # Keeps the layout overlay, its backup and uploaded backgrounds together in /app/data
+      LAYOUT_FILE: /app/data/layout.yaml
     ports:
       - "${PORT:-3001}:3001"
     volumes:
-      - ${CONFIG_FILE:-./config.yaml}:/app/config.yaml
-      - ${SERVICES_FILE:-./services.yaml}:/app/services.yaml
-      # Optional: keep layout changes made in edit mode. Create the file first (touch layout.yaml),
-      # otherwise Docker mounts a directory.
-      # - ./layout.yaml:/app/layout.yaml
-      # Optional: keep background pictures uploaded in edit mode.
-      # - ./backgrounds:/app/backgrounds
+      - ${CONFIG_FILE:-./config.yaml}:/app/config.yaml:ro
+      - ${SERVICES_FILE:-./services.yaml}:/app/services.yaml:ro
+      # Optional: keep layout changes and background pictures made in edit mode. Glassboard runs
+      # as uid 1000, so the folder must be writable by it: mkdir data && sudo chown 1000:1000 data
+      # - ./data:/app/data
+      # Optional: keep plugins installed from the settings window, or add your own. Also
+      # writable by uid 1000 if you install from the settings window.
+      # - ./plugins:/app/plugins
       # Optional: override the default themes or add custom styles.
-      # - ./theme.yaml:/app/theme.yaml
-      # - ./custom.css:/app/custom.css
+      # - ./theme.yaml:/app/theme.yaml:ro
+      # - ./custom.css:/app/custom.css:ro
+    # Glassboard needs no Linux capabilities and never gains privileges
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    # Optional: run as the owner of your mounted folders instead of uid 1000.
+    # user: "1000:1000"
+    # Optional: a read-only container. Only the mounted folders can be written then, so mount
+    # ./data (and ./plugins to install plugins) first.
+    # read_only: true
+    # tmpfs:
+    #   - /tmp
     restart: unless-stopped

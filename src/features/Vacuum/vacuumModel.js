@@ -130,4 +130,4 @@ export function roomOfSegment(segment, rooms) {
  * @param {number} tick - Changes to load a new picture.
  * @returns {string} The URL.
  */
-export const cameraUrl = (cardId, entityId, tick) => `/api/ha/camera?card_id=${encodeURIComponent(cardId)}&entity_id=${encodeURIComponent(entityId)}&t=${tick}`;
+export const cameraUrl = (cardId, entityId, tick) => `/api/plugins/vacuum/camera?card_id=${encodeURIComponent(cardId)}&entity_id=${encodeURIComponent(entityId)}&t=${tick}`;

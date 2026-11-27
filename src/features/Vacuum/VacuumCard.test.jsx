@@ -3,11 +3,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import VacuumCard from './VacuumCard';
 import VacuumsCard from './VacuumsCard';
 import { VacuumEditor } from './VacuumEditor';
-import { cardInfo } from '../registry';
+import { getCardInfo } from '../registry';
 
 const jsonResponse = (body) => ({ ok: true, status: 200, json: async () => body });
 const bodies = () => fetch.mock.calls.map(([, init]) => JSON.parse(init.body));
-const actions = () => bodies().filter(b => b.endpoint === 'vacuum_action');
+const actions = () => bodies().filter(b => b.service === 'vacuum' && b.endpoint === 'action');
 
 const robot = (over = {}) => ({
     entity_id: 'vacuum.robo', name: 'Robo', state: 'docked', battery: 80, progress: null,
@@ -37,8 +37,8 @@ const MAP = {
 /** Answers the card's requests. */
 const backend = (robots, map = MAP) => fetch.mockImplementation(async (_u, init) => {
     const body = JSON.parse(init.body);
-    if (body.endpoint === 'vacuum') return jsonResponse({ robots });
-    if (body.endpoint === 'vacuum_map') return jsonResponse(map);
+    if (body.endpoint === 'robots') return jsonResponse({ robots });
+    if (body.endpoint === 'map') return jsonResponse(map);
     return jsonResponse([]);
 });
 
@@ -180,7 +180,7 @@ describe('Vacuum cards', () => {
         fetch.mockImplementation(async () => jsonResponse({ kind: 'image' }));
         fireEvent.click(d.getByRole('button', { name: 'Camera' }));
         const img = await d.findByRole('img', { name: /camera.front/ });
-        expect(img.getAttribute('src')).toContain('/api/ha/camera?card_id=v&entity_id=camera.front');
+        expect(img.getAttribute('src')).toContain('/api/plugins/vacuum/camera?card_id=v&entity_id=camera.front');
 
         fireEvent.click(d.getByRole('button', { name: 'Close' }));
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -262,7 +262,7 @@ describe('Vacuum cards', () => {
     });
 
     it('sets the sections in the card settings, and offers the wide sizes', () => {
-        expect(cardInfo.vacuum.sizes).toEqual(['half', '1', '2', '3']);
+        expect(getCardInfo('vacuum').sizes).toEqual(['half', '1', '2', '3']);
         const onChange = vi.fn();
         const { rerender } = render(<VacuumEditor config={{ entity_id: 'vacuum.robo' }} onChange={onChange} />);
         fireEvent.click(screen.getByRole('switch', { name: 'Show the map' }));

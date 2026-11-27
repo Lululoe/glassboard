@@ -1,5 +1,5 @@
 import { useCardNotice } from '../../context/notices';
-import { vacuumNotices } from '../cardNotices';
+import { vacuumNotices } from './notices';
 import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import TwoToneBase from '../../components/Shared/TwoToneBase';

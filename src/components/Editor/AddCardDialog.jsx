@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { cardInfo } from '../../features/registry';
+import { useCardTypes } from '../../features/registry';
 import Icon from '../Shared/Icon';
 import './CardEditor.css';
 
@@ -13,6 +13,7 @@ import './CardEditor.css';
  */
 const AddCardDialog = ({ onPick, onCancel, exclude = [] }) => {
     const dialogRef = useRef(null);
+    const cardTypes = useCardTypes();
 
     useEffect(() => {
         const dialog = dialogRef.current;
@@ -33,7 +34,7 @@ const AddCardDialog = ({ onPick, onCancel, exclude = [] }) => {
             </header>
             <div className="editor-dialog-body">
                 <ul className="add-card-list">
-                    {Object.entries(cardInfo)
+                    {Object.entries(cardTypes)
                         .filter(([type]) => !exclude.includes(type))
                         .sort(([, a], [, b]) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }))
                         .map(([type, info]) => (

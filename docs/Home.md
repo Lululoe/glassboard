@@ -16,6 +16,7 @@ Navigate through the wiki using the sidebar or the links below to configure and 
 - 🧭 **[Sidebar](SIDEBAR)**: The optional sidebar of pages and folders, with notification bubbles from cards.
 - 🖥️ **[Server API](SERVER_API)**: Documentation for the Node.js backend API endpoints and services proxy.
 - 🧱 **[Shared Components](SHARED_COMPONENTS)**: Component library reference (`BaseCard`, `TwoToneBase`, etc.) for building your own elements.
+- 🧩 **[Plugins](PLUGINS)**: Install plugins with more cards from GitHub, or write your own.
 - 🚀 **[Creating New Cards](CREATING_NEW_CARDS)**: Developer guide for extending the dashboard with completely new custom cards.
 
 ## Setup & Running

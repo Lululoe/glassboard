@@ -1,22 +1,11 @@
-import { getCardComponent } from '../registry';
+import { getCardComponent, useCardTypes } from '../../plugins/registry';
+import MissingCard from '../../components/Grid/MissingCard';
 import CardErrorBoundary from '../../components/Grid/CardErrorBoundary';
 import { NoticeCard } from '../../context/NoticeScopes';
 import { buildEntries, fitToColumns, isSubTile, rowSpanOf, sizeOf } from '../../components/Grid/gridLayout';
 import { childCardsOf } from '../../../shared/containerCards';
 import { columnsOf, scaleOf } from './containerModel';
 import './ContainerCard.css';
-
-/**
- * Fallback for a card inside the container whose type is not registered.
- * @param {Object} props
- * @param {string} [props.type] - The configured card type.
- * @returns {JSX.Element} The fallback card.
- */
-const UnknownCard = ({ type }) => (
-    <div className="glass-card">
-        <div className="card-content">{type ? `Unknown card type "${type}"` : 'Card is missing a type'}</div>
-    </div>
-);
 
 /**
  * Returns a stable key for a card inside the container: its id, or its position.
@@ -54,7 +43,7 @@ const renderItem = (cards, index, globalConfig, place) => {
             <div className="container-card-scale">
                 <CardErrorBoundary label={card.id ?? card.type} resetKey={card}>
                     <NoticeCard card={card}>
-                        {Card ? <Card config={card} globalConfig={globalConfig} /> : <UnknownCard type={card.type} />}
+                        {Card ? <Card config={card} globalConfig={globalConfig} /> : <MissingCard type={card.type} />}
                     </NoticeCard>
                 </CardErrorBoundary>
             </div>
@@ -74,6 +63,8 @@ const renderItem = (cards, index, globalConfig, place) => {
  * @returns {JSX.Element} The container.
  */
 const ContainerCard = ({ config, globalConfig }) => {
+    // Draws again when a plugin adds card types, so their cards appear
+    useCardTypes();
     const columns = columnsOf(config);
     const rows = rowSpanOf(config);
     const cards = childCardsOf(config).map(card => fitToColumns(card, columns));
